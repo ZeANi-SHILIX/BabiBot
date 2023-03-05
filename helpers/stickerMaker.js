@@ -1,0 +1,97 @@
+const { downloadMediaMessage } = require('@adiwajshing/baileys')
+const { Sticker, StickerTypes } = require('wa-sticker-formatter');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+const text2png = require('text2png');
+
+const sticker_types = {
+    "חתוך": StickerTypes.CROPPED,
+    "ריבוע": StickerTypes.CROPPED,
+    "מרובע": StickerTypes.CROPPED,
+    "עיגול": StickerTypes.CIRCLE,
+    "עגול": StickerTypes.CIRCLE,
+    "מעוגל": StickerTypes.ROUNDED
+}
+
+/**
+ * 
+ * @param {import('@adiwajshing/baileys').WASocket} sock 
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+ */
+async function sendSticker(msg, sock, msgTypeSticker) {
+    let id = msg.key.remoteJid;
+    let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+
+
+    // video or image message
+    if (msgTypeSticker === "media") {
+        let setType = caption.replace('!sticker', '').replace('!סטיקר', '').trim();
+
+        const type = sticker_types[setType] || StickerTypes.FULL;
+
+        const messageType = Object.keys(msg.message)[0]
+        if (messageType === 'imageMessage' || messageType === 'videoMessage') {
+
+            const buffer = await downloadMediaMessage(msg, 'buffer', {})
+            const sticker = new Sticker(buffer, {
+                pack: '🎉',
+                author: 'BabilaBot',
+                type: type,
+                categories: ['🤩', '🎉'],
+                quality: 50
+            });
+            sock.sendMessage(id, await sticker.toMessage());
+            console.log("sended sticker message", type)
+        }
+    }
+
+    // text message
+    else if (msgTypeSticker === "text") {
+        let message = textMsg.replace('!sticker', "").replace('!סטיקר', '').trim();
+        if (message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+        const sticker = new Sticker(textToSticker(message), {
+            pack: '🎉',
+            author: 'BabilaBot',
+            categories: ['🤩', '🎉'],
+            quality: 50
+        });
+        sock.sendMessage(id, await sticker.toMessage());
+    }
+}
+
+function textToSticker(text) {
+
+    const MAX_CHARS_IN_ROW = 20;
+    const style = {
+        font: "100px Arial",
+        textAlign: "center",
+        color: "white",
+        size: 20,
+        padding: 10,
+        strokeWidth: 3,
+        strokeColor: "black",
+    };
+
+    let strs = text.split(" ");
+    let newstr = "";
+    let new_strs = [];
+    for (let str of strs) {
+
+        if (newstr.length + str.length > MAX_CHARS_IN_ROW) {
+            new_strs.push(newstr);
+            newstr = '';
+        }
+
+        newstr = newstr + " " + str;
+        console.log(new_strs);
+    }
+    new_strs.push(newstr);
+    console.log(new_strs);
+    let final_str = new_strs.join('\n');
+
+    return text2png(final_str, style);
+}
+
+module.exports = sendSticker;
