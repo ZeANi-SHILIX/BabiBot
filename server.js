@@ -20,7 +20,7 @@ const mongo = new Mongo();
 
 let qr = "";
 async function connectToWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info')
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info')
     const sock = makeWASocket({
         // can provide additional config here
         printQRInTerminal: true,
@@ -54,12 +54,12 @@ async function connectToWhatsApp() {
 
         if (!msg.message) return // if there is no text or media message
         if (msg.key.fromMe) return
-        console.log(JSON.stringify(msg, undefined, 2))
+        //console.log(JSON.stringify(msg, undefined, 2))
 
         handlerQueue.add(() => handleMessage(sock, msg));
 
         // save msg of specific users
-        if (Object.keys(store).some(msg.key.remoteJid)) {
+        if (Object.keys(store).some(id => id === msg.key.remoteJid)) {
             try {
                 store[msg.key.remoteJid].push(msg)
                 tempStore[msg.key.remoteJid].push(msg)
@@ -73,7 +73,7 @@ async function connectToWhatsApp() {
 
 }
 // run in main file
-//connectToWhatsApp();
+connectToWhatsApp();
 
 
 

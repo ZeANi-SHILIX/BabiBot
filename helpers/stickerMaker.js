@@ -50,7 +50,9 @@ async function sendSticker(msg, sock, msgTypeSticker) {
     // text message
     else if (msgTypeSticker === "text") {
         let message = textMsg.replace('!sticker', "").replace('!סטיקר', '').trim();
+
         if (message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+        
         const sticker = new Sticker(textToSticker(message), {
             pack: '🎉',
             author: 'BabilaBot',
@@ -61,6 +63,12 @@ async function sendSticker(msg, sock, msgTypeSticker) {
     }
 }
 
+
+/**
+ * 
+ * @param {String} text 
+ * @returns {Buffer} buffer as default 
+ */
 function textToSticker(text) {
 
     const MAX_CHARS_IN_ROW = 20;
@@ -74,24 +82,31 @@ function textToSticker(text) {
         strokeColor: "black",
     };
 
-    let strs = text.split(" ");
-    let newstr = "";
-    let new_strs = [];
-    for (let str of strs) {
-
-        if (newstr.length + str.length > MAX_CHARS_IN_ROW) {
-            new_strs.push(newstr);
-            newstr = '';
+    let v1 = "";
+    let v1_arr = [];
+    let count = 0;
+    for (let ch of text) {
+        if (ch === '\n') {
+            count = 0;
+            v1_arr.push(v1);
+            v1 = "";
         }
-
-        newstr = newstr + " " + str;
-        console.log(new_strs);
+        else if (ch === ' ' && count >= MAX_CHARS_IN_ROW) {
+            count = 0;
+            v1_arr.push(v1);
+            v1 = "";
+        }
+        else {
+            v1 += ch;
+            count++;
+        }
     }
-    new_strs.push(newstr);
-    console.log(new_strs);
-    let final_str = new_strs.join('\n');
+    if (v1 != "") v1_arr.push(v1);
 
-    return text2png(final_str, style);
+    console.log(v1_arr)
+    let v1_final = v1_arr.join('\n');
+
+    return text2png(v1_final, style);
 }
 
 module.exports = sendSticker;
