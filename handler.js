@@ -33,8 +33,24 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg === "!pong" || textMsg === "!פונג")
         return msgQueue.add(() => sock.sendMessage(id, { text: "ping" }));
 
+    // commands list
     let helpCommand = ["help", "command", "עזרה", "פקודות"];
-    if (helpCommand.some(com => textMsg.includes(com))) {
+
+    //in group
+    if (msg.key.remoteJid.includes("@g.us")) {
+        if (helpCommand.some(com => textMsg.includes("!" + com))) {
+            let text = "*רשימת הפקודות הזמינות בבוט:*"
+
+            for (const [key, value] of Object.entries(commands)) {
+                //console.log(key, value);
+                text += `\n${key}: ${value}`;
+            }
+
+            return sock.sendMessage(id, { text });
+        }
+    }
+    // in private
+    else if (helpCommand.some(com => textMsg.includes(com))) {
         let text = "*רשימת הפקודות הזמינות בבוט:*"
 
         for (const [key, value] of Object.entries(commands)) {
