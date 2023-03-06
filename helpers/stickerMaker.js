@@ -73,7 +73,7 @@ function textToSticker(text) {
 
     const MAX_CHARS_IN_ROW = 20;
     const style = {
-        font: "100px Arial",
+        font: "100px San Francisco",
         textAlign: "center",
         color: "white",
         size: 20,

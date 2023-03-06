@@ -12,7 +12,7 @@ const apikeys = require('./src/apikeys');
 const secret = process.env.SECRET ?? 'MySecretDefault';
 
 const app = express()
-const port = 8000;
+const port = 8008;
 
 app.use(bodyParser.json());
 
