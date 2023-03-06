@@ -2,6 +2,7 @@ const sendSticker = require('./helpers/stickerMaker')
 const { msgQueue } = require('./src/QueueObj')
 const savedNotes = require('./src/notes')
 
+
 let commands = {
     "!ping": "בדוק אם אני חי",
     "!sticker": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
@@ -11,8 +12,9 @@ let commands = {
  * 
  * @param {import('@adiwajshing/baileys').WASocket} sock 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+ * @param {import('./mongo')} mongo 
  */
-async function handleMessage(sock, msg) {
+async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
@@ -52,6 +54,9 @@ async function handleMessage(sock, msg) {
 
     // save notes
     if (textMsg.startsWith('!save') || textMsg.startsWith('!שמור')) {
+        if (!mongo.isConnected)
+            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+
         textMsg = textMsg.replace('!save', '').replace('!שמור', '').trim();
 
         if (msg.message.conversation) {
@@ -74,6 +79,9 @@ async function handleMessage(sock, msg) {
 
     // delete note
     if (textMsg.startsWith('!delete') || textMsg.startsWith('!מחק')) {
+        if (!mongo.isConnected)
+            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+
         textMsg = textMsg.replace('!delete', '').replace('!מחק', '').trim();
 
         let strs = textMsg.split(/(?<=^\S+)\s/);
@@ -95,6 +103,9 @@ async function handleMessage(sock, msg) {
 
     // get note
     if (textMsg.startsWith('!get') || textMsg.startsWith('#')) {
+        if (!mongo.isConnected)
+            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+
         textMsg = textMsg.replace('!get', '').replace('#', '').trim();
 
         let strs = textMsg.split(/(?<=^\S+)\s/);
@@ -114,6 +125,8 @@ async function handleMessage(sock, msg) {
 
     // get all notes
     if (textMsg.startsWith('!notes') || textMsg.startsWith('!הערות')) {
+        if (!mongo.isConnected)
+            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
         let resultPrivate = await savedNotes.find({ chat: id });
         let resultPublic = await savedNotes.find({ isGlobal: true });

@@ -56,7 +56,7 @@ async function connectToWhatsApp() {
         if (msg.key.fromMe) return
         //console.log(JSON.stringify(msg, undefined, 2))
 
-        handlerQueue.add(() => handleMessage(sock, msg));
+        handlerQueue.add(() => handleMessage(sock, msg, mongo));
 
         // save msg of specific users
         if (Object.keys(store).some(id => id === msg.key.remoteJid)) {
