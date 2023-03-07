@@ -1,6 +1,8 @@
 const sendSticker = require('./helpers/stickerMaker')
 const { msgQueue } = require('./src/QueueObj')
 const savedNotes = require('./src/notes')
+require('dotenv').config();
+let superuser = process.env.SUPERUSER ?? "";
 
 
 let commands = {
@@ -93,6 +95,31 @@ async function handleMessage(sock, msg, mongo) {
         }
     }
 
+    // save global notes
+    if (textMsg.startsWith('!Gsave') || textMsg.startsWith('!גשמור')) {
+        if (!mongo.isConnected)
+            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+
+        textMsg = textMsg.replace('!Gsave', '').replace('!גשמור', '').trim();
+
+        if (msg.message.conversation) {
+            let strs = textMsg.split(/(?<=^\S+)\s/);
+            let result = await savedNotes.findOne({ q: strs[0] });
+            console.log("Find: ", result);
+
+            if (result)
+                return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
+
+            result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id , isGlobal: true });
+            //console.log("Save: ", result);
+            return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
+
+        }
+        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
+
+        }
+    }
+
     // delete note
     if (textMsg.startsWith('!delete') || textMsg.startsWith('!מחק')) {
         if (!mongo.isConnected)
@@ -107,8 +134,9 @@ async function handleMessage(sock, msg, mongo) {
         if (!result)
             return sock.sendMessage(id, { text: "לא קיימת הערה בשם זה" });
 
-        if (result.chat == id) {
-            savedNotes.remove(result)
+        if (result.chat == id || msg.key.participant?.includes(superuser)) {
+            let res = await savedNotes.remove({_id: result._id});
+            console.log("Remove: ", res);
             return sock.sendMessage(id, { text: "ההערה " + result.q + " הוסרה בהצלחה" });
         }
 
