@@ -204,12 +204,12 @@ async function handleMessage(sock, msg, mongo) {
 
         let resultPrivate = await savedNotes.find({ chat: id });
         let resultPublic = await savedNotes.find({ isGlobal: true });
-        console.log("Find: ", resultPrivate, "Public: ", resultPublic);
-
+        
         if (resultPrivate.length === 0 && resultPublic.length === 0)
-            return sock.sendMessage(id, { text: "לא קיימות הערות" });
-
+        return sock.sendMessage(id, { text: "לא קיימות הערות" });
+        
         resultPrivate = resultPrivate.filter(note => note.isGlobal != true);
+        console.log("Find: ", resultPrivate, "Public: ", resultPublic);
 
         let str = "";
         if (resultPrivate.length !== 0) {
@@ -254,9 +254,13 @@ async function handleMessage(sock, msg, mongo) {
                 console.error(error);
             }
         }
+        retunText = retunText.trim();
 
         if (countMails > 0 && countMails < 6)
             sock.sendMessage(id, { text: retunText });
+
+        if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
+            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות (ייתכן שהמייל חסר... נשמח שתשלח לכאן אחרי שתמצא)"})
 
     }
 }
