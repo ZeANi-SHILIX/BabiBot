@@ -8,9 +8,12 @@ const Mongo = require('./mongo');
 const express = require('express');
 const QRCode = require('qrcode');
 const { pino } = require("pino");
+const { MessageRetryHandler} = require("./src/retryHandler")
 
 const logger = pino();
-logger.level = "trace";
+logger.level = "silent";
+
+const handler = new MessageRetryHandler();
 
 const store = makeInMemoryStore({ logger });
 store?.readFromFile("./baileys_store_multi.json");
@@ -44,17 +47,7 @@ async function connectToWhatsApp() {
         },
         logger,
         msgRetryCounterMap,
-        getMessage: async key => {
-            if (store) {
-                const msg = await store.loadMessage(key.remoteJid, key.id)
-                return msg?.message || undefined
-            }
-
-            // only if store is present
-            return {
-                conversation: 'hello'
-            }
-        }
+        getMessage: handler.messageRetryHandler
     })
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update
