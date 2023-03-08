@@ -185,11 +185,13 @@ async function handleMessage(sock, msg, mongo) {
         textMsg = textMsg.replace('!get', '').replace('#', '').trim();
 
         let strs = textMsg.split(/(?<=^\S+)\s/);
-        let result = await savedNotes.findOne({ q: strs[0] });
-        console.log("Find: ", result);
+        let result = await savedNotes.findOne({ q: strs[0], chat : id });
 
         if (!result)
             return sock.sendMessage(id, { text: "לא קיימת הערה עם שם זה" });
+
+        let toConsole = [result?.a, result?.isGlobal, result?.chat]
+        console.log("Find: ", toConsole);
 
         if (result.isGlobal || result.chat == id)
             return sock.sendMessage(id, { text: result.a });
@@ -204,10 +206,10 @@ async function handleMessage(sock, msg, mongo) {
 
         let resultPrivate = await savedNotes.find({ chat: id });
         let resultPublic = await savedNotes.find({ isGlobal: true });
-        
+
         if (resultPrivate.length === 0 && resultPublic.length === 0)
-        return sock.sendMessage(id, { text: "לא קיימות הערות" });
-        
+            return sock.sendMessage(id, { text: "לא קיימות הערות" });
+
         resultPrivate = resultPrivate.filter(note => note.isGlobal != true);
         console.log("Find: ", resultPrivate, "Public: ", resultPublic);
 
@@ -234,7 +236,7 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("מייל של")) {
         let mails = await getMails();
 
-        let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7).replace(/[?]/g,"").replace("בבקשה", "").trim();
+        let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7).replace(/[?]/g, "").replace("בבקשה", "").trim();
         let arr_search = searchText.split(" ");
         console.log(arr_search)
 
@@ -260,7 +262,7 @@ async function handleMessage(sock, msg, mongo) {
             sock.sendMessage(id, { text: retunText });
 
         if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
-            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות (ייתכן שהמייל חסר... נשמח שתשלח לכאן אחרי שתמצא)"})
+            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות (ייתכן שהמייל חסר... נשמח שתשלח לכאן אחרי שתמצא)" })
 
     }
 }

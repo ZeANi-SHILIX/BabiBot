@@ -1,13 +1,27 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@adiwajshing/baileys')
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore } = require('@adiwajshing/baileys')
 const { handlerQueue } = require('./src/QueueObj');
-const { store, tempStore } = require('./src/storeMsg');
+//const { store, tempStore } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const { handleMessage } = require('./handler');
 const Mongo = require('./mongo');
 const express = require('express');
 const QRCode = require('qrcode');
-const apikeys = require('./src/apikeys');
+const { pino } = require("pino");
+
+const logger = pino();
+logger.level = "trace";
+
+const store = makeInMemoryStore({ logger });
+store?.readFromFile("./baileys_store_multi.json");
+// save every 10s
+setInterval(() => {
+    store?.writeToFile("./baileys_store_multi.json");
+}, 10_000);
+
+const msgRetryCounterMap = {};
+
+//const handler = new MessageRetryHandler();
 
 const secret = process.env.SECRET ?? 'MySecretDefault';
 
@@ -27,6 +41,19 @@ async function connectToWhatsApp() {
         auth: {
             creds: state.creds,
             keys: state.keys,
+        },
+        logger,
+        msgRetryCounterMap,
+        getMessage: async key => {
+            if (store) {
+                const msg = await store.loadMessage(key.remoteJid, key.id)
+                return msg?.message || undefined
+            }
+
+            // only if store is present
+            return {
+                conversation: 'hello'
+            }
         }
     })
     sock.ev.on('connection.update', (update) => {
@@ -58,16 +85,16 @@ async function connectToWhatsApp() {
 
         handlerQueue.add(() => handleMessage(sock, msg, mongo));
 
-        // save msg of specific users
-        if (Object.keys(store).some(id => id === msg.key.remoteJid)) {
-            try {
-                store[msg.key.remoteJid].push(msg)
-                tempStore[msg.key.remoteJid].push(msg)
+        // // save msg of specific users
+        // if (Object.keys(store).some(id => id === msg.key.remoteJid)) {
+        //     try {
+        //         store[msg.key.remoteJid].push(msg)
+        //         tempStore[msg.key.remoteJid].push(msg)
 
-            } catch (error) {
-                console.log("Can't store message")
-            }
-        }
+        //     } catch (error) {
+        //         console.log("Can't store message")
+        //     }
+        // }
 
     })
 
