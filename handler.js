@@ -2,7 +2,8 @@ const sendSticker = require('./helpers/stickerMaker')
 const { msgQueue } = require('./src/QueueObj')
 const savedNotes = require('./src/notes')
 require('dotenv').config();
-let superuser = process.env.SUPERUSER ?? "";
+const superuser = process.env.SUPERUSER ?? "";
+const ssid = process.env.MAILLIST ?? "";
 
 
 let commands = {
@@ -77,22 +78,39 @@ async function handleMessage(sock, msg, mongo) {
 
         textMsg = textMsg.replace('!save', '').replace('!שמור', '').trim();
 
-        if (msg.message.conversation) {
+        // quoted message
+        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
             let strs = textMsg.split(/(?<=^\S+)\s/);
             let result = await savedNotes.findOne({ q: strs[0] });
-            console.log("Find: ", result);
+            console.log("Find if exist: ", result);
 
-            if (result)
+            if (result?.isGlobal || result?.chat === id)
                 return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
 
-            result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id });
+            result = await savedNotes.insertMany({
+                q: strs[0],
+                a: msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
+                chat: id
+            });
             //console.log("Save: ", result);
             return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
-
         }
-        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
+        // normal message
 
-        }
+        let strs = textMsg.split(/(?<=^\S+)\s/);
+        if (strs.length != 2)
+            return sock.sendMessage(id, { text: "אופס נראה שחסר מידע... \nוודא שכתבת לי שם להערה וגם תוכן לההערה" });
+
+        let result = await savedNotes.findOne({ q: strs[0] });
+        console.log("Find: ", result);
+
+        if (result?.isGlobal || result?.chat === id)
+            return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
+
+        result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id });
+        //console.log("Save: ", result);
+        return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
+
     }
 
     // save global notes
@@ -102,22 +120,38 @@ async function handleMessage(sock, msg, mongo) {
 
         textMsg = textMsg.replace('!Gsave', '').replace('!גשמור', '').trim();
 
-        if (msg.message.conversation) {
+        // quoted message
+        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
             let strs = textMsg.split(/(?<=^\S+)\s/);
             let result = await savedNotes.findOne({ q: strs[0] });
-            console.log("Find: ", result);
+            console.log("Find if exist: ", result);
 
-            if (result)
+            if (result?.isGlobal || result?.chat === id)
                 return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
 
-            result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id , isGlobal: true });
+            result = await savedNotes.insertMany({
+                q: strs[0],
+                a: msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
+                chat: id
+            });
             //console.log("Save: ", result);
             return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
-
         }
-        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
+        // normal message
 
-        }
+        let strs = textMsg.split(/(?<=^\S+)\s/);
+        if (strs.length != 2)
+            return sock.sendMessage(id, { text: "אופס נראה שחסר מידע... \nוודא שכתבת לי שם להערה וגם תוכן לההערה" });
+
+        let result = await savedNotes.findOne({ q: strs[0] });
+        console.log("Find: ", result);
+
+        if (result?.isGlobal || result?.chat === id)
+            return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
+
+        result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id, isGlobal: true });
+        //console.log("Save: ", result);
+        return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
     }
 
     // delete note
@@ -135,14 +169,12 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: "לא קיימת הערה בשם זה" });
 
         if (result.chat == id || msg.key.participant?.includes(superuser)) {
-            let res = await savedNotes.remove({_id: result._id});
+            let res = await savedNotes.remove({ _id: result._id });
             console.log("Remove: ", res);
             return sock.sendMessage(id, { text: "ההערה " + result.q + " הוסרה בהצלחה" });
         }
 
         return sock.sendMessage(id, { text: "אין לך את ההרשאות המתאימות להסיר את ההערה " });
-
-
     }
 
     // get note
@@ -163,8 +195,6 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: result.a });
 
         return sock.sendMessage(id, { text: "לא קיימת הערה עם שם זה" });
-
-
     }
 
     // get all notes
@@ -182,6 +212,12 @@ async function handleMessage(sock, msg, mongo) {
         resultPrivate = resultPrivate.filter(note => note.isGlobal != true);
 
         let str = "";
+        if (resultPrivate.length !== 0) {
+            str += "*הערות בצאט זה:*\n"
+            for (let note of resultPrivate)
+                str += note.q + "\n";
+            str += "\n";
+        }
         if (resultPublic.length !== 0) {
             str = `*הערות גלובליות:*\n`;
             for (let note of resultPublic)
@@ -189,22 +225,57 @@ async function handleMessage(sock, msg, mongo) {
             str += "\n";
         }
 
-        if (resultPrivate.length !== 0) {
-            str += "*הערות בצאט זה:*\n"
-            for (let note of resultPrivate)
-                str += note.q + "\n";
-            str += "\n";
-        }
-
         str += "\nניתן לגשת להערה על ידי # או על ידי הפקודה !get";
 
         return sock.sendMessage(id, { text: str });
+    }
 
+    // get mails
+    if (textMsg.includes("מייל של")) {
+        let mails = await getMails();
+
+        let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7).replace(/[?]/g,"").replace("בבקשה", "").trim();
+        let arr_search = searchText.split(" ");
+        console.log(arr_search)
+
+        let retunText = "";
+        let countMails = 0;
+        for (let mail of mails) {
+            try {
+                //console.log(mail);
+                let str = mail.c[0].v;
+                //console.log(str, arr_search);
+
+                if (arr_search.every(s => str.includes(s))) {
+                    countMails += 1;
+                    retunText += str + "\n";
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        if (countMails > 0 && countMails < 6)
+            sock.sendMessage(id, { text: retunText });
 
     }
 }
 
+/**
+ * 
+ * @returns {[{"c":[{"v":"name: mail@gmail.com"}]}]}
+ */
+async function getMails() {
+    const url_begin = 'https://docs.google.com/spreadsheets/d/';
+    const url_end = '/gviz/tq?&tqx=out:json';
+    let url = `${url_begin}${ssid}${url_end}`;
 
+    let res = await fetch(url);
+    let data = await res.text();
+
+    let json = JSON.parse(data.substr(47).slice(0, -2));
+    return json.table.rows;
+}
 
 
 module.exports = { handleMessage }

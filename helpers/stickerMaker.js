@@ -40,7 +40,7 @@ async function sendSticker(msg, sock, msgTypeSticker) {
                 author: 'BabilaBot',
                 type: type,
                 categories: ['🤩', '🎉'],
-                quality: 50
+                quality: 40
             });
             sock.sendMessage(id, await sticker.toMessage());
             console.log("sended sticker message", type)
