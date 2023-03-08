@@ -219,7 +219,7 @@ async function handleMessage(sock, msg, mongo) {
             str += "\n";
         }
         if (resultPublic.length !== 0) {
-            str = `*הערות גלובליות:*\n`;
+            str += `*הערות גלובליות:*\n`;
             for (let note of resultPublic)
                 str += note.q + "\n";
             str += "\n";
