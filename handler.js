@@ -185,16 +185,20 @@ async function handleMessage(sock, msg, mongo) {
         textMsg = textMsg.replace('!get', '').replace('#', '').trim();
 
         let strs = textMsg.split(/(?<=^\S+)\s/);
-        let result = await savedNotes.findOne({ q: strs[0], chat : id });
+        let result = await savedNotes.findOne({ q: strs[0], chat: id });
+        let resultGlobal = await savedNotes.findOne({ q: strs[0], isGlobal: true });
 
-        if (!result)
+        if (!result && !resultGlobal)
             return sock.sendMessage(id, { text: "לא קיימת הערה עם שם זה" });
 
         let toConsole = [result?.a, result?.isGlobal, result?.chat]
         console.log("Find: ", toConsole);
 
-        if (result.isGlobal || result.chat == id)
+        if (result?.isGlobal || result?.chat == id)
             return sock.sendMessage(id, { text: result.a });
+
+        if (resultGlobal?.isGlobal)
+            return sock.sendMessage(id, { text: resultGlobal.a });
 
         return sock.sendMessage(id, { text: "לא קיימת הערה עם שם זה" });
     }
@@ -262,7 +266,7 @@ async function handleMessage(sock, msg, mongo) {
             sock.sendMessage(id, { text: retunText });
 
         if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
-            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות (ייתכן שהמייל חסר... נשמח שתשלח לכאן אחרי שתמצא)" })
+            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות\n(אם המייל חסר - נשמח שתשלח לכאן אחרי שתמצא)" })
 
     }
 }

@@ -24,8 +24,6 @@ setInterval(() => {
 
 const msgRetryCounterMap = {};
 
-//const handler = new MessageRetryHandler();
-
 const secret = process.env.SECRET ?? 'MySecretDefault';
 
 const app = express()
