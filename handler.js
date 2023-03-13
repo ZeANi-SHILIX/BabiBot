@@ -1,7 +1,12 @@
 const sendSticker = require('./helpers/stickerMaker')
 const { msgQueue } = require('./src/QueueObj')
 const savedNotes = require('./src/notes')
+const { store } = require('./src/storeMsg')
+const ChatGPT = require('./helpers/chatgpt')
 require('dotenv').config();
+
+const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
+
 const superuser = process.env.SUPERUSER ?? "";
 const ssid = process.env.MAILLIST ?? "";
 
@@ -19,13 +24,14 @@ let commands = {
  */
 async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
+
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
     caption = caption.trim();
     textMsg = textMsg.trim();
 
     console.log(`${msg.pushName} (${id}) - ${caption} ${textMsg}`)
-    console.log(msg);
+    //console.log(msg);
 
     // send ACK
     sock.readMessages([msg.key])
@@ -267,6 +273,37 @@ async function handleMessage(sock, msg, mongo) {
 
         if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
             sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות\n(אם המייל חסר - נשמח שתשלח לכאן אחרי שתמצא)" })
+        return;
+    }
+
+    if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+        try {
+            let numMsgToLoad = parseInt(textMsg.replace(/^\D+|\D.*$/g, ""));
+            numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 5;
+
+            let history = await store.loadMessages(id, numMsgToLoad);
+            history.pop();
+            console.log(history);
+
+            let res = await chatGPT.tldr(history, id)
+            return sock.sendMessage(id, { text: res })
+        } catch (error) {
+            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+        }
+
+    }
+
+
+    // no command - answer with ChatGPT
+    if (!msg.key.remoteJid.includes("@g.us")) {
+        try {
+            let history = await store.loadMessages(id, 8);
+            let res = await chatGPT.chat(history, id)
+            return sock.sendMessage(id, { text: res })
+        } catch (error) {
+            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+        }
+
 
     }
 }

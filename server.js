@@ -1,26 +1,26 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore } = require('@adiwajshing/baileys')
 const { handlerQueue } = require('./src/QueueObj');
-//const { store, tempStore } = require('./src/storeMsg');
+const { store, logger } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const { handleMessage } = require('./handler');
 const Mongo = require('./mongo');
 const express = require('express');
 const QRCode = require('qrcode');
-const { pino } = require("pino");
+//const { pino } = require("pino");
 const { MessageRetryHandler} = require("./src/retryHandler")
 
-const logger = pino();
-logger.level = "silent";
+// const logger = pino();
+// logger.level = "silent";
 
 const handler = new MessageRetryHandler();
 
-const store = makeInMemoryStore({ logger });
-store?.readFromFile("./baileys_store_multi.json");
-// save every 10s
-setInterval(() => {
-    store?.writeToFile("./baileys_store_multi.json");
-}, 10_000);
+// const store = makeInMemoryStore({ logger });
+// store?.readFromFile("./baileys_store_multi.json");
+// // save every 10s
+// setInterval(() => {
+//     store?.writeToFile("./baileys_store_multi.json");
+// }, 10_000);
 
 const msgRetryCounterMap = {};
 
@@ -47,6 +47,9 @@ async function connectToWhatsApp() {
         msgRetryCounterMap,
         getMessage: handler.messageRetryHandler
     })
+
+    store.bind(sock.ev)
+
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update
         if (connection === 'close') {
@@ -70,22 +73,10 @@ async function connectToWhatsApp() {
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
 
-        if (!msg.message) return // if there is no text or media message
-        if (msg.key.fromMe) return
-        //console.log(JSON.stringify(msg, undefined, 2))
+        if (!msg.message) return; // if there is no text or media message
+        if (msg.key.fromMe) return;
 
         handlerQueue.add(() => handleMessage(sock, msg, mongo));
-
-        // // save msg of specific users
-        // if (Object.keys(store).some(id => id === msg.key.remoteJid)) {
-        //     try {
-        //         store[msg.key.remoteJid].push(msg)
-        //         tempStore[msg.key.remoteJid].push(msg)
-
-        //     } catch (error) {
-        //         console.log("Can't store message")
-        //     }
-        // }
 
     })
 
@@ -194,3 +185,7 @@ app.listen(port, () => {
     console.log(`WaAPI app listening at http://localhost:${port}`)
     console.log(`QR at http://localhost:${port}/qr`)
 });
+
+process.on('uncaughtException', (err, origin) => {
+    console.log(err);
+})

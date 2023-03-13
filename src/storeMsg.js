@@ -1,19 +1,17 @@
-const { proto } = require('@adiwajshing/baileys')
+const { proto, makeInMemoryStore } = require('@adiwajshing/baileys')
+const { pino } = require("pino");
 
-/** save msgs */
-const store = {
-    "ID" : [
-        proto.WebMessageInfo
-    ]
-};
-delete store.ID;
+const logger = pino();
+logger.level = "silent";
 
-/** save temp msgs */
-const tempStore = {
-    "ID" : [
-        proto.WebMessageInfo
-    ]
-};
-delete tempStore.ID;
+const store = makeInMemoryStore({ logger });
+store?.readFromFile("./baileys_store_multi.json");
+// save every 10s
+setInterval(() => {
+    store?.writeToFile("./baileys_store_multi.json");
+}, 10_000);
 
-module.exports = {store , tempStore}
+module.exports = {
+    store,
+    logger
+}
