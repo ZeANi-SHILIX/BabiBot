@@ -112,14 +112,19 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
     model: "text-davinci-003",
     prompt: mission,
     temperature: 0.7,
-    max_tokens: 130,
+    max_tokens: 250,
     top_p: 1,
     frequency_penalty: 0,
     presence_penalty: 0.6,
     stop: allUsers,
   });
+
   console.log("Total Tokens: " + response.data.usage?.total_tokens);
-  return response.data.choices[0].text;
+  
+  let res = response.data.choices[0].text;
+  if (res.startsWith(":"))
+    res = res.replace(":", " ").trim();
+  return res;
 };
 
 
