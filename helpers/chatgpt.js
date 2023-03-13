@@ -82,10 +82,8 @@ ChatGPT.prototype.chat = async function (msgs, user) {
  * @returns 
  */
 ChatGPT.prototype.tldr = async function (msgs, user) {
-  let allUsers = [ "AI:"]
-  let messages = [
-    "You are a chatbot named 'Babi Bot' your job is Summarize the conversation in a short and clear way, without expressing an opinion and without answering questions that were in the conversation. Your code has written by Shilo Babila using JavaScript."
-  ];
+  let allUsers = ["BabiBOT:"]
+  let messages = [];
 
   for (let msg of msgs) {
     let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || undefined;
@@ -95,15 +93,17 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
       continue;
 
     if (msg.key.fromMe) {
-      messages.push("AI:" + text);
+      messages.push("BabiBOT:" + text);
     }
     else {
-      allUsers.includes(name) ? 0 : allUsers.push(name)
-      messages.push( name + text);
+      messages.push(name + text);
+
+      if (!allUsers.includes(name))
+        allUsers.push(name)
     }
 
   }
-  messages.push("AI: Summarize the conversation")
+  messages.push("BabiBOT: Summarize the conversation")
 
   let mission = messages.join("\n");
   //console.log(mission)

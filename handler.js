@@ -283,7 +283,7 @@ async function handleMessage(sock, msg, mongo) {
 
             let history = await store.loadMessages(id, numMsgToLoad);
             history.pop();
-            console.log(history);
+            //console.log(history);
 
             let res = await chatGPT.tldr(history, id)
             return sock.sendMessage(id, { text: res })
