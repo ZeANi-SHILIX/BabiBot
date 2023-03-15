@@ -1,9 +1,12 @@
 const sendSticker = require('./helpers/stickerMaker')
+const Downloader = require('./helpers/downloader')
 const { msgQueue } = require('./src/QueueObj')
 const savedNotes = require('./src/notes')
 const { store } = require('./src/storeMsg')
 const ChatGPT = require('./helpers/chatgpt')
+const { info } = require("./helpers/globals");
 require('dotenv').config();
+const fs = require("fs");
 
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 
@@ -77,6 +80,29 @@ async function handleMessage(sock, msg, mongo) {
         return sendSticker(msg, sock, "text");
 
 
+    /**######
+     * GOOGLE
+     ########*/
+    else if (textMsg.startsWith("!google") || textMsg.startsWith("!גוגל")) {
+        let textSearch = textMsg.replace("!google", "").replace("!גוגל", "").trim();
+
+        if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
+            let quotedMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage;
+            let quotedText = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
+            let linkMsg = textSearch.length === 0 ? "https://www.google.com/search?q=" + encodeURIComponent(quotedText.trim()) : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
+            return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! למה שלא שתנסה לשאול אותו?\n" + linkMsg });
+
+        }
+
+        let linkMsg = textSearch.length === 0 ? "https://giybf.com/" : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
+        return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! למה שלא שתנסה לשאול אותו?\n" + linkMsg });
+
+    }
+
+
+    /**######
+     * NOTES
+     ########*/
     // save notes
     if (textMsg.startsWith('!save') || textMsg.startsWith('!שמור')) {
         if (!mongo.isConnected)
@@ -291,6 +317,32 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
         }
 
+    }
+
+    /**#######
+     * YOUTUBE
+     #########*/
+    if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
+
+        let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
+        let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
+
+        //info.getYouTubeProgress(id)
+        msgQueue.add(() => Downloader(vidID, id)
+            .then(async data => {
+                await sock.sendMessage(id, { caption: data.title, audio: { url: data.file }, mimetype: 'audio/mp4' })
+                sock.sendMessage(id, { text: data.title })
+                fs.unlinkSync(data.file);
+            })
+        );
+
+        return sock.sendMessage(id, { text: "מתחיל בהורדה...\nתוכל לראות את התקדמות ההורדה על ידי שליחת '%'" });
+    }
+    
+    if (textMsg.includes('%')){
+        let progress = info.getYouTubeProgress(id);
+        if (progress)
+            return sock.sendMessage(id, {text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...`})
     }
 
 

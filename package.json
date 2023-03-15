@@ -22,7 +22,8 @@
     "openai": "^3.2.1",
     "p-queue": "6.6.2",
     "text2png": "^2.3.0",
-    "wa-sticker-formatter": "^4.4.4"
+    "wa-sticker-formatter": "^4.4.4",
+    "youtube-mp3-downloader": "^0.7.11"
   },
   "devDependencies": {
     "nodemon": "^2.0.21"

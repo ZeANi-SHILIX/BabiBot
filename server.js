@@ -8,7 +8,7 @@ const Mongo = require('./mongo');
 const express = require('express');
 const QRCode = require('qrcode');
 //const { pino } = require("pino");
-const { MessageRetryHandler} = require("./src/retryHandler")
+const { MessageRetryHandler } = require("./src/retryHandler")
 
 // const logger = pino();
 // logger.level = "silent";
@@ -96,8 +96,7 @@ app.get('/qr', async (req, res) => {
 app.get('/', (req, res) => {
     //res.sendFile(__dirname + '/imgtoshare.jpeg');
     res.send('Hello World!')
-})
-
+});
 
 
 app.post('/login', async (req, res) => {
@@ -119,7 +118,6 @@ app.post('/login', async (req, res) => {
 
 
 });
-
 
 app.post('/newMsgs', (req, res) => {
     const authHeader = req.headers.authorization;
@@ -181,6 +179,43 @@ app.post('/allMsgs', (req, res) => {
 });
 
 
+//http://localhost:3000/send?apikey=8e3f5c0f57274eb1&phone=972507923132&text=hello1
+//http://localhost:3000/send?apikey=8e3f5c0f57274eb1&group=120363027168894023&text=ניסיון
+
+// "120363027168894023@g.us",
+app.get('/send', async (req, res) => {
+    const apikey = req.query.apikey;
+
+    let searchResult = (await apikeys.findOne({ apikey: apikey }))?.toJSON();
+
+    if (searchResult == null)
+        return res.status(403).json({
+            status: 403,
+            info: "you do not have permission to send messages"
+        });
+
+    const phone = req.query.phone;
+    const group = req.query.group;
+    const text = req.query.text;
+
+    if ((group == undefined && phone == undefined) || text == undefined) {
+        return res.status(404).json({
+            status: 404,
+            info: `The field 'text' or 'phone' is missing`
+        })
+    }
+    let receiver = group ? group + '@g.us' : phone + "@s.whatsapp.net";
+    console.log(`Send ${text} to ${receiver}, from ${searchResult.name}`);
+
+
+    sock.sendMessage(receiver, { text: text })
+    res.status(200).json({
+        status: 200,
+        info: `Send ${text} to ${receiver}, from ${searchResult.name}`
+    })
+});
+
+
 app.listen(port, () => {
     console.log(`WaAPI app listening at http://localhost:${port}`)
     console.log(`QR at http://localhost:${port}/qr`)
@@ -188,4 +223,4 @@ app.listen(port, () => {
 
 process.on('uncaughtException', (err, origin) => {
     console.log(err);
-})
+});

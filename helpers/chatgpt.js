@@ -120,11 +120,13 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
   });
 
   console.log("Total Tokens: " + response.data.usage?.total_tokens);
-  
+
   let res = response.data.choices[0].text;
   if (res.startsWith(":"))
-    res = res.replace(":", " ").trim();
-  return res;
+    res = res.replace(":", " ");
+  if (res.startsWith("."))
+    res = res.replace(".", " ");
+  return res.trim();
 };
 
 
