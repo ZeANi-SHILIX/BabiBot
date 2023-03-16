@@ -28,8 +28,9 @@ function Downloader(track, userID, sock) {
     const filename = `${track}-${userID}-${new Date().toLocaleDateString("en-GB")}`;
 
     var YD = new YoutubeMp3Downloader({
-        "ffmpegPath": ffmpegInstaller.path,
-        "outputPath": "./",    // Output file location (default: the home directory)
+        ffmpegPath: ffmpegInstaller.path,
+        outputPath: "./",    // Output file location (default: the home directory)
+        youtubeVideoQuality: 'lowest'
     });
 
     //Download video and save as MP3 file
