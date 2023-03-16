@@ -14,7 +14,7 @@ Information.prototype.updateYouTubeProgress = function (userID, progress) {
 
     let userInfo = this.map.get(userID) || new Map();
 
-    if (!this.userInfo.has("youtubeProgress")) {
+    if (!userInfo.has("youtubeProgress")) {
         isFirstTime = true;
     }
 
