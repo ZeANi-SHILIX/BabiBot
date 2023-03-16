@@ -327,22 +327,22 @@ async function handleMessage(sock, msg, mongo) {
         let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
         let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
 
-        //info.getYouTubeProgress(id)
-        msgQueue.add(() => Downloader(vidID, id)
+        Downloader(vidID, id)
             .then(async data => {
                 await sock.sendMessage(id, { caption: data.title, audio: { url: data.file }, mimetype: 'audio/mp4' })
                 sock.sendMessage(id, { text: data.title })
                 fs.unlinkSync(data.file);
             })
-        );
+            .catch(sock.sendMessage(id, { text: "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?" }))
+
 
         return sock.sendMessage(id, { text: "מתחיל בהורדה...\nתוכל לראות את התקדמות ההורדה על ידי שליחת '%'" });
     }
-    
-    if (textMsg.includes('%')){
+
+    if (textMsg.includes('%')) {
         let progress = info.getYouTubeProgress(id);
         if (progress)
-            return sock.sendMessage(id, {text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...`})
+            return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` })
     }
 
 

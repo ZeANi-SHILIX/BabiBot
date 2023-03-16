@@ -36,8 +36,8 @@ function Downloader(track, userID) {
 
         YD.download(track, filename);
     } catch (error) {
-        console.log(error);
-        return;
+        console.log( "link didnt work: ", error);
+        return new Promise((res, rej)=> rej("link didn't work"));
     }
 
     
