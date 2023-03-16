@@ -7,12 +7,21 @@ let info = new Information()
  * 
  * @param {String} userID 
  * @param {import('youtube-mp3-downloader').IVideoTask } progress 
+ * @returns {boolean} True if this first time
  */
 Information.prototype.updateYouTubeProgress = function (userID, progress) {
-    let userInfo = this.map.get(userID) || new Map();
+    let isFirstTime = false;
+
+    let userInfo = this.map.get(userID);
+    if (!userInfo) {
+        userInfo = new Map();
+        isFirstTime = true;
+    }
 
     userInfo.set("youtubeProgress", progress);
     this.map.set(userID, userInfo);
+
+    return isFirstTime;
 }
 
 /**

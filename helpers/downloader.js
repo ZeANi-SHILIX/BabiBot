@@ -6,6 +6,7 @@ const { info } = require("./globals");
  * 
  * @param {String} track 
  * @param {String} userID
+ * @param {import('@adiwajshing/baileys').WASocket} sock 
  * @returns 
     {Promise<{
         videoId:String,
@@ -22,7 +23,7 @@ const { info } = require("./globals");
         thumbnail: String
     }>}
  */
-function Downloader(track, userID) {
+function Downloader(track, userID, sock) {
 
     const filename = `${track}-${new Date().toLocaleDateString("en-GB")}`;
 
@@ -36,15 +37,17 @@ function Downloader(track, userID) {
 
         YD.download(track, filename);
     } catch (error) {
-        console.log( "link didnt work: ", error);
-        return new Promise((res, rej)=> rej("link didn't work"));
+        console.error("link didnt work: ", error);
     }
 
-    
+
     YD.on("progress", function (progress) {
         console.log(JSON.stringify(progress));
+        
         // save progress
-        info.updateYouTubeProgress(userID, progress)
+        if (info.updateYouTubeProgress(userID, progress)){
+            sock.sendMessage(userID, { text: "מתחיל בהורדה...\nתוכל לראות את התקדמות ההורדה על ידי שליחת '%'" });
+        }
     });
 
     return new Promise(function (resolve, reject) {
@@ -56,9 +59,10 @@ function Downloader(track, userID) {
         });
 
         YD.on("error", function (error) {
-            console.log(error);
+            //console.error("Error", error);
             info.deleteYouTubeProgress(userID);
-            reject();
+            sock.sendMessage(userID, { text: "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?" })
+            reject(error);
         });
     });
 
