@@ -15,8 +15,9 @@ const ssid = process.env.MAILLIST ?? "";
 
 
 let commands = {
-    "!ping": "בדוק אם אני חי",
-    "!sticker": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
+    "!פינג": "בדוק אם אני חי",
+    "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
+    "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן"
 }
 
 /**
@@ -62,7 +63,7 @@ async function handleMessage(sock, msg, mongo) {
         }
     }
     // in private
-    else if (helpCommand.some(com => textMsg.includes(com))) {
+    else if (helpCommand.some(com => textMsg.startsWith(com))) {
         let text = "*רשימת הפקודות הזמינות בבוט:*"
 
         for (const [key, value] of Object.entries(commands)) {
@@ -330,8 +331,8 @@ async function handleMessage(sock, msg, mongo) {
 
         Downloader(vidID, id, sock)
             .then(async data => {
-                await sock.sendMessage(id, { caption: data.title, audio: { url: data.file }, mimetype: 'audio/mp4' })
-                sock.sendMessage(id, { text: data.title })
+                await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' })
+                sock.sendMessage(id, { text: data.videoTitle })
                 fs.unlinkSync(data.file);
             })
 
