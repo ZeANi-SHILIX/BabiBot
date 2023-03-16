@@ -25,7 +25,7 @@ const { info } = require("./globals");
  */
 function Downloader(track, userID, sock) {
 
-    const filename = `${track}-${new Date().toLocaleDateString("en-GB")}`;
+    const filename = `${track}-${userID}-${new Date().toLocaleDateString("en-GB")}`;
 
     var YD = new YoutubeMp3Downloader({
         "ffmpegPath": ffmpegInstaller.path,
@@ -43,7 +43,7 @@ function Downloader(track, userID, sock) {
 
     YD.on("progress", function (progress) {
         console.log(JSON.stringify(progress));
-        
+
         // save progress
         if (info.updateYouTubeProgress(userID, progress)){
             sock.sendMessage(userID, { text: "מתחיל בהורדה...\nתוכל לראות את התקדמות ההורדה על ידי שליחת '%'" });
