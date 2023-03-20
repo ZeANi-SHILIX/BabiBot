@@ -44,11 +44,12 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false) {
 
         // check if the note already exist in global or in the chat
         let result = await savedNotes.findOne({ q: q });
+
         if (result?.isGlobal || result?.chat === id)
             return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
 
         return savedNotes.create({ q: q, a: data, chat: chat, isGlobal: isGlobal }, (err, res) => {
-            if (!res.isNew) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
+            if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
 
             sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" });
         });
@@ -72,7 +73,8 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false) {
         fileName: nameFile,
         chat: id, isGlobal: isGlobal
     }, (err, res) => {
-        if (!res.isNew) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
+        console.log(res);
+        if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
 
         sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" });
     });
@@ -95,7 +97,7 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, superuser) {
 
     let search = await savedNotes.findOne({ q: q });
     let searchMedia = await mediaNote.findOne({ q: q });
-    if (!search && !searchMedia) return sock.sendMessage(id, { text: "אופס... ההערה לא נמצאה במאגר" });
+    if (!search && !searchMedia) return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" });
 
     // check permissions
     if (search?.chat !== id && search?.isGlobal == false && id !== superuser && msg.key.participant !== superuser)
@@ -105,13 +107,13 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, superuser) {
         return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
 
     // delete the note
-    if (search) return savedNotes.remove({ _id: search._id }, (err, res) => {
+    if (search) return savedNotes.deleteOne({ _id: search._id }, (err, res) => {
         if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
 
         sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
     });
 
-    mediaNote.remove({ _id: searchMedia._id }, (err, res) => {
+    mediaNote.deleteOne({ _id: searchMedia._id }, (err, res) => {
         if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
 
         sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
@@ -191,7 +193,7 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
     if (!resultMedia) resultMedia = await mediaNote.findOne({ q: q, isGlobal: true });
 
     // note not found
-    if (!result && !resultMedia) return sock.sendMessage(id, { text: "אופס... ההערה לא נמצאה במאגר" });
+    if (!result && !resultMedia) return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" });
 
     // send the media
     switch (resultMedia.type) {

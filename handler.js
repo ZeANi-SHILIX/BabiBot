@@ -40,7 +40,7 @@ async function handleMessage(sock, msg, mongo) {
 
     console.log(`${msg.pushName} (${id}) - ${caption} ${textMsg}`)
     //console.log(JSON.stringify(msg, null, 2));
-    
+
     // send ACK
     sock.readMessages([msg.key])
 
@@ -87,7 +87,7 @@ async function handleMessage(sock, msg, mongo) {
     /**#########
      * barkuni
      ########## */
-     if (textMsg.startsWith("!barkuni") || textMsg.startsWith("!ברקוני"))
+    if (textMsg.startsWith("!barkuni") || textMsg.startsWith("!ברקוני"))
         return BarkuniSticker(msg, sock);
 
 
@@ -210,15 +210,12 @@ async function handleMessage(sock, msg, mongo) {
         let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
         let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
 
-
-        Downloader(vidID, id, sock)
+        return Downloader(vidID, id, sock)
             .then(async data => {
                 await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' })
                 sock.sendMessage(id, { text: data.videoTitle })
                 fs.unlinkSync(data.file);
-            })
-
-        return;
+            });
     }
 
     if (textMsg.includes('%')) {
