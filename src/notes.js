@@ -30,4 +30,4 @@ let savedNotes = new Schema(
     { collection: "Saved_Notes" }
 );
 
-module.exports  = mongoose.model("SavedNotes", savedNotes);
+module.exports = mongoose.model("SavedNotes", savedNotes);

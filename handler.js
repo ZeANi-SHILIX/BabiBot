@@ -1,3 +1,6 @@
+const noteHendler = require('./helpers/noteHandler');
+
+const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
 const { msgQueue } = require('./src/QueueObj')
@@ -17,7 +20,8 @@ const ssid = process.env.MAILLIST ?? "";
 let commands = {
     "!פינג": "בדוק אם אני חי",
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
-    "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן"
+    "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
+    "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
 }
 
 /**
@@ -35,8 +39,8 @@ async function handleMessage(sock, msg, mongo) {
     textMsg = textMsg.trim();
 
     console.log(`${msg.pushName} (${id}) - ${caption} ${textMsg}`)
-    //console.log(msg);
-
+    //console.log(JSON.stringify(msg, null, 2));
+    
     // send ACK
     sock.readMessages([msg.key])
 
@@ -80,6 +84,12 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith('!sticker') || textMsg.startsWith('!סטיקר'))
         return sendSticker(msg, sock, "text");
 
+    /**#########
+     * barkuni
+     ########## */
+     if (textMsg.startsWith("!barkuni") || textMsg.startsWith("!ברקוני"))
+        return BarkuniSticker(msg, sock);
+
 
     /**######
      * GOOGLE
@@ -108,83 +118,14 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith('!save') || textMsg.startsWith('!שמור')) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-
-        textMsg = textMsg.replace('!save', '').replace('!שמור', '').trim();
-
-        // quoted message
-        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
-            let strs = textMsg.split(/(?<=^\S+)\s/);
-            let result = await savedNotes.findOne({ q: strs[0] });
-            console.log("Find if exist: ", result);
-
-            if (result?.isGlobal || result?.chat === id)
-                return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
-
-            result = await savedNotes.insertMany({
-                q: strs[0],
-                a: msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
-                chat: id
-            });
-            //console.log("Save: ", result);
-            return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
-        }
-        // normal message
-
-        let strs = textMsg.split(/(?<=^\S+)\s/);
-        if (strs.length != 2)
-            return sock.sendMessage(id, { text: "אופס נראה שחסר מידע... \nוודא שכתבת לי שם להערה וגם תוכן לההערה" });
-
-        let result = await savedNotes.findOne({ q: strs[0] });
-        console.log("Find: ", result);
-
-        if (result?.isGlobal || result?.chat === id)
-            return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
-
-        result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id });
-        //console.log("Save: ", result);
-        return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
-
+        return noteHendler.saveNote(msg, sock);
     }
 
     // save global notes
     if (textMsg.startsWith('!Gsave') || textMsg.startsWith('!גשמור')) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-
-        textMsg = textMsg.replace('!Gsave', '').replace('!גשמור', '').trim();
-
-        // quoted message
-        if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation) {
-            let strs = textMsg.split(/(?<=^\S+)\s/);
-            let result = await savedNotes.findOne({ q: strs[0] });
-            console.log("Find if exist: ", result);
-
-            if (result?.isGlobal || result?.chat === id)
-                return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
-
-            result = await savedNotes.insertMany({
-                q: strs[0],
-                a: msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
-                chat: id
-            });
-            //console.log("Save: ", result);
-            return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
-        }
-        // normal message
-
-        let strs = textMsg.split(/(?<=^\S+)\s/);
-        if (strs.length != 2)
-            return sock.sendMessage(id, { text: "אופס נראה שחסר מידע... \nוודא שכתבת לי שם להערה וגם תוכן לההערה" });
-
-        let result = await savedNotes.findOne({ q: strs[0] });
-        console.log("Find: ", result);
-
-        if (result?.isGlobal || result?.chat === id)
-            return sock.sendMessage(id, { text: "קיימת הערה בשם זה... נסה שם אחר" });
-
-        result = await savedNotes.insertMany({ q: strs[0], a: strs[1], chat: id, isGlobal: true });
-        //console.log("Save: ", result);
-        return sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה!" });
+        return noteHendler.saveNote(msg, sock, true);
     }
 
     // delete note
@@ -192,22 +133,7 @@ async function handleMessage(sock, msg, mongo) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
-        textMsg = textMsg.replace('!delete', '').replace('!מחק', '').trim();
-
-        let strs = textMsg.split(/(?<=^\S+)\s/);
-        let result = await savedNotes.findOne({ q: strs[0] });
-        console.log("Find: ", result);
-
-        if (!result)
-            return sock.sendMessage(id, { text: "לא קיימת הערה בשם זה" });
-
-        if (result.chat == id || msg.key.participant?.includes(superuser)) {
-            let res = await savedNotes.remove({ _id: result._id });
-            console.log("Remove: ", res);
-            return sock.sendMessage(id, { text: "ההערה " + result.q + " הוסרה בהצלחה" });
-        }
-
-        return sock.sendMessage(id, { text: "אין לך את ההרשאות המתאימות להסיר את ההערה " });
+        return noteHendler.deleteNote(msg, sock, superuser);
     }
 
     // get note
@@ -215,58 +141,14 @@ async function handleMessage(sock, msg, mongo) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
-        textMsg = textMsg.replace('!get', '').replace('#', '').trim();
-
-        let strs = textMsg.split(/(?<=^\S+)\s/);
-        let result = await savedNotes.findOne({ q: strs[0], chat: id });
-        let resultGlobal = await savedNotes.findOne({ q: strs[0], isGlobal: true });
-
-        if (!result && !resultGlobal)
-            return sock.sendMessage(id, { text: "לא קיימת הערה עם שם זה" });
-
-        let toConsole = [result?.a, result?.isGlobal, result?.chat]
-        console.log("Find: ", toConsole);
-
-        if (result?.isGlobal || result?.chat == id)
-            return sock.sendMessage(id, { text: result.a });
-
-        if (resultGlobal?.isGlobal)
-            return sock.sendMessage(id, { text: resultGlobal.a });
-
-        return sock.sendMessage(id, { text: "לא קיימת הערה עם שם זה" });
+        return noteHendler.getNote(msg, sock);
     }
 
     // get all notes
     if (textMsg.startsWith('!notes') || textMsg.startsWith('!הערות')) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-
-        let resultPrivate = await savedNotes.find({ chat: id });
-        let resultPublic = await savedNotes.find({ isGlobal: true });
-
-        if (resultPrivate.length === 0 && resultPublic.length === 0)
-            return sock.sendMessage(id, { text: "לא קיימות הערות" });
-
-        resultPrivate = resultPrivate.filter(note => note.isGlobal != true);
-        console.log("Find: ", resultPrivate, "Public: ", resultPublic);
-
-        let str = "";
-        if (resultPrivate.length !== 0) {
-            str += "*הערות בצאט זה:*\n"
-            for (let note of resultPrivate)
-                str += note.q + "\n";
-            str += "\n";
-        }
-        if (resultPublic.length !== 0) {
-            str += `*הערות גלובליות:*\n`;
-            for (let note of resultPublic)
-                str += note.q + "\n";
-            str += "\n";
-        }
-
-        str += "\nניתן לגשת להערה על ידי # או על ידי הפקודה !get";
-
-        return sock.sendMessage(id, { text: str });
+        return noteHendler.getAllNotes(msg, sock);
     }
 
     // get mails

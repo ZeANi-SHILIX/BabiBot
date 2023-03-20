@@ -5,6 +5,8 @@ mongoose.set('strictQuery', false);
 /** set model by schema  */
 const apiKeys = require('./src/apikeys');
 const savedNotes = require('./src/notes');
+const barkuni = require('./src/barkuni');
+const mediaNote = require('./src/mediaNote');
 
 class Mongo {
   isConnected = false;
@@ -12,6 +14,8 @@ class Mongo {
     this.mongoose = mongoose;
     this.apiKeys = apiKeys;
     this.savedNotes = savedNotes;
+    this.barkuni = barkuni;
+    this.mediaNote = mediaNote;
     this.connectionString = process.env.MONGOOSE + '/API_KEYS'//?retryWrites=true&w=majority'
     this.connection = mongoose.connection;
 
