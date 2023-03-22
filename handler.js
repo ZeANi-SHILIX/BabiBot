@@ -15,6 +15,7 @@ const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
 const ssid = process.env.MAILLIST ?? "";
+const COUNT_USER_TO_MUTE = 10;
 
 
 let commands = {
@@ -22,7 +23,14 @@ let commands = {
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
     "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
+    "!השתק" : "השתק את הקבוצה לפי זמן מסוים",
+    "!בטלהשתקה" : "בטל השתקה",
 }
+/**
+ * this sock is updating while getting messages
+ * @type {import('@adiwajshing/baileys').WASocket} 
+*/
+let GLOBAL_SOCK;
 
 /**
  * 
@@ -32,6 +40,25 @@ let commands = {
  */
 async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
+    GLOBAL_SOCK = sock;
+
+    if (msg.message?.reactionMessage) {
+        console.log(msg.message.reactionMessage)
+
+        // count reactions on saved msg
+        let result = info.reactionsOnSavedMsg(msg);
+        if (!result) return;
+        let { count, minToMute } = result;
+
+        // when count of reactions is enough, mute group
+        if (count >= COUNT_USER_TO_MUTE) {
+            console.log("Mute Group:", id, " to:", minToMute)
+            muteGroup(msg, minToMute);
+
+            // delete msg from saved msgs
+            info.deleteReactionMsg(msg);
+        }
+    }
 
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
@@ -110,150 +137,232 @@ async function handleMessage(sock, msg, mongo) {
 
     }
 
-
     /**######
-     * NOTES
-     ########*/
-    // save notes
-    if (textMsg.startsWith('!save') || textMsg.startsWith('!שמור')) {
-        if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-        return noteHendler.saveNote(msg, sock);
+     * MUTE GROUP
+     * ########*/
+    if (textMsg.startsWith("!mute") || textMsg.startsWith("!השתק")) {
+
+        if (!msg.key.remoteJid.includes("@g.us"))
+            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+
+        let groupData = await sock.groupMetadata(id);
+        let participant = groupData.participants;
+
+        // check if the bot is admin
+        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+        console.log(bot);
+        if (!bot?.admin)
+            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+
+        // get mute time
+        let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
+        if (muteTime.length === 0)
+            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
+
+        let muteTime_min = parseInt(muteTime);
+        if (isNaN(muteTime_min))
+            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
+
+        if (muteTime_min < 1 || muteTime_min > 60)
+            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בין 1 ל 60 דקות" });
+
+        // check if the sender is admin
+        // TODO: make poll to vote if to mute the group
+        let sender = participant.find(p => p.id === msg.key.participant);
+        console.log(sender);
+        if (!sender.admin) {
+            //return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
+            let botMsg = await sock.sendMessage(id, { text: `על מנת שאני אשתיק את הקבוצה ל ${muteTime_min} דקות, אני צריך ש ${COUNT_USER_TO_MUTE} אנשים יגיבו (תגובה מהירה) לי בלייק על ההודעה הזאת` });
+            return info.makeReactionMsg(botMsg, muteTime_min);
+        }
+
+        info.deleteReactionMsg(msg);
+        return muteGroup(msg, muteTime_min);
     }
 
-    // save global notes
-    if (textMsg.startsWith('!Gsave') || textMsg.startsWith('!גשמור')) {
-        if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-        return noteHendler.saveNote(msg, sock, true);
+    if (textMsg.startsWith("!unmute") || textMsg.startsWith("!בטלהשתקה")) {
+        if (!msg.key.remoteJid.includes("@g.us"))
+            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+
+        let groupData = await sock.groupMetadata(id);
+        if (!groupData.announce)
+            return sock.sendMessage(id, { text: "הקבוצה כבר פתוחה" });
+
+        // check if the bot is admin
+        let participant = groupData.participants;
+        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+        console.log(bot);
+        if (!bot?.admin)
+            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+
+        sock.groupSettingUpdate(id, 'not_announcement');
+        sock.sendMessage(id, { text: "הקבוצה פתוחה" });
     }
 
-    // delete note
-    if (textMsg.startsWith('!delete') || textMsg.startsWith('!מחק')) {
-        if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
-        return noteHendler.deleteNote(msg, sock, superuser);
-    }
 
-    // get note
-    if (textMsg.startsWith('!get') || textMsg.startsWith('#')) {
-        if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+        /**######
+         * NOTES
+         ########*/
+        // save notes
+        if (textMsg.startsWith('!save') || textMsg.startsWith('!שמור')) {
+            if (!mongo.isConnected)
+                return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return noteHendler.saveNote(msg, sock);
+        }
 
-        return noteHendler.getNote(msg, sock);
-    }
+        // save global notes
+        if (textMsg.startsWith('!Gsave') || textMsg.startsWith('!גשמור')) {
+            if (!mongo.isConnected)
+                return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return noteHendler.saveNote(msg, sock, true);
+        }
 
-    // get all notes
-    if (textMsg.startsWith('!notes') || textMsg.startsWith('!הערות')) {
-        if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-        return noteHendler.getAllNotes(msg, sock);
-    }
+        // delete note
+        if (textMsg.startsWith('!delete') || textMsg.startsWith('!מחק')) {
+            if (!mongo.isConnected)
+                return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
-    // get mails
-    if (textMsg.includes("מייל של")) {
-        let mails = await getMails();
+            return noteHendler.deleteNote(msg, sock, superuser);
+        }
 
-        let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7).replace(/[?]/g, "").replace("בבקשה", "").trim();
-        let arr_search = searchText.split(" ");
-        console.log(arr_search)
+        // get note
+        if (textMsg.startsWith('!get') || textMsg.startsWith('#')) {
+            if (!mongo.isConnected)
+                return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
-        let retunText = "";
-        let countMails = 0;
-        for (let mail of mails) {
-            try {
-                //console.log(mail);
-                let str = mail.c[0].v;
-                //console.log(str, arr_search);
+            return noteHendler.getNote(msg, sock);
+        }
 
-                if (arr_search.every(s => str.includes(s))) {
-                    countMails += 1;
-                    retunText += str + "\n";
+        // get all notes
+        if (textMsg.startsWith('!notes') || textMsg.startsWith('!הערות')) {
+            if (!mongo.isConnected)
+                return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return noteHendler.getAllNotes(msg, sock);
+        }
+
+        // get mails
+        if (textMsg.includes("מייל של")) {
+            let mails = await getMails();
+
+            let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7).replace(/[?]/g, "").replace("בבקשה", "").trim();
+            let arr_search = searchText.split(" ");
+            console.log(arr_search)
+
+            let retunText = "";
+            let countMails = 0;
+            for (let mail of mails) {
+                try {
+                    //console.log(mail);
+                    let str = mail.c[0].v;
+                    //console.log(str, arr_search);
+
+                    if (arr_search.every(s => str.includes(s))) {
+                        countMails += 1;
+                        retunText += str + "\n";
+                    }
+                } catch (error) {
+                    console.error(error);
                 }
-            } catch (error) {
-                console.error(error);
             }
-        }
-        retunText = retunText.trim();
+            retunText = retunText.trim();
 
-        if (countMails > 0 && countMails < 6)
-            sock.sendMessage(id, { text: retunText });
+            if (countMails > 0 && countMails < 6)
+                sock.sendMessage(id, { text: retunText });
 
-        if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
-            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות\n(אם המייל חסר - נשמח שתשלח לכאן אחרי שתמצא)" })
-        return;
-    }
-
-    if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        try {
-            let numMsgToLoad = parseInt(textMsg.replace(/^\D+|\D.*$/g, ""));
-            numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 5;
-
-            let history = await store.loadMessages(id, numMsgToLoad);
-            history.pop();
-            //console.log(history);
-
-            let res = await chatGPT.tldr(history, id)
-            return sock.sendMessage(id, { text: res })
-        } catch (error) {
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
+                sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות\n(אם המייל חסר - נשמח שתשלח לכאן אחרי שתמצא)" })
+            return;
         }
 
-    }
+        if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+            try {
+                let numMsgToLoad = parseInt(textMsg.replace(/^\D+|\D.*$/g, ""));
+                numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 5;
 
-    /**#######
-     * YOUTUBE
-     #########*/
-    if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
+                let history = await store.loadMessages(id, numMsgToLoad);
+                history.pop();
+                //console.log(history);
 
-        let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
-        let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
+                let res = await chatGPT.tldr(history, id)
+                return sock.sendMessage(id, { text: res })
+            } catch (error) {
+                return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            }
 
-        return Downloader(vidID, id, sock)
-            .then(async data => {
-                await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' })
-                sock.sendMessage(id, { text: data.videoTitle })
-                fs.unlinkSync(data.file);
-            });
-    }
+        }
 
-    if (textMsg.includes('%')) {
-        let progress = info.getYouTubeProgress(id);
-        if (progress)
-            return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` })
-    }
+        /**#######
+         * YOUTUBE
+         #########*/
+        if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
 
+            let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
+            let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
 
-    // no command - answer with ChatGPT
-    if (!msg.key.remoteJid.includes("@g.us")) {
-        try {
-            let history = await store.loadMessages(id, 8);
-            let res = await chatGPT.chat(history, id)
-            return sock.sendMessage(id, { text: res })
-        } catch (error) {
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            return Downloader(vidID, id, sock)
+                .then(async data => {
+                    await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' })
+                    sock.sendMessage(id, { text: data.videoTitle })
+                    fs.unlinkSync(data.file);
+                });
+        }
+
+        if (textMsg.includes('%')) {
+            let progress = info.getYouTubeProgress(id);
+            if (progress)
+                return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` })
         }
 
 
+        // no command - answer with ChatGPT
+        if (!msg.key.remoteJid.includes("@g.us")) {
+            try {
+                let history = await store.loadMessages(id, 8);
+                let res = await chatGPT.chat(history, id)
+                return sock.sendMessage(id, { text: res })
+            } catch (error) {
+                return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            }
+
+
+        }
     }
-}
 
-/**
- * 
- * @returns {[{"c":[{"v":"name: mail@gmail.com"}]}]}
- */
-async function getMails() {
-    const url_begin = 'https://docs.google.com/spreadsheets/d/';
-    const url_end = '/gviz/tq?&tqx=out:json';
-    let url = `${url_begin}${ssid}${url_end}`;
+    /**
+     * 
+     * @returns {[{"c":[{"v":"name: mail@gmail.com"}]}]}
+     */
+    async function getMails() {
+        const url_begin = 'https://docs.google.com/spreadsheets/d/';
+        const url_end = '/gviz/tq?&tqx=out:json';
+        let url = `${url_begin}${ssid}${url_end}`;
 
-    let res = await fetch(url);
-    let data = await res.text();
+        let res = await fetch(url);
+        let data = await res.text();
 
-    let json = JSON.parse(data.substr(47).slice(0, -2));
-    return json.table.rows;
-}
+        let json = JSON.parse(data.substr(47).slice(0, -2));
+        return json.table.rows;
+    }
+
+    /**
+     * 
+     * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+     * @param {Number} muteTime_min 
+     */
+    async function muteGroup(msg, muteTime_min) {
+        let id = msg.key.remoteJid;
+        const ONE_MINUTE = 1000 * 60;
+
+        await GLOBAL_SOCK.groupSettingUpdate(id, 'announcement')
+        GLOBAL_SOCK.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות` })
+
+        setTimeout(async () => {
+            await GLOBAL_SOCK.groupSettingUpdate(id, 'not_announcement');
+            GLOBAL_SOCK.sendMessage(id, { text: "הקבוצה פתוחה" })
+        }, muteTime_min * ONE_MINUTE);
+
+    }
 
 
-module.exports = { handleMessage }
+    module.exports = { handleMessage }
