@@ -5,6 +5,9 @@ const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const text2png = require('text2png');
 
+const { store } = require('../src/storeMsg');
+const { MsgType, getMsgType } = require('./msgType');
+
 const sticker_types = {
     "חתוך": StickerTypes.CROPPED,
     "ריבוע": StickerTypes.CROPPED,
@@ -23,6 +26,30 @@ async function sendSticker(msg, sock, msgTypeSticker) {
     let id = msg.key.remoteJid;
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+
+    // quoted message with image or video
+    try {
+        let quoted = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        let { type } = getMsgType(quoted);
+        if (type === MsgType.IMAGE || type === MsgType.VIDEO) {
+
+            let setType = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
+            const type = sticker_types[setType] || StickerTypes.FULL;
+
+            const buffer = await downloadMediaMessage(msg, 'buffer', {})
+            const sticker = new Sticker(buffer, {
+                pack: '🎉',
+                author: 'BabilaBot',
+                type: type,
+                categories: ['🤩', '🎉'],
+                quality: 40
+            });
+            return sock.sendMessage(id, await sticker.toMessage());
+        }
+    } catch (error) {
+        //console.log(error);
+    }
+
 
 
     // video or image message
@@ -52,7 +79,7 @@ async function sendSticker(msg, sock, msgTypeSticker) {
         let message = textMsg.replace('!sticker', "").replace('!סטיקר', '').trim();
 
         if (message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
-        
+
         const sticker = new Sticker(textToSticker(message), {
             pack: '🎉',
             author: 'BabilaBot',

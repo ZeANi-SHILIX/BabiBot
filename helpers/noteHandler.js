@@ -3,7 +3,7 @@ const { downloadMediaMessage } = require('@adiwajshing/baileys')
 const savedNotes = require('../src/notes');
 const mediaNote = require('../src/mediaNote');
 
-const { MsgType, getMsgType } = require('../Types/msgType');
+const { MsgType, getMsgType } = require('./msgType');
 
 const { store } = require('../src/storeMsg')
 
@@ -48,7 +48,7 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false) {
         if (result?.isGlobal || result?.chat === id)
             return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
 
-        return savedNotes.create({ q: q, a: data, chat: chat, isGlobal: isGlobal }, (err, res) => {
+        return savedNotes.create({ q: q, a: a, chat: id, isGlobal: isGlobal }, (err, res) => {
             if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
 
             sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" });
