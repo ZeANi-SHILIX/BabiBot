@@ -56,7 +56,7 @@ Information.prototype.deleteYouTubeProgress = function (userID) {
  * @returns {{count: Number, minToMute: Number}} the number of reactions
  */
 Information.prototype.reactionsOnSavedMsg = function (msg) {
-    const LIKE_EMOJI = ["👍", "👍🏿", "👍🏾", "👍🏽", "👍🏼", "👍🏻"];
+    //const LIKE_EMOJI = ["👍", "👍🏿", "👍🏾", "👍🏽", "👍🏼", "👍🏻"];
 
     let idGroup = msg.key.remoteJid;
     let idUser = msg.key.participant;
@@ -78,14 +78,17 @@ Information.prototype.reactionsOnSavedMsg = function (msg) {
     /** @type {Set<string>} */
     let reactionsMembers = reactionsByMsg.get("reactionsCount") || new Set();
 
-    // when exist - check if the reaction is a like
-    // if not - remove the reaction
-    if (!LIKE_EMOJI.includes(msg.message.reactionMessage.text)) {
+    // when exist - check if the reaction is not '' (empty)
+    // if empty - remove the reaction
+    if (!msg.message.reactionMessage.text) {
         reactionsMembers.delete(idUser);
         reactionsByMsg.set("reactionsCount", reactionsMembers);
         group.set(messageID, reactionsByMsg);
         this.map.set(idGroup, group);
-        return reactionsMembers.size;
+        return {
+            count: reactionsMembers.size,
+            minToMute: reactionsByMsg.get("minToMute")
+        };
     }
 
     reactionsMembers.add(idUser);

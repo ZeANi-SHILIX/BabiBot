@@ -55,8 +55,11 @@ async function handleMessage(sock, msg, mongo) {
             console.log("Mute Group:", id, " to:", minToMute)
             muteGroup(msg, minToMute);
 
-            // delete msg from saved msgs
+            // delete msg (of reactions) from saved msgs
             info.deleteReactionMsg(msg);
+        }
+        else {
+            console.log("Not enough reactions", count, "to mute group:", id)
         }
     }
 
@@ -65,7 +68,7 @@ async function handleMessage(sock, msg, mongo) {
     caption = caption.trim();
     textMsg = textMsg.trim();
 
-    console.log(`${msg.pushName} (${id}) - ${caption} ${textMsg}`)
+    console.log(`${msg.pushName} (${id}) - ${caption || textMsg || msg?.message?.reactionMessage?.text}`)
     //console.log(JSON.stringify(msg, null, 2));
 
     // send ACK
