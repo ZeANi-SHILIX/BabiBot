@@ -1,26 +1,13 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore } = require('@adiwajshing/baileys')
 const { handlerQueue } = require('./src/QueueObj');
-const { store, logger } = require('./src/storeMsg');
+const { store, logger, GLOBAL_SOCK } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const { handleMessage } = require('./handler');
 const Mongo = require('./mongo');
 const express = require('express');
 const QRCode = require('qrcode');
-//const { pino } = require("pino");
-const { MessageRetryHandler } = require("./src/retryHandler")
-
-// const logger = pino();
-// logger.level = "silent";
-
-const handler = new MessageRetryHandler();
-
-// const store = makeInMemoryStore({ logger });
-// store?.readFromFile("./baileys_store_multi.json");
-// // save every 10s
-// setInterval(() => {
-//     store?.writeToFile("./baileys_store_multi.json");
-// }, 10_000);
+const messageRetryHandler = require("./src/retryHandler")
 
 const msgRetryCounterMap = {};
 
@@ -45,7 +32,7 @@ async function connectToWhatsApp() {
         },
         logger,
         msgRetryCounterMap,
-        getMessage: handler.messageRetryHandler
+        getMessage: messageRetryHandler.messageRetryHandler
     })
 
     store.bind(sock.ev)
@@ -78,6 +65,7 @@ async function connectToWhatsApp() {
 
         handlerQueue.add(() => handleMessage(sock, msg, mongo));
 
+        GLOBAL_SOCK = sock;
     })
 
 }
@@ -222,5 +210,5 @@ app.listen(port, () => {
 });
 
 process.on('uncaughtException', (err, origin) => {
-    console.log(err);
+    console.error("uncaughtException:", err);
 });

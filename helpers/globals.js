@@ -1,4 +1,3 @@
-const { set } = require('mongoose');
 
 function Information() {
     this.map = new Map();

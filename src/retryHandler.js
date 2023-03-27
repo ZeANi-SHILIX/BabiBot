@@ -40,4 +40,6 @@ class MessageRetryHandler {
   };
 }
 
-module.exports = {MessageRetryHandler}
+const messageRetryHandler = new MessageRetryHandler();
+
+module.exports = messageRetryHandler

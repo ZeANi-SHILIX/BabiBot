@@ -29,7 +29,7 @@ ChatGPT.prototype.conversion = async function (msgs) {
     model: "text-davinci-003",
     prompt: msgs,
     temperature: 0.9,
-    max_tokens: 150,
+    max_tokens: 460,
     top_p: 1,
     frequency_penalty: 0,
     presence_penalty: 0.6,
@@ -68,7 +68,7 @@ ChatGPT.prototype.chat = async function (msgs, user) {
   const response = await this.openai.createChatCompletion({
     model: "gpt-3.5-turbo",
     messages,
-    max_tokens: 80,
+    max_tokens: 256,
     user
   });
   console.log("Total Tokens: " + response.data.usage?.total_tokens);
@@ -112,7 +112,7 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
     model: "text-davinci-003",
     prompt: mission,
     temperature: 0.7,
-    max_tokens: 250,
+    max_tokens: 800,
     top_p: 1,
     frequency_penalty: 0,
     presence_penalty: 0.6,
