@@ -1,5 +1,5 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore } = require('@adiwajshing/baileys')
-const { handlerQueue } = require('./src/QueueObj');
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@adiwajshing/baileys')
+//const { handlerQueue } = require('./src/QueueObj');
 const { store, logger, GLOBAL } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
@@ -12,9 +12,10 @@ const messageRetryHandler = require("./src/retryHandler")
 const msgRetryCounterMap = {};
 
 const secret = process.env.SECRET ?? 'MySecretDefault';
+const PRODUCTION = process.env.NODE_ENV === 'production';
 
 const app = express()
-const port = 8008;
+const port = 3000;
 
 app.use(bodyParser.json());
 
@@ -32,6 +33,9 @@ async function connectToWhatsApp() {
         },
         logger,
         msgRetryCounterMap,
+        retryRequestDelayMs: 1000,
+        //syncFullHistory: true,
+        //shouldSyncHistoryMessage
         getMessage: messageRetryHandler.messageRetryHandler
     })
 
@@ -48,6 +52,10 @@ async function connectToWhatsApp() {
             }
         } else if (connection === 'open') {
             console.log('opened connection')
+            GLOBAL.sock = sock;
+        }
+        if (connection === "connecting"){
+            console.log("connecting");
         }
         qr = update.qr;
     })
@@ -57,16 +65,34 @@ async function connectToWhatsApp() {
     })
 
     // handle messages
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const msg = messages[0];
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+        if (type == 'notify') {
+            const msg = messages[0];
 
-        if (!msg.message) return; // if there is no text or media message
-        if (msg.key.fromMe) return;
+            if (!msg.message) return; // if there is no text or media message
+            if (msg.key.fromMe) return;
 
-        handlerQueue.add(() => handleMessage(sock, msg, mongo));
+            handleMessage(sock, msg, mongo);
+            //handlerQueue.add(() => handleMessage(sock, msg, mongo));   
+        }
+        else /* type == 'append'*/ {
+            messages.forEach(async (msg) => {
+                if (!msg.message) return; // if there is no text or media message
+                if (msg.key.fromMe) return;
 
-        GLOBAL.sock = sock;
+                handleMessage(sock, msg, mongo);
+
+                if (!PRODUCTION)
+                    return console.log(msg.message); // read only first message in dev mode
+            })
+        }
     })
+
+    // reaction
+    // sock.ev.on('messages.reaction', async (reactions) => {
+    //     let react = reactions[0]
+    //     react.reaction.key
+    // })
 
 }
 // run in main file
@@ -174,7 +200,7 @@ app.post('/allMsgs', (req, res) => {
 app.get('/send', async (req, res) => {
     const apikey = req.query.apikey;
 
-    let searchResult = (await apikeys.findOne({ apikey: apikey }))?.toJSON();
+    let searchResult = (await mongo.apiKeys.findOne({ apikey: apikey }))?.toJSON();
 
     if (searchResult == null)
         return res.status(403).json({
@@ -196,11 +222,17 @@ app.get('/send', async (req, res) => {
     console.log(`Send ${text} to ${receiver}, from ${searchResult.name}`);
 
 
-    sock.sendMessage(receiver, { text: text })
-    res.status(200).json({
-        status: 200,
-        info: `Send ${text} to ${receiver}, from ${searchResult.name}`
-    })
+    let msgInfo = await GLOBAL.sock.sendMessage(receiver, { text: text })
+    if (msgInfo)
+        res.status(200).json({
+            status: 200,
+            info: `Send ${text} to ${receiver}, from ${searchResult.name}`
+        })
+    else
+        res.status(500).json({
+            status: 500,
+            info: `failed to send ${text} to ${receiver}`
+        })
 });
 
 

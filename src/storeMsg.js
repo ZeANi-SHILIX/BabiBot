@@ -21,14 +21,14 @@ setInterval(() => {
 }, 10_000);
 
 /**
- * @type {{id:{countusers: number, spam: string}}}}
+ * @type {{id:{countUsers: number, spam: string}}}}
  */
 const groupConfig = {};
 readConfig();
 
 setInterval(() => {
     saveConfig();
-}, 30_000);
+}, 60_000);
 
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {
@@ -43,7 +43,7 @@ function readConfig() {
 
 function saveConfig() {
     fs.writeFileSync("./groupConfig.json", JSON.stringify(groupConfig));
-    console.log("Group Config saved");
+    //console.log("Group Config saved");
 }
 
 module.exports = {
