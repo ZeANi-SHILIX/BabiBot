@@ -1,6 +1,6 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore } = require('@adiwajshing/baileys')
 const { handlerQueue } = require('./src/QueueObj');
-const { store, logger, GLOBAL_SOCK } = require('./src/storeMsg');
+const { store, logger, GLOBAL } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const { handleMessage } = require('./handler');
@@ -65,7 +65,7 @@ async function connectToWhatsApp() {
 
         handlerQueue.add(() => handleMessage(sock, msg, mongo));
 
-        GLOBAL_SOCK = sock;
+        GLOBAL.sock = sock;
     })
 
 }

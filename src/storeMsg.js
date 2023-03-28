@@ -4,9 +4,11 @@ const fs = require("fs");
 
 /**
  * this sock is updating while getting messages
- * @type {import('@adiwajshing/baileys').WASocket} 
+ * @type {{sock: import('@adiwajshing/baileys').WASocket}}
 */
-let GLOBAL_SOCK;
+let GLOBAL = {
+    sock: null
+};
 
 const logger = pino();
 logger.level = "silent";
@@ -26,7 +28,7 @@ readConfig();
 
 setInterval(() => {
     saveConfig();
-}, 10_000);
+}, 30_000);
 
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {
@@ -48,5 +50,5 @@ module.exports = {
     store,
     logger,
     groupConfig,
-    GLOBAL_SOCK
+    GLOBAL
 }

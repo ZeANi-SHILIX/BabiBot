@@ -5,7 +5,7 @@ const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
 const { msgQueue } = require('./src/QueueObj')
 const savedNotes = require('./src/notes')
-const { store, groupConfig, GLOBAL_SOCK } = require('./src/storeMsg')
+const { store, groupConfig, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
 const ChatGPT = require('./helpers/chatgpt')
 const UnofficalGPT = require('./helpers/unofficalGPT')
@@ -359,15 +359,15 @@ async function muteGroup(msg, muteTime_min) {
     let id = msg.key.remoteJid;
     const ONE_MINUTE = 1000 * 60;
 
-    await GLOBAL_SOCK.groupSettingUpdate(id, 'announcement')
+    await GLOBAL.sock.groupSettingUpdate(id, 'announcement')
     if (groupConfig[id]?.spam)
-        GLOBAL_SOCK.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות\nתוכלו להמשיך לקשקש בקבוצת הספאם\n${groupConfig[id].spam}` })
+        GLOBAL.sock.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות\nתוכלו להמשיך לקשקש בקבוצת הספאם\n${groupConfig[id].spam}` })
     else
-        GLOBAL_SOCK.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות` })
+        GLOBAL.sock.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות` })
 
     setTimeout(async () => {
-        await GLOBAL_SOCK.groupSettingUpdate(id, 'not_announcement');
-        GLOBAL_SOCK.sendMessage(id, { text: "הקבוצה פתוחה" })
+        await GLOBAL.sock.groupSettingUpdate(id, 'not_announcement');
+        GLOBAL.sock.sendMessage(id, { text: "הקבוצה פתוחה" })
     }, muteTime_min * ONE_MINUTE);
 
 }
