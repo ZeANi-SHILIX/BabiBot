@@ -47,7 +47,7 @@ async function handleMessage(sock, msg, mongo) {
         if (!result) return;
         let { count, minToMute } = result;
 
-        let COUNT_USER_TO_MUTE = groupConfig[id]?.countusers ?? DEFAULT_COUNT_USER_TO_MUTE;
+        let COUNT_USER_TO_MUTE = groupConfig?.[id]?.countusers ?? DEFAULT_COUNT_USER_TO_MUTE;
         // when count of reactions is enough, mute group
         if (count >= COUNT_USER_TO_MUTE) {
             console.log("Mute Group:", id, " to:", minToMute)
