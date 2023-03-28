@@ -2,16 +2,16 @@ const noteHendler = require('./helpers/noteHandler');
 
 const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
-const Downloader = require('./helpers/downloader')
-const { msgQueue } = require('./src/QueueObj')
+//const Downloader = require('./helpers/downloader')
+//const { msgQueue } = require('./src/QueueObj')
 //const savedNotes = require('./src/notes')
 const { store, groupConfig, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
 //const ChatGPT = require('./helpers/chatgpt')
 //const UnofficalGPT = require('./helpers/unofficalGPT')
-const { info } = require("./helpers/globals");
+//const { info } = require("./helpers/globals");
 require('dotenv').config();
-const fs = require("fs");
+//const fs = require("fs");
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 //const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
@@ -24,10 +24,10 @@ const DEFAULT_COUNT_USER_TO_MUTE = 10;
 let commands = {
     "!פינג": "בדוק אם אני חי",
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
-    "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
+    //"!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
-    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
-    "!בטלהשתקה": "בטל השתקה",
+    //"!השתק": "השתק את הקבוצה לפי זמן מסוים",
+    //"!בטלהשתקה": "בטל השתקה",
 }
 
 /**
@@ -74,9 +74,9 @@ async function handleMessage(sock, msg, mongo) {
 
 
     if (textMsg === "!ping" || textMsg === "!פינג")
-        return msgQueue.add(() => sock.sendMessage(id, { text: "pong" })).then(messageRetryHandler.addMessage);
+        return sock.sendMessage(id, { text: "pong" }).then(messageRetryHandler.addMessage);
     if (textMsg === "!pong" || textMsg === "!פונג")
-        return msgQueue.add(() => sock.sendMessage(id, { text: "ping" })).then(messageRetryHandler.addMessage);
+        return sock.sendMessage(id, { text: "ping" }).then(messageRetryHandler.addMessage);
 
     // commands list
     let helpCommand = ["help", "command", "עזרה", "פקודות"];
@@ -247,10 +247,10 @@ async function handleMessage(sock, msg, mongo) {
         let mails = await getMails();
 
         let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7)
-                                .replace(/[?]/g, "")
-                                .replace("בבקשה", "").replace("המרצה ", "").replace("מרצה ", "")
-                                .replace("המתרגל ", "").replace("מתרגל ", "")
-                                .trim();
+            .replace(/[?]/g, "")
+            .replace("בבקשה", "").replace("המרצה ", "").replace("מרצה ", "")
+            .replace("המתרגל ", "").replace("מתרגל ", "")
+            .trim();
         let arr_search = searchText.split(" ");
         console.log(arr_search)
 
@@ -300,24 +300,24 @@ async function handleMessage(sock, msg, mongo) {
     /**#######
      * YOUTUBE
      #########*/
-    if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
+    // if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
 
-        let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
-        let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
+    //     let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
+    //     let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
 
-        return Downloader(vidID, id, sock)
-            .then(async data => {
-                await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' }).then(messageRetryHandler.addMessage)
-                sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
-                fs.unlinkSync(data.file);
-            });
-    }
-
-    if (textMsg.includes('%')) {
-        let progress = info.getYouTubeProgress(id);
-        if (progress)
-            return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` }).then(messageRetryHandler.addMessage)
-    }
+    //     return Downloader(vidID, id, sock)
+    //         .then(async data => {
+    //             await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' }).then(messageRetryHandler.addMessage)
+    //             sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
+    //             fs.unlinkSync(data.file);
+    //         });
+    // }
+    // // get youtube progress
+    // if (textMsg.includes('%')) {
+    //     let progress = info.getYouTubeProgress(id);
+    //     if (progress)
+    //         return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` }).then(messageRetryHandler.addMessage)
+    // }
 
 
     // no command - answer with ChatGPT

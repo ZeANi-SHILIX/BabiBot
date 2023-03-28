@@ -2,7 +2,7 @@ const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = requi
 const { handlerQueue } = require('./src/QueueObj');
 const { store, logger, GLOBAL } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
-const jwt = require('jsonwebtoken');
+//const jwt = require('jsonwebtoken');
 const { handleMessage } = require('./handler');
 const Mongo = require('./mongo');
 const express = require('express');
@@ -72,8 +72,8 @@ async function connectToWhatsApp() {
             if (!msg.message) return; // if there is no text or media message
             if (msg.key.fromMe) return;
 
-            handleMessage(sock, msg, mongo);
-
+            //handleMessage(sock, msg, mongo);
+            handlerQueue.add(() => handleMessage(sock, msg, mongo));
         }
         else /* type == 'append'*/ {
             messages.forEach(async (msg) => {
