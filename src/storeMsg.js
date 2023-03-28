@@ -26,9 +26,9 @@ setInterval(() => {
 const groupConfig = {};
 readConfig();
 
-setInterval(() => {
-    saveConfig();
-}, 60_000);
+// setInterval(() => {
+//     saveConfig();
+// }, 60_000);
 
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {

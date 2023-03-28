@@ -1,5 +1,5 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@adiwajshing/baileys')
-//const { handlerQueue } = require('./src/QueueObj');
+const { handlerQueue } = require('./src/QueueObj');
 const { store, logger, GLOBAL } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
@@ -54,7 +54,7 @@ async function connectToWhatsApp() {
             console.log('opened connection')
             GLOBAL.sock = sock;
         }
-        if (connection === "connecting"){
+        if (connection === "connecting") {
             console.log("connecting");
         }
         qr = update.qr;
@@ -73,14 +73,15 @@ async function connectToWhatsApp() {
             if (msg.key.fromMe) return;
 
             handleMessage(sock, msg, mongo);
-            //handlerQueue.add(() => handleMessage(sock, msg, mongo));   
+
         }
         else /* type == 'append'*/ {
             messages.forEach(async (msg) => {
                 if (!msg.message) return; // if there is no text or media message
                 if (msg.key.fromMe) return;
 
-                handleMessage(sock, msg, mongo);
+                handlerQueue.add(() => handleMessage(sock, msg, mongo));
+                //handleMessage(sock, msg, mongo);
 
                 if (!PRODUCTION)
                     return console.log(msg.message); // read only first message in dev mode
@@ -108,95 +109,95 @@ app.get('/qr', async (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    //res.sendFile(__dirname + '/imgtoshare.jpeg');
-    res.send('Hello World!')
+    res.send('Hello World! its Babi Bot') 
 });
 
 
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    console.log(req.body)
+// app.post('/login', async (req, res) => {
+//     const { username, password } = req.body;
+//     console.log(req.body)
 
-    const user = await mongo.findApiKey({ name: username })
+//     const user = await mongo.findApiKey({ name: username })
 
-    if (!user) {
-        return res.status(401).send({ message: 'Invalid username' });
-    }
+//     if (!user) {
+//         return res.status(401).send({ message: 'Invalid username' });
+//     }
 
-    if (password !== user.apikey)
-        return res.status(401).send({ message: 'Invalid username or password' });
+//     if (password !== user.apikey)
+//         return res.status(401).send({ message: 'Invalid username or password' });
 
-    const token = jwt.sign({ sub: user.apikey }, secret, { expiresIn: '1h' });
+//     const token = jwt.sign({ sub: user.apikey }, secret, { expiresIn: '1h' });
 
-    res.send({ token });
-
-
-});
-
-app.post('/newMsgs', (req, res) => {
-    const authHeader = req.headers.authorization;
-    const contactID = req.body.contact;
-
-    if (!authHeader) {
-        return res.status(401).send({ message: 'Missing Authorization header' });
-    }
-
-    if (!contactID) {
-        return res.status(401).send({ message: 'Missing Contact ID' });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    jwt.verify(token, secret, (err, decoded) => {
-        if (err) {
-            return res.status(403).send({ message: 'Invalid token' });
-        }
-
-        //const newToken = jwt.sign({ sub: user.id }, secret, { expiresIn: '30m' });
+//     res.send({ token });
 
 
-        // Return data that belongs to the authenticated user
-        res.send({
-            data: tempStore[contactID]
-            //newToken
-        });
+// });
 
-        delete tempStore[contactID];
-    });
-});
+// app.post('/newMsgs', (req, res) => {
+//     const authHeader = req.headers.authorization;
+//     const contactID = req.body.contact;
 
-app.post('/allMsgs', (req, res) => {
-    const authHeader = req.body.auth;
-    const contactID = req.body.contact;
+//     if (!authHeader) {
+//         return res.status(401).send({ message: 'Missing Authorization header' });
+//     }
 
-    if (!authHeader) {
-        return res.status(401).send({ message: 'Missing Authorization header' });
-    }
+//     if (!contactID) {
+//         return res.status(401).send({ message: 'Missing Contact ID' });
+//     }
 
-    if (!contactID) {
-        return res.status(401).send({ message: 'Missing Contact ID' });
-    }
+//     const token = authHeader.split(' ')[1];
 
-    const token = authHeader.split(' ')[1];
+//     jwt.verify(token, secret, (err, decoded) => {
+//         if (err) {
+//             return res.status(403).send({ message: 'Invalid token' });
+//         }
 
-    jwt.verify(token, secret, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: 'Invalid token' });
-        }
+//         //const newToken = jwt.sign({ sub: user.id }, secret, { expiresIn: '30m' });
 
 
-        // Return data that belongs to the authenticated user
-        res.send({
-            data: store[contactID]
-        });
-    });
-});
+//         // Return data that belongs to the authenticated user
+//         res.send({
+//             data: tempStore[contactID]
+//             //newToken
+//         });
+
+//         delete tempStore[contactID];
+//     });
+// });
+
+// app.post('/allMsgs', (req, res) => {
+//     const authHeader = req.body.auth;
+//     const contactID = req.body.contact;
+
+//     if (!authHeader) {
+//         return res.status(401).send({ message: 'Missing Authorization header' });
+//     }
+
+//     if (!contactID) {
+//         return res.status(401).send({ message: 'Missing Contact ID' });
+//     }
+
+//     const token = authHeader.split(' ')[1];
+
+//     jwt.verify(token, secret, (err, decoded) => {
+//         if (err) {
+//             return res.status(401).send({ message: 'Invalid token' });
+//         }
+
+
+//         // Return data that belongs to the authenticated user
+//         res.send({
+//             data: store[contactID]
+//         });
+//     });
+// });
 
 
 //http://localhost:3000/send?apikey=8e3f5c0f57274eb1&phone=972507923132&text=hello1
 //http://localhost:3000/send?apikey=8e3f5c0f57274eb1&group=120363027168894023&text=ניסיון
 
 // "120363027168894023@g.us",
+
 app.get('/send', async (req, res) => {
     const apikey = req.query.apikey;
 

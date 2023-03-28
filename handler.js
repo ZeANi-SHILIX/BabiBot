@@ -4,16 +4,16 @@ const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
 const { msgQueue } = require('./src/QueueObj')
-const savedNotes = require('./src/notes')
+//const savedNotes = require('./src/notes')
 const { store, groupConfig, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
-const ChatGPT = require('./helpers/chatgpt')
-const UnofficalGPT = require('./helpers/unofficalGPT')
+//const ChatGPT = require('./helpers/chatgpt')
+//const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 require('dotenv').config();
 const fs = require("fs");
 
-const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
+//const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 //const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
@@ -39,27 +39,27 @@ let commands = {
 async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
 
-    if (msg.message?.reactionMessage) {
-        console.log(msg.message.reactionMessage)
+    // if (msg.message?.reactionMessage) {
+    //     console.log(msg.message.reactionMessage)
 
-        // count reactions on saved msg
-        let result = info.reactionsOnSavedMsg(msg);
-        if (!result) return;
-        let { count, minToMute } = result;
+    //     // count reactions on saved msg
+    //     let result = info.reactionsOnSavedMsg(msg);
+    //     if (!result) return;
+    //     let { count, minToMute } = result;
 
-        let COUNT_USER_TO_MUTE = groupConfig?.[id]?.countusers ?? DEFAULT_COUNT_USER_TO_MUTE;
-        // when count of reactions is enough, mute group
-        if (count >= COUNT_USER_TO_MUTE) {
-            console.log("Mute Group:", id, " to:", minToMute)
-            muteGroup(msg, minToMute);
+    //     let COUNT_USER_TO_MUTE = groupConfig?.[id]?.countusers ?? DEFAULT_COUNT_USER_TO_MUTE;
+    //     // when count of reactions is enough, mute group
+    //     if (count >= COUNT_USER_TO_MUTE) {
+    //         console.log("Mute Group:", id, " to:", minToMute)
+    //         muteGroup(msg, minToMute);
 
-            // delete msg (of reactions) from saved msgs
-            info.deleteReactionMsg(msg);
-        }
-        else {
-            console.log("Not enough reactions", count, "to mute group:", id)
-        }
-    }
+    //         // delete msg (of reactions) from saved msgs
+    //         info.deleteReactionMsg(msg);
+    //     }
+    //     else {
+    //         console.log("Not enough reactions", count, "to mute group:", id)
+    //     }
+    // }
 
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
@@ -141,64 +141,64 @@ async function handleMessage(sock, msg, mongo) {
     /**######
      * MUTE GROUP
      * ########*/
-    if (textMsg.startsWith("!mute") || textMsg.startsWith("!השתק")) {
+    // if (textMsg.startsWith("!mute") || textMsg.startsWith("!השתק")) {
 
-        if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+    //     if (!msg.key.remoteJid.includes("@g.us"))
+    //         return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
 
-        let groupData = await sock.groupMetadata(id);
-        let participant = groupData.participants;
+    //     let groupData = await sock.groupMetadata(id);
+    //     let participant = groupData.participants;
 
-        // check if the bot is admin
-        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
-        console.log(bot);
-        if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+    //     // check if the bot is admin
+    //     let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+    //     console.log(bot);
+    //     if (!bot?.admin)
+    //         return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
 
-        // get mute time
-        let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
-        if (muteTime.length === 0)
-            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
+    //     // get mute time
+    //     let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
+    //     if (muteTime.length === 0)
+    //         return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
 
-        let muteTime_min = parseInt(muteTime);
-        if (isNaN(muteTime_min))
-            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
+    //     let muteTime_min = parseInt(muteTime);
+    //     if (isNaN(muteTime_min))
+    //         return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
 
-        if (muteTime_min < 1 || muteTime_min > 60)
-            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בין 1 ל 60 דקות" });
+    //     if (muteTime_min < 1 || muteTime_min > 60)
+    //         return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בין 1 ל 60 דקות" });
 
-        // check if the sender is admin
-        // TODO: make poll to vote if to mute the group
-        let sender = participant.find(p => p.id === msg.key.participant);
-        console.log(sender);
-        if (!sender.admin) {
-            //return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
-            let botMsg = await sock.sendMessage(id, { text: `על מנת שאני אשתיק את הקבוצה ל ${muteTime_min} דקות, אני צריך ש ${COUNT_USER_TO_MUTE} אנשים יגיבו (תגובה מהירה) לי בלייק על ההודעה הזאת` });
-            return info.makeReactionMsg(botMsg, muteTime_min);
-        }
+    //     // check if the sender is admin
+    //     // TODO: make poll to vote if to mute the group
+    //     let sender = participant.find(p => p.id === msg.key.participant);
+    //     console.log(sender);
+    //     if (!sender.admin) {
+    //         //return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
+    //         let botMsg = await sock.sendMessage(id, { text: `על מנת שאני אשתיק את הקבוצה ל ${muteTime_min} דקות, אני צריך ש ${COUNT_USER_TO_MUTE} אנשים יגיבו (תגובה מהירה) לי בלייק על ההודעה הזאת` });
+    //         return info.makeReactionMsg(botMsg, muteTime_min);
+    //     }
 
-        info.deleteReactionMsg(msg);
-        return muteGroup(msg, muteTime_min);
-    }
+    //     info.deleteReactionMsg(msg);
+    //     return muteGroup(msg, muteTime_min);
+    // }
 
-    if (textMsg.startsWith("!unmute") || textMsg.startsWith("!בטלהשתקה")) {
-        if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+    // if (textMsg.startsWith("!unmute") || textMsg.startsWith("!בטלהשתקה")) {
+    //     if (!msg.key.remoteJid.includes("@g.us"))
+    //         return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
 
-        let groupData = await sock.groupMetadata(id);
-        if (!groupData.announce)
-            return sock.sendMessage(id, { text: "הקבוצה כבר פתוחה" });
+    //     let groupData = await sock.groupMetadata(id);
+    //     if (!groupData.announce)
+    //         return sock.sendMessage(id, { text: "הקבוצה כבר פתוחה" });
 
-        // check if the bot is admin
-        let participant = groupData.participants;
-        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
-        console.log(bot);
-        if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+    //     // check if the bot is admin
+    //     let participant = groupData.participants;
+    //     let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+    //     console.log(bot);
+    //     if (!bot?.admin)
+    //         return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
 
-        sock.groupSettingUpdate(id, 'not_announcement');
-        sock.sendMessage(id, { text: "הקבוצה פתוחה" });
-    }
+    //     sock.groupSettingUpdate(id, 'not_announcement');
+    //     sock.sendMessage(id, { text: "הקבוצה פתוחה" });
+    // }
 
 
 
@@ -280,22 +280,22 @@ async function handleMessage(sock, msg, mongo) {
         return;
     }
 
-    if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        try {
-            let numMsgToLoad = parseInt(textMsg.replace(/^\D+|\D.*$/g, ""));
-            numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 5;
+    // if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+    //     try {
+    //         let numMsgToLoad = parseInt(textMsg.replace(/^\D+|\D.*$/g, ""));
+    //         numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 5;
 
-            let history = await store.loadMessages(id, numMsgToLoad);
-            history.pop();
-            //console.log(history);
+    //         let history = await store.loadMessages(id, numMsgToLoad);
+    //         history.pop();
+    //         //console.log(history);
 
-            let res = await chatGPT.tldr(history, id)
-            return sock.sendMessage(id, { text: res })
-        } catch (error) {
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-        }
+    //         let res = await chatGPT.tldr(history, id)
+    //         return sock.sendMessage(id, { text: res })
+    //     } catch (error) {
+    //         return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+    //     }
 
-    }
+    // }
 
     /**#######
      * YOUTUBE
@@ -321,17 +321,17 @@ async function handleMessage(sock, msg, mongo) {
 
 
     // no command - answer with ChatGPT
-    if (!msg.key.remoteJid.includes("@g.us")) {
-        try {
-            let history = await store.loadMessages(id, 8);
-            let res = await chatGPT.chat(history, id)
-            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
-        } catch (error) {
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-        }
+    // if (!msg.key.remoteJid.includes("@g.us")) {
+    //     try {
+    //         let history = await store.loadMessages(id, 8);
+    //         let res = await chatGPT.chat(history, id)
+    //         return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
+    //     } catch (error) {
+    //         return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+    //     }
 
 
-    }
+    // }
 }
 
 /**
