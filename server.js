@@ -49,14 +49,14 @@ async function connectToWhatsApp() {
         const { connection, lastDisconnect } = update
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut
-            console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect)
+            console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect, ", status code: ", lastDisconnect.error?.output?.statusCode)
             // reconnect if not logged out
             if (lastDisconnect.error?.output?.statusCode === DisconnectReason.timedOut
                 || lastDisconnect.error?.output?.statusCode === DisconnectReason.connectionClosed) {
                 setTimeout(() => {
                     connectToWhatsApp()
-                }, 1000)
-                console.log('reconnecting after 1 second')
+                }, 10000)
+                console.log('reconnecting after 10 second')
             }
             else if (shouldReconnect) {
                 connectToWhatsApp()
