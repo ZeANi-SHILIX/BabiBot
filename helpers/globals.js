@@ -1,3 +1,4 @@
+const { GLOBAL } = require('../src/storeMsg');
 
 function Information() {
     this.map = new Map();
@@ -51,54 +52,38 @@ Information.prototype.deleteYouTubeProgress = function (userID) {
 /**
  * count emoji reactions on a message in a group
  * saving the id of user who reacted
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg - reaction message
- * @returns {{count: Number, minToMute: Number}} the number of reactions
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @returns {{reactionsCount: number,minToMute: number,startTime: number} | undefined} 
  */
 Information.prototype.reactionsOnSavedMsg = function (msg) {
     //const LIKE_EMOJI = ["👍", "👍🏿", "👍🏾", "👍🏽", "👍🏼", "👍🏻"];
+    const UNLIKE_EMOJI = ["👎", "👎🏿", "👎🏾", "👎🏽", "👎🏼", "👎🏻"];
 
-    let idGroup = msg.key.remoteJid;
-    let idUser = msg.key.participant;
-    let messageID = msg.message.reactionMessage.key.id;
-
-    // check if the message is a reaction
-    // if not - do nothing
-
-    /** @type {Map} */
-    let group = this.map.get(idGroup);
-    if (!group)
+    // if not a group, do nothing
+    if (!msg.key.remoteJid.endsWith("@g.us"))
         return;
 
-    /** @type {Map} */
-    let reactionsByMsg = group.get(messageID);
-    if (!reactionsByMsg)
-        return;
+    let idGroup = msg.key?.remoteJid;
+    let messageID = msg.message?.reactionMessage?.key?.id;
 
-    /** @type {Set<string>} */
-    let reactionsMembers = reactionsByMsg.get("reactionsCount") || new Set();
+    let idUser = msg.key?.participant || msg.key?.remoteJid;
+    let emoji = msg.message?.reactionMessage?.text;
 
-    // when exist - check if the reaction is not '' (empty)
-    // if empty - remove the reaction
-    if (!msg.message.reactionMessage.text) {
-        reactionsMembers.delete(idUser);
-        reactionsByMsg.set("reactionsCount", reactionsMembers);
-        group.set(messageID, reactionsByMsg);
-        this.map.set(idGroup, group);
-        return {
-            count: reactionsMembers.size,
-            minToMute: reactionsByMsg.get("minToMute")
-        };
+    /** * @type {{reactionsCount: number,minToMute: number,startTime: number} | undefined} */
+    let msgOfReaction = GLOBAL.muteGroup?.[idGroup]?.[messageID];
+    if (!msgOfReaction) return;
+
+    let addOrRemove = emoji ? 1 : -1; 
+    msgOfReaction.reactionsCount += addOrRemove;
+
+    if (msgOfReaction.reactionsCount < 0) {
+        msgOfReaction.reactionsCount = 0;
     }
 
-    reactionsMembers.add(idUser);
-    reactionsByMsg.set("reactionsCount", reactionsMembers);
-    group.set(messageID, reactionsByMsg);
-    this.map.set(idGroup, group);
+    // save progress
+    GLOBAL.muteGroup[idGroup][messageID] = msgOfReaction;
 
-    return {
-        count: reactionsMembers.size,
-        minToMute: reactionsByMsg.get("minToMute")
-    };
+    return msgOfReaction
 }
 
 /**
@@ -110,22 +95,19 @@ Information.prototype.makeReactionMsg = function (msg, minToMute) {
     let idGroup = msg.key.remoteJid;
     let messageID = msg.key.id;
 
-    /** @type {Map} */
-    let group = this.map.get(idGroup);
-    if (!group) {
-        group = new Map();
-        this.map.set(idGroup, group);
+    if (!GLOBAL.muteGroup) {
+        GLOBAL.muteGroup = {};
     }
 
-    /** @type {Map} */
-    let reactionsByMsg = group.get(messageID);
-    if (!reactionsByMsg) {
-        reactionsByMsg = new Map();
-        reactionsByMsg.set("minToMute", minToMute);
-        group.set(messageID, reactionsByMsg);
-        this.map.set(idGroup, group);
+    if (!GLOBAL.muteGroup[idGroup]) {
+        GLOBAL.muteGroup[idGroup] = {};
     }
 
+    GLOBAL.muteGroup[idGroup][messageID] = {
+        reactionsCount: 0,
+        minToMute: minToMute,
+        startTime: Date.now()
+    }
 }
 
 /**
@@ -135,22 +117,20 @@ Information.prototype.makeReactionMsg = function (msg, minToMute) {
 Information.prototype.deleteReactionMsg = function (msg) {
     let idGroup = msg.key.remoteJid;
 
-    /** @type {Map} */
-    let group = this.map.get(idGroup);
-    if (!group)
-        return;
-
-    // if the key have the reactionsCount property - delete it
-    for (let key of group.keys()) {
-        let savedData = group.get(key);
-        try {
-            savedData.get("reactionsCount");
-            group.delete(key);
-        } catch (error) {
-
-        }
+    if (!GLOBAL.muteGroup) {
+        GLOBAL.muteGroup = {};
     }
-    this.map.set(idGroup, group);
+
+    if (!GLOBAL.muteGroup[idGroup]) {
+        GLOBAL.muteGroup[idGroup] = {};
+    }
+
+    let messageID = msg.message?.reactionMessage?.key?.id;
+    delete GLOBAL.muteGroup[idGroup][messageID];
+
+    if (Object.keys(GLOBAL.muteGroup[idGroup]).length == 0) {
+        delete GLOBAL.muteGroup[idGroup];
+    }
 }
 
 

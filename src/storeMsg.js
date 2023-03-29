@@ -4,10 +4,28 @@ const fs = require("fs");
 
 /**
  * this sock is updating while getting messages
- * @type {{sock: import('@adiwajshing/baileys').WASocket}}
+ * @type {{ sock: import('@adiwajshing/baileys').WASocket
+ *          muteGroup: {
+ *              idGroup: {
+ *                  messageID: {
+ *                      reactionsCount: number,
+ *                      minToMute: number,
+ *                      startTime: number
+ *                  }
+ *              }
+ *          },
+ *         groupConfig: {
+ *              idGroup: {
+ *                  countUsers: number,
+ *                  spam: string
+ *             }
+ *        }
+ * }}
 */
-let GLOBAL = {
-    sock: null
+const GLOBAL = {
+    sock: null,
+    muteGroup: {},
+    groupConfig: {}
 };
 
 const logger = pino();
@@ -20,15 +38,11 @@ setInterval(() => {
     store?.writeToFile("./baileys_store_multi.json");
 }, 10_000);
 
-/**
- * @type {{id:{countUsers: number, spam: string}}}}
- */
-const groupConfig = {};
 readConfig();
 
-// setInterval(() => {
-//     saveConfig();
-// }, 60_000);
+setInterval(() => {
+    saveConfig();
+}, 60_000);
 
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {
@@ -38,17 +52,18 @@ function readConfig() {
 
     const data = fs.readFileSync("./groupConfig.json");
     const json = JSON.parse(data);
-    Object.assign(groupConfig, json);
+    console.log(json);
+    Object.assign(GLOBAL, json);
 }
 
 function saveConfig() {
+    const groupConfig = GLOBAL.groupConfig;
     fs.writeFileSync("./groupConfig.json", JSON.stringify(groupConfig));
-    //console.log("Group Config saved");
+    console.log("Group Config saved");
 }
 
 module.exports = {
     store,
     logger,
-    groupConfig,
     GLOBAL
 }

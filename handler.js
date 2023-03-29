@@ -9,7 +9,7 @@ const { store, groupConfig, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
 //const ChatGPT = require('./helpers/chatgpt')
 //const UnofficalGPT = require('./helpers/unofficalGPT')
-//const { info } = require("./helpers/globals");
+const { info } = require("./helpers/globals");
 require('dotenv').config();
 //const fs = require("fs");
 
@@ -39,27 +39,36 @@ let commands = {
 async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
 
-    // if (msg.message?.reactionMessage) {
-    //     console.log(msg.message.reactionMessage)
+    if (msg.message?.reactionMessage) {
+        console.log(msg.message.reactionMessage)
 
-    //     // count reactions on saved msg
-    //     let result = info.reactionsOnSavedMsg(msg);
-    //     if (!result) return;
-    //     let { count, minToMute } = result;
+        // count reactions on saved msg
+        let result = info.reactionsOnSavedMsg(msg);
+        if (!result) return;
+        let { reactionsCount, startTime, minToMute } = result;
 
-    //     let COUNT_USER_TO_MUTE = groupConfig?.[id]?.countusers ?? DEFAULT_COUNT_USER_TO_MUTE;
-    //     // when count of reactions is enough, mute group
-    //     if (count >= COUNT_USER_TO_MUTE) {
-    //         console.log("Mute Group:", id, " to:", minToMute)
-    //         muteGroup(msg, minToMute);
+        // check the delay between the first reaction and the last reaction
+        let delay = Date.now() - startTime;
 
-    //         // delete msg (of reactions) from saved msgs
-    //         info.deleteReactionMsg(msg);
-    //     }
-    //     else {
-    //         console.log("Not enough reactions", count, "to mute group:", id)
-    //     }
-    // }
+        // if delay is more than 5 minutes, delete msg (of reactions) from saved msgs
+        if (delay > 5 * 60 * 1000) {
+            info.deleteReactionMsg(msg);
+            return;
+        }
+
+        // when count of reactions is enough, mute group
+        if (reactionsCount >= GLOBAL.groupConfig?.[id]?.countUsers ?? DEFAULT_COUNT_USER_TO_MUTE) {
+            console.log("Mute Group:", id, " to:", minToMute)
+            muteGroup(msg, minToMute);
+
+            // delete msg (of reactions) from saved msgs
+            info.deleteReactionMsg(msg);
+        }
+        else {
+            console.log("Not enough reactions", reactionsCount, "to mute group:", id)
+        }
+        return;
+    }
 
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";

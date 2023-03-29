@@ -1,4 +1,4 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@adiwajshing/baileys')
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@adiwajshing/baileys')
 const { handlerQueue } = require('./src/QueueObj');
 const { store, logger, GLOBAL } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
@@ -24,6 +24,8 @@ const mongo = new Mongo();
 let qr = "";
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info')
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    console.log('version', version.join("."), 'isLatest', isLatest)
     const sock = makeWASocket({
         // can provide additional config here
         printQRInTerminal: true,
@@ -32,8 +34,9 @@ async function connectToWhatsApp() {
             keys: state.keys,
         },
         logger,
+        version,
         msgRetryCounterMap,
-        retryRequestDelayMs: 1000,
+        retryRequestDelayMs: 300,
         //syncFullHistory: true,
         //shouldSyncHistoryMessage
         getMessage: messageRetryHandler.messageRetryHandler
@@ -47,7 +50,14 @@ async function connectToWhatsApp() {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut
             console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect)
             // reconnect if not logged out
-            if (shouldReconnect) {
+            if (lastDisconnect.error?.output?.statusCode === DisconnectReason.timedOut
+                || lastDisconnect.error?.output?.statusCode === DisconnectReason.connectionClosed) {
+                setTimeout(() => {
+                    connectToWhatsApp()
+                }, 1000)
+                console.log('reconnecting after 1 second')
+            }
+            else if (shouldReconnect) {
                 connectToWhatsApp()
             }
         } else if (connection === 'open') {
@@ -67,33 +77,27 @@ async function connectToWhatsApp() {
     // handle messages
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type == 'notify') {
-            const msg = messages[0];
+            for (const msg of messages) {
+                if (!msg.message) return; // if there is no text or media message
+                if (msg.key.fromMe) return;
 
-            if (!msg.message) return; // if there is no text or media message
-            if (msg.key.fromMe) return;
-
-            //handleMessage(sock, msg, mongo);
-            handlerQueue.add(() => handleMessage(sock, msg, mongo));
+                //handleMessage(sock, msg, mongo);
+                handlerQueue.add(() => handleMessage(sock, msg, mongo));
+            }
         }
-        else /* type == 'append'*/ {
-            messages.forEach(async (msg) => {
+        if (type === 'append') {
+            console.log(messages.length, " unread messages");
+            if (!PRODUCTION) return; // avoid double handling in dev
+
+            for (const msg of messages) {
                 if (!msg.message) return; // if there is no text or media message
                 if (msg.key.fromMe) return;
 
                 handlerQueue.add(() => handleMessage(sock, msg, mongo));
-                //handleMessage(sock, msg, mongo);
-
-                if (!PRODUCTION)
-                    return console.log(msg.message); // read only first message in dev mode
-            })
+            }
         }
     })
 
-    // reaction
-    // sock.ev.on('messages.reaction', async (reactions) => {
-    //     let react = reactions[0]
-    //     react.reaction.key
-    // })
 
 }
 // run in main file
@@ -109,7 +113,7 @@ app.get('/qr', async (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    res.send('Hello World! its Babi Bot') 
+    res.send('Hello World! its Babi Bot')
 });
 
 
