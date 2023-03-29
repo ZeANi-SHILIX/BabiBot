@@ -5,6 +5,11 @@ class MessageRetryHandler {
     this.messagesMap = {};
   }
 
+  /**
+   * 
+   * @param {import('@adiwajshing/baileys').proto.IWebMessageInfo} message 
+   * @returns 
+   */
   addMessage = async (message) => {
     const id = message.key.id ?? "";
 
