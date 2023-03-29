@@ -13,6 +13,7 @@ const msgRetryCounterMap = {};
 
 const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
+console.log("PRODUCTION:", PRODUCTION);
 
 const app = express()
 const port = 3000;
