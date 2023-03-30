@@ -13,6 +13,45 @@ function UnofficalGPT(auth) {
 }
 
 /**
+ * ask question to the bot
+ * @param {String} prompt 
+ * @returns {Promise<{
+ *              "object":"text_completion",
+ *              "model":"text-davinci-003",
+ *              "choices":[{
+ *                  "text":" Hi there! How can I help you?",
+ *                  "index":0,
+ *                  "finish_reason":"stop",
+ *                  "logprobs":null}],
+ *              "usage":{
+ *                  "prompt_tokens":7,
+ *                  "completion_tokens":9,
+ *                  "total_tokens":16
+ *              }
+ *          }>}
+ */
+UnofficalGPT.prototype.ask = async function (prompt) {
+    return new Promise((resolve, reject) => {
+        fetch(this.text, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": this.auth
+            },
+            body: JSON.stringify({
+                "prompt": prompt,
+                "temperature": 0.7,
+                "max_tokens": 256,
+                "model": "text-davinci-003"
+            })
+        }).then(res => res.json())
+            .then(json => resolve(json))
+            .catch(err => reject(err)) 
+    })
+}
+
+
+/**
  * make post request to the server
  * @param {{"messages": [
  *              {"role": "system" | "user" | "assistant",
@@ -52,7 +91,7 @@ UnofficalGPT.prototype.waMsgs = async function (msgs) {
     for (let i = 0; i < msgs.length; i++) {
         const msg = msgs[i];
         data.messages.push({
-            "role": msg.key.fromMe ? "user" : "assistant",
+            "role": msg.key.fromMe ? "assistant" : "user",
             "content": msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ""
         })
     }

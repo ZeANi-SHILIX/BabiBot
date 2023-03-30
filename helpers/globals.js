@@ -133,5 +133,21 @@ Information.prototype.deleteReactionMsg = function (msg) {
     }
 }
 
+/**
+ * delete all data structure to save the reactions on a message
+ * @param {String} idGroup - group id
+ */
+Information.prototype.deleteAllReactionMsg = function (idGroup) {
+    if (!GLOBAL.muteGroup) {
+        GLOBAL.muteGroup = {};
+    }
+
+    if (!GLOBAL.muteGroup[idGroup]) {
+        GLOBAL.muteGroup[idGroup] = {};
+    }
+
+    delete GLOBAL.muteGroup[idGroup];
+}
+
 
 module.exports = { info }
