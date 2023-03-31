@@ -8,8 +8,9 @@ const { Sticker } = require('wa-sticker-formatter');
  * when ```!barkuni``` is called, this function will be called
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  * @param {import('@adiwajshing/baileys').WASocket} sock 
+ * @param {String} superuser
  */
-async function BarkuniSticker(msg, sock) {
+async function BarkuniSticker(msg, sock, superuser) {
     let id = msg.key.remoteJid;
 
     // save sticker to database
@@ -19,6 +20,11 @@ async function BarkuniSticker(msg, sock) {
 
         let quotedMessage = await store.loadMessage(id, msgID);
         if (!quotedMessage) return;
+
+        // check if sender is superuser
+        if (msg.key.participant !== superuser || 
+            id !== superuser) 
+            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה להוסיף סטיקרי ברקוני" });
 
 
         try {
@@ -32,6 +38,7 @@ async function BarkuniSticker(msg, sock) {
                 barkuniDB.create({ buffer: stickerBuffer }, (err, res) => {
                     if (err) throw err;
                     console.log(res);
+                    sock.sendMessage(id, { text: "הסטיקר נוסף בהצלחה!" });
                 });
             });
         } catch (error) {

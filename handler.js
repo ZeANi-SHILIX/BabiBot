@@ -11,6 +11,7 @@ const messageRetryHandler = require("./src/retryHandler")
 const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 require('dotenv').config();
+const fetch = require('node-fetch');
 const fs = require("fs");
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
@@ -19,15 +20,17 @@ const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 const superuser = process.env.SUPERUSER ?? "";
 const ssid = process.env.MAILLIST ?? "";
 const DEFAULT_COUNT_USER_TO_MUTE = 10;
+const url_begin = 'https://docs.google.com/spreadsheets/d/';
+const url_end = '/gviz/tq?&tqx=out:json';
 
 
 let commands = {
     "!פינג": "בדוק אם אני חי",
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
-    //"!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
+    "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
-    //"!השתק": "השתק את הקבוצה לפי זמן מסוים",
-    //"!בטלהשתקה": "בטל השתקה",
+    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
+    "!בטלהשתקה": "בטל השתקה",
 }
 
 /**
@@ -125,7 +128,7 @@ async function handleMessage(sock, msg, mongo) {
      * barkuni
      ########## */
     if (textMsg.startsWith("!barkuni") || textMsg.startsWith("!ברקוני"))
-        return BarkuniSticker(msg, sock);
+        return BarkuniSticker(msg, sock, superuser);
 
 
     /**######
@@ -215,8 +218,69 @@ async function handleMessage(sock, msg, mongo) {
 
         sock.groupSettingUpdate(id, 'not_announcement');
         sock.sendMessage(id, { text: "הקבוצה פתוחה" });
-        
+
     }
+
+    // set group config
+    // TODO - move setter to private chat 
+
+    // set group count to mute
+    if (textMsg.startsWith("!setcount") || textMsg.startsWith("!הגדרכמות")) {
+        if (!msg.key.remoteJid.includes("@g.us"))
+            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+
+        let groupData = await sock.groupMetadata(id);
+        let participant = groupData.participants;
+
+        // check if the bot is admin
+        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+        console.log(bot);
+        if (!bot?.admin)
+            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+
+        // get count
+        let count = textMsg.replace("!setcount", "").replace("!הגדרכמות", "").trim();
+        if (count.length === 0)
+            return sock.sendMessage(id, { text: "אנא הכנס כמות אנשים" });
+
+        let count_num = parseInt(count);
+        if (isNaN(count_num))
+            return sock.sendMessage(id, { text: "אנא הכנס כמות אנשים" });
+
+        if (count_num < 1 || count_num > 100)
+            return sock.sendMessage(id, { text: "אנא הכנס כמות אנשים בין 1 ל 100" });
+
+        GLOBAL.groupConfig[id] = { countUsers: count_num };
+        sock.sendMessage(id, { text: `הכמות של האנשים שיש להם ללחוץ על לייק כדי להשתיק את הקבוצה הוגדרה ל ${count_num}` });
+
+    }
+
+    // set group spam message
+    if (textMsg.startsWith("!setspam") || textMsg.startsWith("!הגדרספאם")) {
+        if (!msg.key.remoteJid.includes("@g.us"))
+            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+
+        let groupData = await sock.groupMetadata(id);
+        let participant = groupData.participants;
+
+        // check if the bot is admin
+        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+        console.log(bot);
+
+        if (!bot?.admin)
+            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+
+        // get count
+        let spam = textMsg.replace("!setspam", "").replace("!הגדרספאם", "").trim();
+        if (spam.length === 0)
+            return sock.sendMessage(id, { text: "אנא הכנס ספאם" });
+
+        GLOBAL.groupConfig[id] = { spamMsg: spam };
+        sock.sendMessage(id, { text: `הספאם של הקבוצה הוגדר ל ${spam}` });
+
+    }
+    
+
 
 
 
@@ -294,16 +358,31 @@ async function handleMessage(sock, msg, mongo) {
             sock.sendMessage(id, { text: retunText }).then(messageRetryHandler.addMessage);
 
         if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
-            sock.sendMessage(id, { text: "לא מצאתי את המייל המבוקש...\nנסה לחפש שוב במילים אחרות\n(אם המייל חסר - נשמח שתשלח לכאן אחרי שתמצא)" }).then(messageRetryHandler.addMessage)
+            sock.sendMessage(id, {
+                text: `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
+                    + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`
+            }).then(messageRetryHandler.addMessage)
         return;
     }
 
+    // reply with plesure to "תודה"
+    if (textMsg.includes("תודה")) {
+        // check if replied to the bot
+        // and have @ in the quoted message
+        if (msg.message.extendedTextMessage?.contextInfo?.participant === sock.user.id &&
+            msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation.includes("@")) {
+            sock.sendMessage(id, { text: "בשמחה! תמיד שמח לעזור😃" }).then(messageRetryHandler.addMessage);
+            return;
+        }
+    }
+
     // ask GPT
-    if (textMsg.includes("!בוט") || textMsg.includes("!ask")) {
+    if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
-            let res = await unofficalGPT.ask(textMsg.replace("!שאל", "").replace("!בוט", "").trim())
+            let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim())
             return sock.sendMessage(id, { text: res.choices[0].text })
         } catch (error) {
+            console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
         }
     }
@@ -367,8 +446,6 @@ async function handleMessage(sock, msg, mongo) {
  * @returns {Promise<[{"c":[{"v":"name: mail@gmail.com"}]}]>}
  */
 async function getMails() {
-    const url_begin = 'https://docs.google.com/spreadsheets/d/';
-    const url_end = '/gviz/tq?&tqx=out:json';
     let url = `${url_begin}${ssid}${url_end}`;
 
     let res = await fetch(url);
@@ -388,8 +465,11 @@ async function muteGroup(msg, muteTime_min) {
     const ONE_MINUTE = 1000 * 60;
 
     await GLOBAL.sock.groupSettingUpdate(id, 'announcement')
-    if (groupConfig[id]?.spam)
-        GLOBAL.sock.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות\nתוכלו להמשיך לקשקש בקבוצת הספאם\n${groupConfig[id].spam}` })
+    if (GLOBAL.groupConfig?.[id]?.spam)
+        GLOBAL.sock.sendMessage(id, {
+            text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות\n`
+                + `${GLOBAL.groupConfig?.[id]?.spam}`
+        })
     else
         GLOBAL.sock.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות` })
 
