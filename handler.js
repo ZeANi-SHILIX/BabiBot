@@ -279,7 +279,7 @@ async function handleMessage(sock, msg, mongo) {
         sock.sendMessage(id, { text: `הספאם של הקבוצה הוגדר ל ${spam}` });
 
     }
-    
+
 
 
 
@@ -357,19 +357,30 @@ async function handleMessage(sock, msg, mongo) {
         if (countMails > 0 && countMails < 8)
             sock.sendMessage(id, { text: retunText }).then(messageRetryHandler.addMessage);
 
-        if (countMails === 0 && msg.key.remoteJid.includes("s.whatsapp.net"))
-            sock.sendMessage(id, {
-                text: `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
-                    + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`
-            }).then(messageRetryHandler.addMessage)
+        if (msg.key.remoteJid.includes("s.whatsapp.net")) {
+            if (countMails === 0)
+                sock.sendMessage(id, {
+                    text: `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
+                        + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`
+                }).then(messageRetryHandler.addMessage)
+
+            else 
+                sock.sendMessage(id, {
+                    text: `מצאתי ${countMails} מיילים עבור ${searchText}\n`
+                        + `נסה לחפש באופן ממוקד יותר\n`
+                }).then(messageRetryHandler.addMessage)
+
+        }
         return;
     }
 
     // reply with plesure to "תודה"
     if (textMsg.includes("תודה")) {
+        let numberSocket = sock.user.id.slice(0, sock.user.id.indexOf(":"));
+
         // check if replied to the bot
         // and have @ in the quoted message
-        if (msg.message.extendedTextMessage?.contextInfo?.participant === sock.user.id &&
+        if (msg.message.extendedTextMessage?.contextInfo?.participant.startsWith(numberSocket) &&
             msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation.includes("@")) {
             sock.sendMessage(id, { text: "בשמחה! תמיד שמח לעזור😃" }).then(messageRetryHandler.addMessage);
             return;
