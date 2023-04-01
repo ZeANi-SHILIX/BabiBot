@@ -73,7 +73,7 @@ Information.prototype.reactionsOnSavedMsg = function (msg) {
     let msgOfReaction = GLOBAL.muteGroup?.[idGroup]?.[messageID];
     if (!msgOfReaction) return;
 
-    let addOrRemove = emoji ? 1 : -1; 
+    let addOrRemove = emoji ? 1 : -1;
     msgOfReaction.reactionsCount += addOrRemove;
 
     if (msgOfReaction.reactionsCount < 0) {
@@ -148,6 +148,91 @@ Information.prototype.deleteAllReactionMsg = function (idGroup) {
 
     delete GLOBAL.muteGroup[idGroup];
 }
+
+/**
+ * if the user is in a dialog with the bot
+ * allow him to set settings for the group
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @returns {Number | undefined} ```undefined``` user without dialog. ```-1``` error, otherwise return the stage of the dialog (step 3 - finished)
+ */
+Information.prototype.setSettingDialog = function (msg) {
+    let idGroup = msg.key.remoteJid;
+    let idUser = msg.key.participant || msg.key.remoteJid;
+
+    if (!this.map.has(idUser))
+        return;
+
+    /** @type {Map} */
+    let userInfo = this.map.get(idUser);
+
+    /** @type {{idGroup: String, stage : Number, countUser: Number, spam: String}}*/
+    let dialog = userInfo.get("setGroup");
+
+    if (!dialog)
+        return;
+
+    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+
+    switch (dialog.stage) {
+        case 0:
+            let countUser = Number(textMsg);
+            if (isNaN(countUser)) {
+                return -1;
+            }
+            dialog.countUser = countUser;
+            dialog.stage = 1;
+            break;
+        case 1:
+            dialog.spam = textMsg;
+            dialog.stage = 2;
+            break;
+        case 2:
+            if (textMsg.includes("כן") || textMsg.includes("yes")) {
+                GLOBAL.groupConfig[dialog.idGroup] = {
+                    countUser: dialog.countUser,
+                    spam: dialog.spam
+                }
+                userInfo.delete("setGroup");
+                this.map.set(idUser, userInfo);
+                return 3;
+            }
+            if (textMsg.includes("לא") || textMsg.includes("no")) {
+                userInfo.delete("setGroup");
+                this.map.set(idUser, userInfo);
+                return 3;
+            }
+            if (textMsg.includes("ערוך") || textMsg.includes("edit")) {
+                dialog.stage = 0;
+            }
+    }
+    userInfo.set("setGroup", dialog);
+    this.map.set(idUser, userInfo);
+    return dialog.stage;
+
+}
+
+/** 
+ * start dialog with admin in private chat to set settings for the group
+ * stage 0: set count user to mute
+ * stage 1: set spam message
+ * stage 2: apply settings
+ * @param {import ('@adiwajshing/baileys').proto.WebMessageInfo} msg
+*/
+Information.prototype.startDialog = function (msg) {
+    let idGroup = msg.key.remoteJid;
+    let idUser = msg.key.participant || msg.key.remoteJid;
+
+    /** @type {Map} */
+    let userInfo = this.map.get(idUser) || new Map();
+    userInfo.set("setGroup", {
+        idGroup: idGroup,
+        stage: 0,
+        countUser: null,
+        spam: null
+    });
+    this.map.set(idUser, userInfo);
+}
+
 
 
 module.exports = { info }

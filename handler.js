@@ -42,6 +42,8 @@ let commands = {
 async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
 
+    // early check if action need to be done
+    // reaction message
     if (msg.message?.reactionMessage) {
         console.log(msg.message.reactionMessage)
 
@@ -60,7 +62,7 @@ async function handleMessage(sock, msg, mongo) {
         }
 
         // when count of reactions is enough, mute group
-        if (reactionsCount >= GLOBAL.groupConfig?.[id]?.countUsers ?? DEFAULT_COUNT_USER_TO_MUTE) {
+        if (reactionsCount >= GLOBAL.groupConfig?.[id]?.countUser ?? DEFAULT_COUNT_USER_TO_MUTE) {
             console.log("Mute Group:", id, " to:", minToMute)
             muteGroup(msg, minToMute);
 
@@ -72,6 +74,24 @@ async function handleMessage(sock, msg, mongo) {
         }
         return;
     }
+    // set group config
+    let stage = info.setSettingDialog(msg);
+    if (stage !== undefined)
+        switch (stage) {
+            case -1:
+                return sock.sendMessage(id, { text: "חלה שגיאה, אנא נסה שנית" }).then(messageRetryHandler.addMessage);
+            case 0:
+                return sock.sendMessage(id, { text: "הכנס את מספר המשתמשים להשתקה" }).then(messageRetryHandler.addMessage);
+            case 1:
+                return sock.sendMessage(id, { text: "הכנס הודעה שתשלח בקבוצה בעת ההשתקה" }).then(messageRetryHandler.addMessage);
+            case 2:
+                return sock.sendMessage(id, {
+                    text: getGroupConfig(id) +
+                        "\nהאם ברצונך לשמור את השינויים?\nכן - לשמור,  לא - לביטול, ערוך - כדי לערוך שוב."
+                }).then(messageRetryHandler.addMessage);
+            case 3:
+                return sock.sendMessage(id, { text: "ההגדרות נשמרו בהצלחה!" }).then(messageRetryHandler.addMessage);
+        }
 
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
@@ -186,12 +206,18 @@ async function handleMessage(sock, msg, mongo) {
         if (!sender.admin) {
             //return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
             //info.deleteReactionMsg(msg);
-            let nameOfSender = sender.notify || sender.name || sender.id;
+            let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
+            // get the number from text
+            let timeToMute = textMsg.replace(/[^0-9]/g, '').trim();
+
+            console.log(GLOBAL.groupConfig?.[id]);
 
             let botMsg = await sock.sendMessage(id, {
-                text: `*מזה יש כאן באלגן?* כי ${nameOfSender} רוצה להשתיק את הקבוצה למשך${muteTime_min} דקות...\n`
-                    `ברגע ש${GLOBAL.groupConfig?.[id]?.countUsers ?? DEFAULT_COUNT_USER_TO_MUTE} אנשים יסכימו איתו ויגיבו על ההודעה הזאת בלייק, הקבוצה תושתק.\n`
-                    `אתם מסכימים?`
+                text: `*מזה יש כאן באלגן?*\n` +
+                    `@${phoneOfSender} רוצה להשתיק את הקבוצה למשך ${timeToMute} דקות...\n` +
+                    `ברגע ש${GLOBAL.groupConfig?.[id]?.countUser ?? DEFAULT_COUNT_USER_TO_MUTE} אנשים יסכימו איתו ויגיבו על ההודעה הזאת בלייק, הקבוצה תושתק.\n` +
+                    `אתם מסכימים?`,
+                mentions: [msg.key.participant]
             }).then(messageRetryHandler.addMessage);
             return info.makeReactionMsg(botMsg, muteTime_min);
         }
@@ -222,10 +248,7 @@ async function handleMessage(sock, msg, mongo) {
     }
 
     // set group config
-    // TODO - move setter to private chat 
-
-    // set group count to mute
-    if (textMsg.startsWith("!setcount") || textMsg.startsWith("!הגדרכמות")) {
+    if (textMsg.startsWith("!set") || textMsg.startsWith("!הגדר")) {
         if (!msg.key.remoteJid.includes("@g.us"))
             return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
 
@@ -238,49 +261,13 @@ async function handleMessage(sock, msg, mongo) {
         if (!bot?.admin)
             return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
 
-        // get count
-        let count = textMsg.replace("!setcount", "").replace("!הגדרכמות", "").trim();
-        if (count.length === 0)
-            return sock.sendMessage(id, { text: "אנא הכנס כמות אנשים" });
+        info.startDialog(msg);
+        sock.sendMessage(id, { text: "הגדרות הקבוצה נשלחו לפרטי" });
 
-        let count_num = parseInt(count);
-        if (isNaN(count_num))
-            return sock.sendMessage(id, { text: "אנא הכנס כמות אנשים" });
-
-        if (count_num < 1 || count_num > 100)
-            return sock.sendMessage(id, { text: "אנא הכנס כמות אנשים בין 1 ל 100" });
-
-        GLOBAL.groupConfig[id] = { countUsers: count_num };
-        sock.sendMessage(id, { text: `הכמות של האנשים שיש להם ללחוץ על לייק כדי להשתיק את הקבוצה הוגדרה ל ${count_num}` });
-
+        // send the group config to the sender
+        sock.sendMessage(msg.key.participant, { text: getGroupConfig(id) + "\nמתחיל בעריכה:\nהכנס את מספר המשתמשים להשתקה" });
+        return;
     }
-
-    // set group spam message
-    if (textMsg.startsWith("!setspam") || textMsg.startsWith("!הגדרספאם")) {
-        if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
-
-        let groupData = await sock.groupMetadata(id);
-        let participant = groupData.participants;
-
-        // check if the bot is admin
-        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
-        console.log(bot);
-
-        if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
-
-        // get count
-        let spam = textMsg.replace("!setspam", "").replace("!הגדרספאם", "").trim();
-        if (spam.length === 0)
-            return sock.sendMessage(id, { text: "אנא הכנס ספאם" });
-
-        GLOBAL.groupConfig[id] = { spamMsg: spam };
-        sock.sendMessage(id, { text: `הספאם של הקבוצה הוגדר ל ${spam}` });
-
-    }
-
-
 
 
 
@@ -364,7 +351,7 @@ async function handleMessage(sock, msg, mongo) {
                         + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`
                 }).then(messageRetryHandler.addMessage)
 
-            else 
+            else
                 sock.sendMessage(id, {
                     text: `מצאתי ${countMails} מיילים עבור ${searchText}\n`
                         + `נסה לחפש באופן ממוקד יותר\n`
@@ -491,5 +478,20 @@ async function muteGroup(msg, muteTime_min) {
 
 }
 
+/**
+ * get the group config
+ * @param {String} id
+ * @returns {String}
+ */
+function getGroupConfig(id) {
+    let msgToSend = `*הגדרות הקבוצה:*\n`;
+    if (GLOBAL.groupConfig?.[id]?.countUser)
+        msgToSend += `*מספר משתתפים להשתקה*: ${GLOBAL.groupConfig?.[id]?.countUser}\n`;
+    if (GLOBAL.groupConfig?.[id]?.spam)
+        msgToSend += `*ההודעה שתשלח בקבוצה בעת ההשתקה*:\n ${GLOBAL.groupConfig?.[id]?.spam}`;
+
+    msgToSend = GLOBAL.groupConfig?.[id] ? msgToSend : "אין הגדרות קבוצה";
+    return msgToSend;
+}
 
 module.exports = { handleMessage }

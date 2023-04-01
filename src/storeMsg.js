@@ -25,7 +25,6 @@ const fs = require("fs");
 const GLOBAL = {
     sock: null,
     muteGroup: {},
-    groupConfig: {}
 };
 
 const logger = pino();
@@ -47,13 +46,14 @@ setInterval(() => {
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {
         console.log("Group Config file not found");
+        GLOBAL.groupConfig = {};
         return;
     }
 
     const data = fs.readFileSync("./groupConfig.json");
     const json = JSON.parse(data);
     console.log(json);
-    Object.assign(GLOBAL, json);
+    GLOBAL.groupConfig = json;
 }
 
 function saveConfig() {
