@@ -261,6 +261,12 @@ async function handleMessage(sock, msg, mongo) {
         if (!bot?.admin)
             return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
 
+        // check if the sender is admin
+        let sender = participant.find(p => p.id === msg.key.participant);
+        console.log(sender);
+        if (!sender.admin)
+            return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
+
         info.startDialog(msg);
         sock.sendMessage(id, { text: "הגדרות הקבוצה נשלחו לפרטי" });
 
