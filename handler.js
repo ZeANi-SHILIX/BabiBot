@@ -5,7 +5,7 @@ const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
 //const { msgQueue } = require('./src/QueueObj')
 //const savedNotes = require('./src/notes')
-const { store, groupConfig, GLOBAL } = require('./src/storeMsg')
+const { store, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
 //const ChatGPT = require('./helpers/chatgpt')
 const UnofficalGPT = require('./helpers/unofficalGPT')
@@ -19,6 +19,7 @@ const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
 const ssid = process.env.MAILLIST ?? "";
+const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 10;
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
@@ -103,6 +104,27 @@ async function handleMessage(sock, msg, mongo) {
 
     // send ACK
     sock.readMessages([msg.key])
+
+    // text message
+    if (!PRODUCTION && textMsg.startsWith("test")) {
+        const vcard = 'BEGIN:VCARD\n' // metadata of the contact card
+            + 'VERSION:3.0\n'
+            + 'FN:test\n' // full name
+            //+ 'ORG:Ashoka Uni;\n' // the organization of the contact
+            + 'TEL;type=CELL;waid=911234567890:+91 12345 67890\n' // WhatsApp ID + phone number
+            + 'EMAIL;INTERNET:test1@gmail.com\n' // email ID
+            + 'END:VCARD'
+        const sentMsg = await sock.sendMessage(
+            id,
+            {
+                contacts: {
+                    displayName: 'Jeff',
+                    contacts: [{ vcard }]
+                }
+            }
+        )
+            .then(messageRetryHandler.addMessage);
+    }
 
 
     if (textMsg === "!ping" || textMsg === "!פינג")
@@ -333,11 +355,12 @@ async function handleMessage(sock, msg, mongo) {
         let countMails = 0;
         for (let mail of mails) {
             try {
-                //console.log(mail);
                 let str = mail.c[0].v;
+                let nickname = mail.c[1]?.v || "";
                 //console.log(str, arr_search);
-
-                if (arr_search.every(s => str.includes(s))) {
+                
+                if (arr_search.every(s => str.includes(s) || nickname.includes(s))) {
+                    console.log(mail);
                     countMails += 1;
                     retunText += str + "\n";
                 }
@@ -350,7 +373,7 @@ async function handleMessage(sock, msg, mongo) {
         if (countMails > 0 && countMails < 8)
             sock.sendMessage(id, { text: retunText }).then(messageRetryHandler.addMessage);
 
-        if (msg.key.remoteJid.includes("s.whatsapp.net")) {
+        else if (msg.key.remoteJid.includes("s.whatsapp.net")) {
             if (countMails === 0)
                 sock.sendMessage(id, {
                     text: `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
@@ -447,7 +470,7 @@ async function handleMessage(sock, msg, mongo) {
 
 /**
  * 
- * @returns {Promise<[{"c":[{"v":"name: mail@gmail.com"}]}]>}
+ * @returns {Promise<[{"c":[{"v":"name: mail@gmail.com"},{"v":"nickname"} | undefined]}]>}
  */
 async function getMails() {
     let url = `${url_begin}${ssid}${url_end}`;
