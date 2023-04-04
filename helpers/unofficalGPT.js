@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+require('dotenv').config();
 
 /**
  * apikey from https://discord.pawan.krd/
@@ -46,9 +47,10 @@ UnofficalGPT.prototype.ask = async function (prompt) {
             })
         }).then(res => res.json())
             .then(json => resolve(json))
-            .catch(err => reject(err)) 
+            .catch(err => reject(err))
     })
 }
+
 
 
 /**
@@ -88,11 +90,12 @@ UnofficalGPT.prototype.chat = async function (data) {
  */
 UnofficalGPT.prototype.waMsgs = async function (msgs) {
     let data = {
+        "max_tokens": 256,
         "messages": [
             {
                 role: "system",
-                content: "You are a chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript." 
-                        + "you have mail list at https://docs.google.com/spreadsheets/d/1jm2Pcn9SOjczfl5lyhYueafh1HpjXNQ0EfyFHQL-ajQ/edit?usp=sharing"
+                content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
+                    + process.env.MAILLIST ? `you have mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
             }
         ]
     }
