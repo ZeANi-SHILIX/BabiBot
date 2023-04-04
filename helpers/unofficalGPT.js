@@ -57,7 +57,15 @@ UnofficalGPT.prototype.ask = async function (prompt) {
  *              {"role": "system" | "user" | "assistant",
  *               "content": "You are an helful assistant"}
  *         ]}} data 
- * @returns 
+ * @returns {Promise<{status: false, error: 'Your API key is not allowed to be used from t…ess please use /resetip on our discord server', hint: 'You can get support from https://discord.pawan.krd', info: 'https://gist.github.com/PawanOsman/72dddd0a12e5829da664a43fc9b9cf9a', support: 'https://discord.pawan.krd'}|
+ * {"id": "chatcmpl-123","object": "chat.completion","created": 1677652288,"choices": [{
+ *  "index": 0,"message": {
+ *    "role": "assistant",
+ *    "content": "\n\nHello there, how may I assist you today?",
+ *  },"finish_reason": "stop"}],
+ *"usage": {
+ *  "prompt_tokens": 9,"completion_tokens": 12,"total_tokens": 21}
+ *}>}
  */
 UnofficalGPT.prototype.chat = async function (data) {
     return new Promise((resolve, reject) => {
@@ -101,6 +109,20 @@ UnofficalGPT.prototype.waMsgs = async function (msgs) {
 /**
  * TL:DR the conversation is a list of messages
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo[]} msgs
+ * @returns {Promise<{
+ *              "object":"text_completion",
+*              "model":"text-davinci-003",
+*              "choices":[{
+*                  "text":" Hi there! How can I help you?",
+*                  "index":0,
+*                  "finish_reason":"stop",
+*                  "logprobs":null}],
+*              "usage":{
+*                  "prompt_tokens":7,
+*                  "completion_tokens":9,
+*                  "total_tokens":16
+*              }
+*          }>}
  */
 UnofficalGPT.prototype.tldr = async function (msgs) {
     //let stopsChat = [];
@@ -115,7 +137,7 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
             continue;
 
         prompt += `${pushName}: ${text}\n`;
-        stopsChat.push(pushName);
+        //stopsChat.push(pushName);
     }
     prompt += "TL:DR this conversions with details: ";
 
@@ -126,7 +148,7 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
         "model": "text-davinci-003",
         "prompt": prompt,
         "temperature": 0.7,
-        "max_tokens": 420
+        "max_tokens": 512
     }
 
     return new Promise((resolve, reject) => {

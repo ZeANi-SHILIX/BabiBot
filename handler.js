@@ -173,9 +173,9 @@ async function handleMessage(sock, msg, mongo) {
         return BarkuniSticker(msg, sock, superuser);
 
 
-    /**######
+    /**########
      * GOOGLE
-     ########*/
+     ##########*/
     else if (textMsg.startsWith("!google") || textMsg.startsWith("!גוגל")) {
         let textSearch = textMsg.replace("!google", "").replace("!גוגל", "").trim();
 
@@ -192,9 +192,9 @@ async function handleMessage(sock, msg, mongo) {
 
     }
 
-    /**######
+    /**##########
      * MUTE GROUP
-     * ########*/
+     * ##########*/
     if (textMsg.startsWith("!mute") || textMsg.startsWith("!השתק")) {
 
         if (!msg.key.remoteJid.includes("@g.us"))
@@ -414,22 +414,25 @@ async function handleMessage(sock, msg, mongo) {
         }
     }
 
-    // if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-    //     try {
-    //         let numMsgToLoad = parseInt(textMsg.replace(/^\D+|\D.*$/g, ""));
-    //         numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 5;
+    if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+        try {
+            let numMsgToLoad = parseInt(textMsg.replace(/\d+/g, ""));
+            numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 15;
 
-    //         let history = await store.loadMessages(id, numMsgToLoad);
-    //         history.pop();
-    //         //console.log(history);
+            let history = await store.loadMessages(id, numMsgToLoad);
+            history.pop(); // we don't want the last message (the one we got now)
+            //console.log(history);
 
-    //         let res = await chatGPT.tldr(history, id)
-    //         return sock.sendMessage(id, { text: res })
-    //     } catch (error) {
-    //         return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-    //     }
+            let res = await unofficalGPT.tldr(history)
+            console.log(res);
+            let resText = res.choices[0].text.trim();
+            return sock.sendMessage(id, { text: resText })
+        } catch (error) {
+            console.error(error);
+            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+        }
 
-    // }
+    }
 
     /**#######
      * YOUTUBE
@@ -455,17 +458,16 @@ async function handleMessage(sock, msg, mongo) {
 
 
     // no command - answer with ChatGPT
-    // if (!msg.key.remoteJid.includes("@g.us")) {
-    //     try {
-    //         let history = await store.loadMessages(id, 8);
-    //         let res = await chatGPT.chat(history, id)
-    //         return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
-    //     } catch (error) {
-    //         return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-    //     }
-
-
-    // }
+    if (!msg.key.remoteJid.includes("@g.us")) {
+        try {
+            let history = await store.loadMessages(id, 8);
+            let res = await unofficalGPT.waMsgs(history)
+            console.log(res);
+            return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+        } catch (error) {
+            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+        }
+    }
 }
 
 /**
