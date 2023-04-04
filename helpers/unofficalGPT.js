@@ -142,7 +142,7 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
         prompt += `${pushName}: ${text}\n`;
         //stopsChat.push(pushName);
     }
-    prompt += "TL:DR this conversions with details: ";
+    prompt += "Summarize the conversation as briefly as possible but with as much detail as possible";
 
     // remove duplicate
     //stopsChat = [...new Set(stopsChat)];
@@ -151,7 +151,7 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
         "model": "text-davinci-003",
         "prompt": prompt,
         "temperature": 0.7,
-        "max_tokens": 512
+        "max_tokens": 850
     }
 
     return new Promise((resolve, reject) => {
