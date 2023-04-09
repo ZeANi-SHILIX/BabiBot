@@ -19,15 +19,18 @@ let noteHendler = new NoteHendler();
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  * @param {import('@adiwajshing/baileys').WASocket} sock 
  * @param {Boolean} isGlobal optional, default is false
+ * @param {boolean} issuperuser optional, default is null
  */
-NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false) {
+NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, issuperuser = null) {
     let id = msg.key.remoteJid;
 
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
     let q = msgText.split(" ")[1];
     if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" });
 
-
+    // check premissions
+    if (isGlobal && issuperuser !== true)
+        return sock.sendMessage(id, { text: "אופס... אין לך הרשאה לשמור הערה גלובלית" });
 
     let quoted;
     try {
@@ -85,9 +88,9 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false) {
  * 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  * @param {import('@adiwajshing/baileys').WASocket} sock 
- * @param {string} superuser 
+ * @param {boolean} issuperuser 
  */
-NoteHendler.prototype.deleteNote = async function (msg, sock, superuser) {
+NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = false) {
     let id = msg.key.remoteJid;
 
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
@@ -95,31 +98,42 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, superuser) {
 
     if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" });
 
-    let search = await savedNotes.findOne({ q: q });
-    let searchMedia = await mediaNote.findOne({ q: q });
-    if (!search && !searchMedia) return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" });
+    let search = await savedNotes.find({ q: q });
+    let searchMedia = await mediaNote.find({ q: q });
 
-    // check permissions
-    if (search?.chat !== id && search?.isGlobal == false && id !== superuser && msg.key.participant !== superuser)
-        return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
+    // filter the notes
+    search = search.filter(note => note.chat === id || note.isGlobal == true);
+    searchMedia = searchMedia.filter(note => note.chat === id || note.isGlobal == true);
 
-    if (searchMedia?.chat !== id && searchMedia?.isGlobal == false && id !== superuser && msg.key.participant !== superuser)
-        return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
-
-    // delete the note
-    if (search) return savedNotes.deleteOne({ _id: search._id }, (err, res) => {
-        if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
-
-        sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
-    });
-
-    mediaNote.deleteOne({ _id: searchMedia._id }, (err, res) => {
-        if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
-
-        sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
-    });
+    if (search.length === 0 && searchMedia.length === 0)
+        return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" });
 
 
+    for (const note of search) {
+        // check permissions
+        if (note.isGlobal == true && issuperuser !== true)
+            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
+
+        // delete the note
+        savedNotes.deleteOne({ _id: search._id }, (err, res) => {
+            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
+
+            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
+        })
+    }
+
+    for (const note of searchMedia) {
+        // check permissions
+        if (note.isGlobal == true && issuperuser !== true)
+            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
+
+        // delete the note
+        mediaNote.deleteOne({ _id: searchMedia._id }, (err, res) => {
+            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
+
+            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
+        });
+    }
 }
 
 /**
@@ -206,7 +220,7 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
         case MsgType.STICKER:
             return sock.sendMessage(id, { sticker: resultMedia.buffer, mimetype: resultMedia.mimetype });
         case MsgType.DOCUMENT:
-            return sock.sendMessage(id, { document: resultMedia.buffer, mimetype: resultMedia.mimetype , fileName: resultMedia.fileName });
+            return sock.sendMessage(id, { document: resultMedia.buffer, mimetype: resultMedia.mimetype, fileName: resultMedia.fileName });
     }
 }
 

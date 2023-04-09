@@ -95,7 +95,7 @@ UnofficalGPT.prototype.waMsgs = async function (msgs) {
             {
                 role: "system",
                 content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
-                    + process.env.MAILLIST ? `you have mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
+                    + process.env.MAILLIST ? `only if ask for mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
             }
         ]
     }
@@ -142,7 +142,7 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
         prompt += `${pushName}: ${text}\n`;
         //stopsChat.push(pushName);
     }
-    prompt += "Summarize the conversation as briefly as possible but with as much detail as possible";
+    prompt += "Summarize the conversation as briefly as possible but with as much detail as possible\n";
 
     // remove duplicate
     //stopsChat = [...new Set(stopsChat)];
@@ -153,6 +153,8 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
         "temperature": 0.7,
         "max_tokens": 512
     }
+
+    console.log(prompt);
 
     return new Promise((resolve, reject) => {
         fetch(this.text, {

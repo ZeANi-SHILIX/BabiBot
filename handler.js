@@ -313,7 +313,12 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith('!Gsave') || textMsg.startsWith('!גשמור')) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
-        return noteHendler.saveNote(msg, sock, true);
+
+        let issuperuser = false;
+        if (msg.key.remoteJid === superuser || msg.key.participant === superuser)
+            issuperuser = true;
+
+        return noteHendler.saveNote(msg, sock, true, issuperuser);
     }
 
     // delete note
@@ -321,7 +326,11 @@ async function handleMessage(sock, msg, mongo) {
         if (!mongo.isConnected)
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
-        return noteHendler.deleteNote(msg, sock, superuser);
+        let issuperuser = false;
+        if (msg.key.remoteJid === superuser || msg.key.participant === superuser)
+            issuperuser = true;
+
+        return noteHendler.deleteNote(msg, sock, issuperuser);
     }
 
     // get note
@@ -358,7 +367,7 @@ async function handleMessage(sock, msg, mongo) {
                 let str = mail.c[0].v;
                 let nickname = mail.c[1]?.v || "";
                 //console.log(str, arr_search);
-                
+
                 if (arr_search.every(s => str.includes(s) || nickname.includes(s))) {
                     console.log(mail);
                     countMails += 1;
@@ -406,8 +415,8 @@ async function handleMessage(sock, msg, mongo) {
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
-            let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim())
-            return sock.sendMessage(id, { text: res.choices[0].text })
+            let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            return sock.sendMessage(id, { text: res.choices?.[0]?.text?.trim() })
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
@@ -416,16 +425,16 @@ async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
         try {
-            let numMsgToLoad = parseInt(textMsg.replace(/\d+/g, ""));
-            numMsgToLoad = numMsgToLoad > 1 ? numMsgToLoad : 15;
+            // get num from message
+            let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 15);
 
             let history = await store.loadMessages(id, numMsgToLoad);
             history.pop(); // we don't want the last message (the one we got now)
-            //console.log(history);
+            console.log('history length loaded:', history.length);
 
             let res = await unofficalGPT.tldr(history)
             console.log(res);
-            let resText = res.choices[0].text.trim();
+            let resText = res.choices?.[0]?.text?.trim();
             return sock.sendMessage(id, { text: resText })
         } catch (error) {
             console.error(error);
@@ -462,7 +471,7 @@ async function handleMessage(sock, msg, mongo) {
         try {
             let history = await store.loadMessages(id, 8);
             let res = await unofficalGPT.waMsgs(history)
-            console.log(res);
+            console.log(res.choices);
             return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
         } catch (error) {
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
@@ -503,6 +512,9 @@ async function muteGroup(msg, muteTime_min) {
         GLOBAL.sock.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות` })
 
     setTimeout(async () => {
+        let groupData = await GLOBAL.sock.groupMetadata(id);
+        if (!groupData.announce) return;
+
         await GLOBAL.sock.groupSettingUpdate(id, 'not_announcement');
         GLOBAL.sock.sendMessage(id, { text: "הקבוצה פתוחה" })
     }, muteTime_min * ONE_MINUTE);
