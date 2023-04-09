@@ -1,4 +1,5 @@
 const { downloadMediaMessage } = require('@adiwajshing/baileys')
+const messageRetryHandler = require("../src/retryHandler")
 
 const savedNotes = require('../src/notes');
 const mediaNote = require('../src/mediaNote');
@@ -26,11 +27,11 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
 
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
     let q = msgText.split(" ")[1];
-    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" });
+    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" }).then(messageRetryHandler.addMessage);
 
     // check premissions
     if (isGlobal && issuperuser !== true)
-        return sock.sendMessage(id, { text: "אופס... אין לך הרשאה לשמור הערה גלובלית" });
+        return sock.sendMessage(id, { text: "אופס... אין לך הרשאה לשמור הערה גלובלית" }).then(messageRetryHandler.addMessage);
 
     let quoted;
     try {
@@ -43,7 +44,7 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
     // ### text note ### (no quoted message or quoted message is text)
     if (type == MsgType.TEXT) {
         let a = msgText.split(" ").slice(2).join(" ") || msg.message.extendedTextMessage?.text || "";
-        if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" });
+        if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" }).then(messageRetryHandler.addMessage);
 
         // check if the note already exist in global or in the chat
         let result = await savedNotes.findOne({ q: q });
@@ -54,7 +55,7 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
         return savedNotes.create({ q: q, a: a, chat: id, isGlobal: isGlobal }, (err, res) => {
             if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
 
-            sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" });
+            sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" }).then(messageRetryHandler.addMessage);;
         });
     }
 
@@ -67,7 +68,7 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
     if (type == MsgType.DOCUMENT) {
         nameFile = quoted.message.documentMessage.fileName;
         let size = buffer.length / 1024 / 1024;
-        if (size > 15) return sock.sendMessage(id, { text: "אופס... הקובץ גדול מדי" });
+        if (size > 15) return sock.sendMessage(id, { text: "אופס... הקובץ גדול מדי" }).then(messageRetryHandler.addMessage);
     }
 
     mediaNote.create({
@@ -77,9 +78,9 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
         chat: id, isGlobal: isGlobal
     }, (err, res) => {
         console.log(res);
-        if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
+        if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" }).then(messageRetryHandler.addMessage);
 
-        sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" });
+        sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" }).then(messageRetryHandler.addMessage);
     });
 
 }
@@ -96,7 +97,7 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = fals
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
     let q = msgText.split(" ")[1];
 
-    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" });
+    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" }).then(messageRetryHandler.addMessage);
 
     let search = await savedNotes.find({ q: q });
     let searchMedia = await mediaNote.find({ q: q });
@@ -106,32 +107,32 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = fals
     searchMedia = searchMedia.filter(note => note.chat === id || note.isGlobal == true);
 
     if (search.length === 0 && searchMedia.length === 0)
-        return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" });
+        return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" }).then(messageRetryHandler.addMessage);
 
 
     for (const note of search) {
         // check permissions
         if (note.isGlobal == true && issuperuser !== true)
-            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
+            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" }).then(messageRetryHandler.addMessage);
 
         // delete the note
         savedNotes.deleteOne({ _id: search._id }, (err, res) => {
-            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
+            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" }).then(messageRetryHandler.addMessage);
 
-            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
+            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" }).then(messageRetryHandler.addMessage);
         })
     }
 
     for (const note of searchMedia) {
         // check permissions
         if (note.isGlobal == true && issuperuser !== true)
-            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" });
+            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" }).then(messageRetryHandler.addMessage);
 
         // delete the note
         mediaNote.deleteOne({ _id: searchMedia._id }, (err, res) => {
-            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" });
+            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" }).then(messageRetryHandler.addMessage);
 
-            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" });
+            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" }).then(messageRetryHandler.addMessage);
         });
     }
 }
@@ -160,7 +161,7 @@ NoteHendler.prototype.getAllNotes = async function (msg, sock) {
     let privateNotes = [...resultPrivate, ...resultPrivateMedia];
 
     if (globalNotes.length === 0 && privateNotes.length === 0)
-        return sock.sendMessage(id, { text: "לא קיימות הערות" });
+        return sock.sendMessage(id, { text: "לא קיימות הערות" }).then(messageRetryHandler.addMessage);
 
     // create the message
     let str = "";
@@ -179,7 +180,7 @@ NoteHendler.prototype.getAllNotes = async function (msg, sock) {
 
     str += "\nניתן לגשת להערה על ידי # או על ידי הפקודה !get";
 
-    return sock.sendMessage(id, { text: str });
+    return sock.sendMessage(id, { text: str }).then(messageRetryHandler.addMessage);
 }
 
 /**
@@ -197,30 +198,35 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
 
     // note with text
     let result = await savedNotes.findOne({ q: q, chat: id });
-    if (result) return sock.sendMessage(id, { text: result.a });
+    if (result) return sock.sendMessage(id, { text: result.a }).then(messageRetryHandler.addMessage);
 
     result = await savedNotes.findOne({ q: q, isGlobal: true });
-    if (result) return sock.sendMessage(id, { text: result.a });
+    if (result) return sock.sendMessage(id, { text: result.a }).then(messageRetryHandler.addMessage);
 
     // note with media
     let resultMedia = await mediaNote.findOne({ q: q, chat: id });
     if (!resultMedia) resultMedia = await mediaNote.findOne({ q: q, isGlobal: true });
 
     // note not found
-    if (!result && !resultMedia) return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" });
+    if (!result && !resultMedia) return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" }).then(messageRetryHandler.addMessage);
 
     // send the media
     switch (resultMedia.type) {
         case MsgType.IMAGE:
-            return sock.sendMessage(id, { image: resultMedia.buffer, mimetype: resultMedia.mimetype });
+            return sock.sendMessage(id, { image: resultMedia.buffer, mimetype: resultMedia.mimetype })
+                .then(messageRetryHandler.addMessage);
         case MsgType.VIDEO:
-            return sock.sendMessage(id, { video: resultMedia.buffer, mimetype: resultMedia.mimetype });
+            return sock.sendMessage(id, { video: resultMedia.buffer, mimetype: resultMedia.mimetype })
+                .then(messageRetryHandler.addMessage);
         case MsgType.AUDIO:
-            return sock.sendMessage(id, { audio: resultMedia.buffer, mimetype: resultMedia.mimetype });
+            return sock.sendMessage(id, { audio: resultMedia.buffer, mimetype: resultMedia.mimetype })
+                .then(messageRetryHandler.addMessage);
         case MsgType.STICKER:
-            return sock.sendMessage(id, { sticker: resultMedia.buffer, mimetype: resultMedia.mimetype });
+            return sock.sendMessage(id, { sticker: resultMedia.buffer, mimetype: resultMedia.mimetype })
+                .then(messageRetryHandler.addMessage);
         case MsgType.DOCUMENT:
-            return sock.sendMessage(id, { document: resultMedia.buffer, mimetype: resultMedia.mimetype, fileName: resultMedia.fileName });
+            return sock.sendMessage(id, { document: resultMedia.buffer, mimetype: resultMedia.mimetype, fileName: resultMedia.fileName })
+                .then(messageRetryHandler.addMessage);
     }
 }
 

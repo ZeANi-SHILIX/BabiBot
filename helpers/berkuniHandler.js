@@ -2,6 +2,7 @@ const { store } = require('../src/storeMsg');
 const { downloadMediaMessage } = require('@adiwajshing/baileys');
 const barkuniDB = require('../src/barkuni');
 const { Sticker } = require('wa-sticker-formatter');
+const messageRetryHandler = require("../src/retryHandler")
 
 
 /**
@@ -19,11 +20,11 @@ async function BarkuniSticker(msg, sock, superuser) {
         if (!msgID) return;
 
         let quotedMessage = await store.loadMessage(id, msgID);
-        if (!quotedMessage) return;
+        // if no quoted message, continue to search for sticker
+        if (!quotedMessage) return searchBarkuni(sock, id);
 
         // check if sender is superuser
-        if (!msg.key.participant?.includes(superuser) || 
-            !id?.includes(superuser)) 
+        if (!(id?.includes(superuser) || msg.key.participant?.includes(superuser)))
             return sock.sendMessage(id, { text: "אופס... אין לך הרשאה להוסיף סטיקרי ברקוני" });
 
 
@@ -48,6 +49,15 @@ async function BarkuniSticker(msg, sock, superuser) {
     }
 
     // send random sticker from database
+    searchBarkuni(sock, id);
+}
+
+/**
+ * send random sticker from database
+ * @param {import('@adiwajshing/baileys').WASocket} sock 
+ * @param {string} id 
+ */
+async function searchBarkuni(sock, id) {
     const numItems = await barkuniDB.estimatedDocumentCount()
     if (numItems === 0) return sock.sendMessage(id, { text: "אופס... אין לי סטיקרים" });
 
@@ -61,9 +71,7 @@ async function BarkuniSticker(msg, sock, superuser) {
         quality: 40
     });
 
-    sock.sendMessage(id, await sticker.toMessage());
-
-
+    sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);;
 }
 
 exports = module.exports = BarkuniSticker;
