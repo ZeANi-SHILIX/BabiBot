@@ -22,8 +22,8 @@ async function BarkuniSticker(msg, sock, superuser) {
         if (!quotedMessage) return;
 
         // check if sender is superuser
-        if (msg.key.participant !== superuser || 
-            id !== superuser) 
+        if (!msg.key.participant?.includes(superuser) || 
+            !id?.includes(superuser)) 
             return sock.sendMessage(id, { text: "אופס... אין לך הרשאה להוסיף סטיקרי ברקוני" });
 
 

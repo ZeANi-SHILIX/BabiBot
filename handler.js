@@ -315,7 +315,7 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
         let issuperuser = false;
-        if (msg.key.remoteJid === superuser || msg.key.participant === superuser)
+        if (msg.key.remoteJid?.includes(superuser) || msg.key.participant?.includes(superuser))
             issuperuser = true;
 
         return noteHendler.saveNote(msg, sock, true, issuperuser);
@@ -327,7 +327,7 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
 
         let issuperuser = false;
-        if (msg.key.remoteJid === superuser || msg.key.participant === superuser)
+        if (msg.key.remoteJid?.includes(superuser) || msg.key.participant?.includes(superuser))
             issuperuser = true;
 
         return noteHendler.deleteNote(msg, sock, issuperuser);
