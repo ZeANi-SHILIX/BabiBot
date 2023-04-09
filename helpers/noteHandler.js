@@ -116,7 +116,7 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = fals
             return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" }).then(messageRetryHandler.addMessage);
 
         // delete the note
-        savedNotes.deleteOne({ _id: search._id }, (err, res) => {
+        savedNotes.deleteOne({ _id: note._id }, (err, res) => {
             if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" }).then(messageRetryHandler.addMessage);
 
             sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" }).then(messageRetryHandler.addMessage);
@@ -129,7 +129,7 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = fals
             return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" }).then(messageRetryHandler.addMessage);
 
         // delete the note
-        mediaNote.deleteOne({ _id: searchMedia._id }, (err, res) => {
+        mediaNote.deleteOne({ _id: note._id }, (err, res) => {
             if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" }).then(messageRetryHandler.addMessage);
 
             sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" }).then(messageRetryHandler.addMessage);
