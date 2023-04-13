@@ -12,6 +12,7 @@ const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 require('dotenv').config();
 const fetch = require('node-fetch');
+const axios = require('axios').default;
 const fs = require("fs");
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
@@ -428,7 +429,12 @@ async function handleMessage(sock, msg, mongo) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
             console.log(resImage.data[0].url);
-            return sock.sendMessage(id, { image: resImage.data[0].url }).then(messageRetryHandler.addMessage);
+
+            // download image
+            // let imageData = await axios.get(urlimage, { responseType: 'arraybuffer' });
+            // // upload image
+            // let res = await sock.sendMessage(id, image.data, MessageType.image, { mimetype: Mimetype.png, caption: "תמונה מגנט" });
+            return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
