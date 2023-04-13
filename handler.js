@@ -416,10 +416,21 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
             let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            return sock.sendMessage(id, { text: res.choices?.[0]?.text?.trim() })
+            return sock.sendMessage(id, { text: res.choices?.[0]?.text?.trim() }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+        }
+    }
+
+    // get image from GPT
+    if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
+        try {
+            let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
+            return sock.sendMessage(id, { image: resImage.data[0].url }).then(messageRetryHandler.addMessage);
+        } catch (error) {
+            console.error(error);
+            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
         }
     }
 

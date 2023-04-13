@@ -43,7 +43,7 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
 
     // ### text note ### (no quoted message or quoted message is text)
     if (type == MsgType.TEXT) {
-        let a = msgText.split(" ").slice(2).join(" ") || msg.message.extendedTextMessage?.text || "";
+        let a = msg.message.extendedTextMessage?.text || msgText.split(" ").slice(2).join(" ") ||  "";
         if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" }).then(messageRetryHandler.addMessage);
 
         // check if the note already exist in global or in the chat

@@ -95,7 +95,7 @@ UnofficalGPT.prototype.waMsgs = async function (msgs) {
             {
                 role: "system",
                 content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
-                    + process.env.MAILLIST ? `only if ask for mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
+                    + process.env.MAILLIST ? `only if ask for a mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
             }
         ]
     }
