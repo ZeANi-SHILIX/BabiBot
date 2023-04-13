@@ -427,6 +427,7 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
+            console.log(resImage.data[0].url);
             return sock.sendMessage(id, { image: resImage.data[0].url }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
