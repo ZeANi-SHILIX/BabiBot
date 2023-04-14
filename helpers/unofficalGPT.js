@@ -17,19 +17,26 @@ function UnofficalGPT(auth) {
  * ask question to the bot
  * @param {String} prompt 
  * @returns {Promise<{
- *              "object":"text_completion",
- *              "model":"text-davinci-003",
- *              "choices":[{
+ *              object:"text_completion",
+ *              model:"text-davinci-003",
+ *              choices:[{
  *                  "text":" Hi there! How can I help you?",
  *                  "index":0,
  *                  "finish_reason":"stop",
  *                  "logprobs":null}],
- *              "usage":{
+ *              usage:{
  *                  "prompt_tokens":7,
  *                  "completion_tokens":9,
  *                  "total_tokens":16
  *              }
- *          }>}
+ *          } | {
+ *  status: false,
+ *  error: 'You have run out of credits',
+ *  hint: 'You can wait for your daily reset',
+ *  info: 'https://gist.github.com/PawanOsman/72dddd0a12e5829da664a43fc9b9cf9a',
+ *  support: 'https://discord.pawan.krd'
+ *  }
+ *  >}
  */
 UnofficalGPT.prototype.ask = async function (prompt) {
     return new Promise((resolve, reject) => {
@@ -67,7 +74,14 @@ UnofficalGPT.prototype.ask = async function (prompt) {
  *  },"finish_reason": "stop"}],
  *"usage": {
  *  "prompt_tokens": 9,"completion_tokens": 12,"total_tokens": 21}
- *}>}
+ *} | {
+ *  status: false,
+ *  error: 'You have run out of credits',
+ *  hint: 'You can wait for your daily reset',
+ *  info: 'https://gist.github.com/PawanOsman/72dddd0a12e5829da664a43fc9b9cf9a',
+ *  support: 'https://discord.pawan.krd'
+ *}
+ *  >}
  */
 UnofficalGPT.prototype.chat = async function (data) {
     return new Promise((resolve, reject) => {
@@ -125,7 +139,13 @@ UnofficalGPT.prototype.waMsgs = async function (msgs) {
 *                  "completion_tokens":9,
 *                  "total_tokens":16
 *              }
-*          }>}
+*          }| {
+*      status: false,
+*      error: 'You have run out of credits',
+*      hint: 'You can wait for your daily reset',
+*      info: 'https://gist.github.com/PawanOsman/72dddd0a12e5829da664a43fc9b9cf9a',
+*      support: 'https://discord.pawan.krd'
+*    }>}
  */
 UnofficalGPT.prototype.tldr = async function (msgs) {
     //let stopsChat = [];
@@ -178,7 +198,13 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
  *                  "data": [{
  *                      "url": "https://..."
  *                  }]
- *           }>}
+ *           }| {
+*  status: false,
+*  error: 'You have run out of credits',
+*  hint: 'You can wait for your daily reset',
+*  info: 'https://gist.github.com/PawanOsman/72dddd0a12e5829da664a43fc9b9cf9a',
+*  support: 'https://discord.pawan.krd'
+*}>}
  */
 UnofficalGPT.prototype.image = async function (prompt) {
     return new Promise((resolve, reject) => {

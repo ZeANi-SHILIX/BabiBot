@@ -418,8 +418,9 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
             let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            console.log(res?.choices?.[0]?.text?.trim() || res);
-            return sock.sendMessage(id, { text: res.choices?.[0]?.text?.trim() }).then(messageRetryHandler.addMessage);
+            console.log(res?.choices?.[0]?.text?.trim() || res.error);
+            let retText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
+            return sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
@@ -430,8 +431,9 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
-            console.log(resImage?.data?.[0]?.url || resImage);
-            return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
+            if(resImage?.data?.[0]?.url)
+                return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
+            return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
@@ -449,7 +451,7 @@ async function handleMessage(sock, msg, mongo) {
 
             let res = await unofficalGPT.tldr(history)
             console.log(res);
-            let resText = res.choices?.[0]?.text?.trim();
+            let resText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;;
             return sock.sendMessage(id, { text: resText })
         } catch (error) {
             console.error(error);
@@ -490,8 +492,9 @@ async function handleMessage(sock, msg, mongo) {
         try {
             let history = await store.loadMessages(id, 8);
             let res = await unofficalGPT.waMsgs(history)
-            console.log(res.choices || res);
-            return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+            if (res?.choices?.[0]?.message?.content)
+                return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+            return sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
