@@ -63,10 +63,10 @@ async function sendSticker(msg, sock, msgTypeSticker) {
             const buffer = await downloadMediaMessage(quoted, 'buffer', {})
             const sticker = new Sticker(buffer, {
                 pack: '🎉',
-                author: 'BabilaBot',
+                author: 'BabiBot',
                 type: type,
                 categories: ['🤩', '🎉'],
-                quality: 40
+                quality: 30
             });
             return sock.sendMessage(id, await sticker.toMessage());
         }
@@ -83,7 +83,7 @@ async function sendSticker(msg, sock, msgTypeSticker) {
 
         const sticker = new Sticker(textToSticker(message), {
             pack: '🎉',
-            author: 'BabilaBot',
+            author: 'BabiBot',
             categories: ['🤩', '🎉'],
             quality: 50
         });

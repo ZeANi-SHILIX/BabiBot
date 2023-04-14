@@ -3,6 +3,7 @@ const noteHendler = require('./helpers/noteHandler');
 const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
+const { getOmerDay } = require('./helpers/hebrewDate')
 //const { msgQueue } = require('./src/QueueObj')
 //const savedNotes = require('./src/notes')
 const { store, GLOBAL } = require('./src/storeMsg')
@@ -417,6 +418,7 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
             let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            console.log(res?.choices?.[0]?.text?.trim() || res);
             return sock.sendMessage(id, { text: res.choices?.[0]?.text?.trim() }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
@@ -428,12 +430,7 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
-            console.log(resImage.data[0].url);
-
-            // download image
-            // let imageData = await axios.get(urlimage, { responseType: 'arraybuffer' });
-            // // upload image
-            // let res = await sock.sendMessage(id, image.data, MessageType.image, { mimetype: Mimetype.png, caption: "תמונה מגנט" });
+            console.log(resImage?.data?.[0]?.url || resImage);
             return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
@@ -483,15 +480,20 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` }).then(messageRetryHandler.addMessage)
     }
 
+    // Omer count
+    if (textMsg.includes("!omer") || textMsg.includes("!עומר")) {
+        return sock.sendMessage(id, { text: `היום ${getOmerDay().render("he")}` }).then(messageRetryHandler.addMessage)
+    }
 
     // no command - answer with ChatGPT
     if (!msg.key.remoteJid.includes("@g.us")) {
         try {
             let history = await store.loadMessages(id, 8);
             let res = await unofficalGPT.waMsgs(history)
-            console.log(res.choices);
+            console.log(res.choices || res);
             return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
         } catch (error) {
+            console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
         }
     }

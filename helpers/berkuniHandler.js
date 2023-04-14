@@ -65,9 +65,7 @@ async function searchBarkuni(sock, id) {
     const randomItem = await barkuniDB.findOne().skip(rand)
 
     const sticker = new Sticker(randomItem.buffer, {
-        pack: '🎉',
-        author: 'BabilaBot',
-        categories: ['🤩', '🎉'],
+        author: 'BabiBot',
         quality: 40
     });
 
