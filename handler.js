@@ -422,13 +422,14 @@ async function handleMessage(sock, msg, mongo) {
             let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0]?.text?.trim() || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
-            sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
+            await sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
             sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         } catch (error) {
             console.error(error);
-            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
+        return;
     }
 
     // get image from GPT
@@ -446,6 +447,7 @@ async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
         try {
+            await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             // get num from message
             let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 15);
 
@@ -455,12 +457,13 @@ async function handleMessage(sock, msg, mongo) {
 
             let res = await unofficalGPT.tldr(history)
             console.log(res);
-            let resText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;;
+            let resText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
+            await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
             return sock.sendMessage(id, { text: resText })
         } catch (error) {
             console.error(error);
-            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-            sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
+            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            return sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
 
     }
@@ -476,7 +479,8 @@ async function handleMessage(sock, msg, mongo) {
         return Downloader(vidID, id, sock)
             .then(async data => {
                 await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' }).then(messageRetryHandler.addMessage)
-                sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
+                await sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
+                sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
                 fs.unlinkSync(data.file);
             });
     }
@@ -495,18 +499,18 @@ async function handleMessage(sock, msg, mongo) {
     // no command - answer with ChatGPT
     if (!msg.key.remoteJid.includes("@g.us")) {
         try {
-            let history = await store.loadMessages(id, 8);
+            let history = await store.loadMessages(id, 20);
             let res = await unofficalGPT.waMsgs(history)
             if (res?.choices?.[0]?.message?.content) {
-                sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+                await sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
                 return sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
 
             }
-            sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
+            await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         } catch (error) {
             console.error(error);
-            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
     }
