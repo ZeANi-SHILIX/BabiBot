@@ -63,6 +63,7 @@ function Downloader(track, userID, sock) {
             //console.error("Error", error);
             info.deleteYouTubeProgress(userID);
             sock.sendMessage(userID, { text: "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?" })
+            sock.sendMessage(userID, { react: { text: '❌', key: msg.key } });
             reject(error);
         });
     });

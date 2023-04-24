@@ -352,6 +352,8 @@ async function handleMessage(sock, msg, mongo) {
 
     // get mails
     if (textMsg.includes("מייל של ")) {
+        sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
+
         let mails = await getMails();
 
         let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7)
@@ -399,6 +401,7 @@ async function handleMessage(sock, msg, mongo) {
                 }).then(messageRetryHandler.addMessage)
 
         }
+        sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         return;
     }
 
@@ -418,21 +421,25 @@ async function handleMessage(sock, msg, mongo) {
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
+            sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0]?.text?.trim() || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
-            return sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
+            sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
+            sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         } catch (error) {
             console.error(error);
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+            sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
+        return
     }
 
     // get image from GPT
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
-            if(resImage?.data?.[0]?.url)
+            if (resImage?.data?.[0]?.url)
                 return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
             return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
         } catch (error) {
@@ -443,6 +450,7 @@ async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
         try {
+            sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             // get num from message
             let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 15);
 
@@ -452,20 +460,22 @@ async function handleMessage(sock, msg, mongo) {
 
             let res = await unofficalGPT.tldr(history)
             console.log(res);
-            let resText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;;
-            return sock.sendMessage(id, { text: resText })
+            let resText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
+            sock.sendMessage(id, { text: resText })
+            sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         } catch (error) {
             console.error(error);
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
-
+        return
     }
 
     /**#######
      * YOUTUBE
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
-
+        sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
         let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
         let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
 
@@ -473,6 +483,7 @@ async function handleMessage(sock, msg, mongo) {
             .then(async data => {
                 await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' }).then(messageRetryHandler.addMessage)
                 sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
+                sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
                 fs.unlinkSync(data.file);
             });
     }
@@ -491,15 +502,22 @@ async function handleMessage(sock, msg, mongo) {
     // no command - answer with ChatGPT
     if (!msg.key.remoteJid.includes("@g.us")) {
         try {
-            let history = await store.loadMessages(id, 8);
+            sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
+            let history = await store.loadMessages(id, 20);
             let res = await unofficalGPT.waMsgs(history)
-            if (res?.choices?.[0]?.message?.content)
-                return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
-            return sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
+            if (res?.choices?.[0]?.message?.content) {
+                sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+                return sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+
+            }
+            sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
+            sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         } catch (error) {
             console.error(error);
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
+        return
     }
 }
 
