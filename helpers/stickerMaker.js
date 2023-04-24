@@ -71,7 +71,8 @@ async function sendSticker(msg, sock, msgTypeSticker) {
             return sock.sendMessage(id, await sticker.toMessage());
         }
     } catch (error) {
-        //console.log(error);
+        console.log(error);
+        return sock.sendMessage(id, {text: "אופס... נראה שההודעה שציטטת אינה תקינה" })
     }
 
 
