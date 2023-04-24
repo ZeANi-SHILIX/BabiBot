@@ -492,10 +492,12 @@ async function handleMessage(sock, msg, mongo) {
     // no command - answer with ChatGPT
     if (!msg.key.remoteJid.includes("@g.us")) {
         try {
+            await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             let history = await store.loadMessages(id, 20);
             let res = await unofficalGPT.waMsgs(history)
             if (res?.choices?.[0]?.message?.content) {
-                returnsock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+                await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+                return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
             }
             await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
             console.log(res);
@@ -503,6 +505,7 @@ async function handleMessage(sock, msg, mongo) {
             console.error(error);
             await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
         }
+        await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
     }
 }
 
