@@ -401,7 +401,7 @@ async function handleMessage(sock, msg, mongo) {
                 }).then(messageRetryHandler.addMessage)
 
         }
-        sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+        await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         return;
     }
 
@@ -425,11 +425,11 @@ async function handleMessage(sock, msg, mongo) {
             let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0]?.text?.trim() || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
-            sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
+            await sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
             sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         } catch (error) {
             console.error(error);
-            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
         return
@@ -465,7 +465,7 @@ async function handleMessage(sock, msg, mongo) {
             sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         } catch (error) {
             console.error(error);
-            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
         return
@@ -510,11 +510,11 @@ async function handleMessage(sock, msg, mongo) {
                 return sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
 
             }
-            sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
+            await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         } catch (error) {
             console.error(error);
-            sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
             sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
         }
         return
