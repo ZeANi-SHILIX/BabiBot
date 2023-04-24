@@ -355,7 +355,7 @@ async function handleMessage(sock, msg, mongo) {
         let mails = await getMails();
 
         let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7)
-            .replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uDC00-\uDDFF])/g, "")
+            .replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
             .replace(/[?]/g, "")
             .replace("בבקשה", "").replace("המרצה ", "").replace("מרצה ", "")
             .replace("המתרגל ", "").replace("מתרגל ", "")
