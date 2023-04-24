@@ -6,21 +6,43 @@ const fs = require("fs");
  * this sock is updating while getting messages
  * @type {{ sock: import('@adiwajshing/baileys').WASocket
  *          muteGroup: {
- *              idGroup: {
- *                  messageID: {
+ *              "idGroup": {
+ *                  "messageID": {
  *                      reactionsCount: number,
  *                      minToMute: number,
  *                      startTime: number
  *                  }
  *              }
  *          },
- *         groupConfig: {
- *              idGroup: {
+ *          groupConfig: {
+ *              "idGroup": {
  *                  countUsers: number,
- *                  spam: string
+ *                  spam: string,
+ *                  feder: string
  *             }
- *        }
- * }}
+ *          },
+ *          quizLev: {
+ *              groups : {
+ *                  "groupID" : { 
+ *                      isActive: boolean, 
+ *                      hourOfQuiz: number,
+ *                      progress: {
+*                           bible: number, math: number, programming: number
+*                       },
+ *                       tempParticipates: {
+ *                          "userID": {timestamp: Number, group: string}
+ *                      },
+ *                      tempAnswer: any
+ *                  }
+ *              },
+ *              participates : {
+ *                  "userID": {
+ *                      group: string, name: string, score: number
+ *                  }
+ *              }, 
+ *                      
+ *          }
+ *      }}
 */
 const GLOBAL = {
     sock: null,

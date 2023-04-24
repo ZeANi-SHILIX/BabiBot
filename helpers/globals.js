@@ -165,7 +165,7 @@ Information.prototype.setSettingDialog = function (msg) {
     /** @type {Map} */
     let userInfo = this.map.get(idUser);
 
-    /** @type {{idGroup: String, stage : Number, countUser: Number, spam: String}}*/
+    /** @type {{idGroup: String, stage : Number, countUser: Number, spam: String, feder: String}}*/
     let dialog = userInfo.get("setGroup");
 
     if (!dialog)
@@ -204,6 +204,11 @@ Information.prototype.setSettingDialog = function (msg) {
             if (textMsg.includes("ערוך") || textMsg.includes("edit")) {
                 dialog.stage = 0;
             }
+            break;
+            case 4:
+                dialog.feder = textMsg;
+                dialog.stage = 3;
+                break;
     }
     userInfo.set("setGroup", dialog);
     this.map.set(idUser, userInfo);
