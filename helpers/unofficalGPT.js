@@ -58,6 +58,49 @@ UnofficalGPT.prototype.ask = async function (prompt) {
     })
 }
 
+/**
+ * ask question to the bot
+ * @param {String} prompt 
+ * @returns {Promise<{
+ *              object:"text_completion",
+ *              model:"text-davinci-003",
+ *              choices:[{
+ *                  "text":" Hi there! How can I help you?",
+ *                  "index":0,
+ *                  "finish_reason":"stop",
+ *                  "logprobs":null}],
+ *              usage:{
+ *                  "prompt_tokens":7,
+ *                  "completion_tokens":9,
+ *                  "total_tokens":16
+ *              }
+ *          } | {
+ *  status: false,
+ *  error: 'You have run out of credits',
+ *  hint: 'You can wait for your daily reset',
+ *  info: 'https://gist.github.com/PawanOsman/72dddd0a12e5829da664a43fc9b9cf9a',
+ *  support: 'https://discord.pawan.krd'
+ *  }
+ *  >}
+ */
+UnofficalGPT.prototype.ask2 = async function (prompt) {
+    let data = {
+        "max_tokens": 256,
+        "messages": [
+            {
+                role: "system",
+                content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
+                    + process.env.MAILLIST ? `only if ask for a mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    }
+    return await this.chat(data);
+}
+
 
 
 /**
