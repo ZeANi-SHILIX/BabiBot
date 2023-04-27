@@ -172,6 +172,7 @@ Information.prototype.setSettingDialog = function (msg) {
         return;
 
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+    textMsg = textMsg.trim();
 
     switch (dialog.stage) {
         case 0:
@@ -187,28 +188,30 @@ Information.prototype.setSettingDialog = function (msg) {
             dialog.stage = 2;
             break;
         case 2:
+            dialog.feder = textMsg;
+            dialog.stage = 3;
+            break;
+        case 3:
             if (textMsg.includes("כן") || textMsg.includes("yes")) {
                 GLOBAL.groupConfig[dialog.idGroup] = {
                     countUser: dialog.countUser,
-                    spam: dialog.spam
+                    spam: dialog.spam,
+                    feder: dialog.feder
                 }
                 userInfo.delete("setGroup");
                 this.map.set(idUser, userInfo);
-                return 3;
+                return 4;
             }
             if (textMsg.includes("לא") || textMsg.includes("no")) {
                 userInfo.delete("setGroup");
                 this.map.set(idUser, userInfo);
-                return 3;
+                return 4;
             }
             if (textMsg.includes("ערוך") || textMsg.includes("edit")) {
                 dialog.stage = 0;
             }
             break;
-            case 4:
-                dialog.feder = textMsg;
-                dialog.stage = 3;
-                break;
+
     }
     userInfo.set("setGroup", dialog);
     this.map.set(idUser, userInfo);

@@ -13,7 +13,6 @@ const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 require('dotenv').config();
 const fetch = require('node-fetch');
-const axios = require('axios').default;
 const fs = require("fs");
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
@@ -88,11 +87,13 @@ async function handleMessage(sock, msg, mongo) {
             case 1:
                 return sock.sendMessage(id, { text: "הכנס הודעה שתשלח בקבוצה בעת ההשתקה" }).then(messageRetryHandler.addMessage);
             case 2:
+                return sock.sendMessage(id, { text: "הכנס קוד פדרציה" }).then(messageRetryHandler.addMessage);
+            case 3:
                 return sock.sendMessage(id, {
                     text: getGroupConfig(id) +
                         "\nהאם ברצונך לשמור את השינויים?\nכן - לשמור,  לא - לביטול, ערוך - כדי לערוך שוב."
                 }).then(messageRetryHandler.addMessage);
-            case 3:
+            case 4:
                 return sock.sendMessage(id, { text: "ההגדרות נשמרו בהצלחה!" }).then(messageRetryHandler.addMessage);
         }
 
@@ -116,16 +117,19 @@ async function handleMessage(sock, msg, mongo) {
             + 'TEL;type=CELL;waid=911234567890:+91 12345 67890\n' // WhatsApp ID + phone number
             + 'EMAIL;INTERNET:test1@gmail.com\n' // email ID
             + 'END:VCARD'
-        const sentMsg = await sock.sendMessage(
-            id,
-            {
-                contacts: {
-                    displayName: 'Jeff',
-                    contacts: [{ vcard }]
-                }
-            }
-        )
-            .then(messageRetryHandler.addMessage);
+        // const sentMsg = await sock.sendMessage(
+        //     id,
+        //     {
+        //         contacts: {
+        //             displayName: 'Jeff',
+        //             contacts: [{ vcard }]
+        //         }
+        //     }
+        // )
+        //     .then(messageRetryHandler.addMessage);
+
+        let groupData = await sock.groupMetadata(id);
+        console.log(groupData);
     }
 
 
@@ -496,12 +500,12 @@ async function handleMessage(sock, msg, mongo) {
             await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             let history = await store.loadMessages(id, 20);
             let res = await unofficalGPT.waMsgs(history)
+            console.log(res?.choices);
             if (res?.choices?.[0]?.message?.content) {
                 await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
                 return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
             }
             await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
-            console.log(res);
         } catch (error) {
             console.error(error);
             await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
@@ -560,9 +564,11 @@ async function muteGroup(msg, muteTime_min) {
 function getGroupConfig(id) {
     let msgToSend = `*הגדרות הקבוצה:*\n`;
     if (GLOBAL.groupConfig?.[id]?.countUser)
-        msgToSend += `*מספר משתתפים להשתקה*: ${GLOBAL.groupConfig?.[id]?.countUser}\n`;
+        msgToSend += `*מספר משתתפים להשתקה:* ${GLOBAL.groupConfig?.[id]?.countUser}\n`;
     if (GLOBAL.groupConfig?.[id]?.spam)
-        msgToSend += `*ההודעה שתשלח בקבוצה בעת ההשתקה*:\n ${GLOBAL.groupConfig?.[id]?.spam}`;
+        msgToSend += `*ההודעה שתשלח בקבוצה בעת ההשתקה:* ${GLOBAL.groupConfig?.[id]?.spam}\n`;
+    if (GLOBAL.groupConfig?.[id]?.feder)
+        msgToSend += `*פדרציה:* ${GLOBAL.groupConfig?.[id]?.feder}\n`;
 
     msgToSend = GLOBAL.groupConfig?.[id] ? msgToSend : "אין הגדרות קבוצה";
     return msgToSend;
