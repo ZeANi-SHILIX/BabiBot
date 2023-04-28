@@ -40,10 +40,10 @@ async function sendSticker(msg, sock, msgTypeSticker) {
             const buffer = await downloadMediaMessage(msg, 'buffer', {})
             const sticker = new Sticker(buffer, {
                 pack: '🎉',
-                author: 'BabilaBot',
+                author: 'BabiBot',
                 type: type,
                 categories: ['🤩', '🎉'],
-                quality: 40
+                quality: 30
             });
             sock.sendMessage(id, await sticker.toMessage());
             console.log("sended sticker message", type)

@@ -501,7 +501,7 @@ async function handleMessage(sock, msg, mongo) {
             let history = await store.loadMessages(id, 20);
             let res = await unofficalGPT.waMsgs(history)
             console.log(res?.choices);
-            if (res?.choices?.[0]?.message?.content) {
+            if (res?.choices?.[0]?.message?.content !== undefined) {
                 await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
                 return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
             }
