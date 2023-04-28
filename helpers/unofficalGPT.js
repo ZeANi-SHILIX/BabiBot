@@ -86,6 +86,7 @@ UnofficalGPT.prototype.ask = async function (prompt) {
 UnofficalGPT.prototype.ask2 = async function (prompt) {
     let data = {
         "max_tokens": 256,
+        "model":"gpt-3.5-turbo",
         "messages": [
             {
                 role: "system",
@@ -148,6 +149,7 @@ UnofficalGPT.prototype.chat = async function (data) {
 UnofficalGPT.prototype.waMsgs = async function (msgs) {
     let data = {
         "max_tokens": 256,
+        "model": "gpt-3.5-turbo",
         "messages": [
             {
                 role: "system",
@@ -211,7 +213,8 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
     //stopsChat = [...new Set(stopsChat)];
 
     let data = {
-        "model": "text-davinci-003",
+        "model":"gpt-3.5-turbo",
+        //"model": "text-davinci-003",
         "prompt": prompt,
         "temperature": 0.7,
         "max_tokens": 512
