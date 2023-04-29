@@ -263,7 +263,7 @@ UnofficalGPT.prototype.image = async function (prompt) {
             body: JSON.stringify({
                 prompt,
                 n: 1,
-                size: "512x512"
+                size: "256x256"
             })
         }).then(res => res.json())
             .then(json => resolve(json))

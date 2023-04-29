@@ -438,6 +438,7 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
+            console.log(resImage?.data?.[0]?.url || resImage.error);
             if(resImage?.data?.[0]?.url)
                 return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
             return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
@@ -500,7 +501,7 @@ async function handleMessage(sock, msg, mongo) {
             await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             let history = await store.loadMessages(id, 20);
             let res = await unofficalGPT.waMsgs(history)
-            console.log(res?.choices);
+            console.log(JSON.stringify(res, null, 2));
             if (res?.choices?.[0]?.message?.content !== undefined) {
                 await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
                 return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
