@@ -4,6 +4,9 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const text2png = require('text2png');
+const { UltimateTextToImage } = require("ultimate-text-to-image");
+
+const messageRetryHandler = require("../src/retryHandler")
 
 const { store } = require('../src/storeMsg');
 const { MsgType, getMsgType } = require('./msgType');
@@ -72,7 +75,7 @@ async function sendSticker(msg, sock, msgTypeSticker) {
         }
     } catch (error) {
         console.log(error);
-        return sock.sendMessage(id, {text: "אופס... נראה שההודעה שציטטת אינה תקינה" })
+        return sock.sendMessage(id, { text: "אופס... נראה שההודעה שציטטת אינה תקינה" })
     }
 
 
@@ -82,13 +85,16 @@ async function sendSticker(msg, sock, msgTypeSticker) {
 
         if (message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
 
-        const sticker = new Sticker(textToSticker(message), {
-            pack: '🎉',
-            author: 'BabiBot',
-            categories: ['🤩', '🎉'],
-            quality: 50
-        });
-        sock.sendMessage(id, await sticker.toMessage());
+        const sticker = new Sticker(
+            //textToSticker(message),
+            textToSticker2(message),
+            {
+                pack: '🎉',
+                author: 'BabiBot',
+                categories: ['🤩', '🎉'],
+                quality: 50
+            });
+        sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
     }
 }
 
@@ -136,6 +142,57 @@ function textToSticker(text) {
     let v1_final = v1_arr.join('\n');
 
     return text2png(v1_final, style);
+}
+
+function textToSticker2(text) {
+    text = putEnterBetweenEmojis(text);
+    console.log(text);
+    return new UltimateTextToImage(text, {
+        width: 350,
+        maxWidth: 400,
+        maxHeight: 400,
+        fontFamily: "Arial",
+        // white color
+        fontColor: "#ffffff",
+        fontSize: 150,
+        //fontWeight: "bold",
+        minFontSize: 25,
+        lineHeight: 50,
+        autoWrapLineHeightMultiplier: 1.1,
+        //autoWrapLineHeight: 2,
+        margin: 10,
+        marginBottom: 10,
+        align: "center",
+        valign: "middle",
+        strokeSize: 2,
+        // backgroud color transparent
+        backgroundColor: "#00000000",
+    })
+        .render().toBuffer("image/png")
+}
+
+/**
+ * 
+ * @param {String} text 
+ * @returns 
+ */
+function putEnterBetweenEmojis(text) {
+    const regexAllEmojis = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}\u{200d}]*/ug;
+    let match = text.match(regexAllEmojis);
+    match = match.filter(i => i != '');
+
+    const arrText = text.split('\n');
+    for (let i = 0; i < arrText.length; i++) {
+        for (let j = 0; j < match.length; j++) {
+            if (arrText[i].endsWith(match[j])
+                && arrText[i + 1] && match[j + 1] // if not undefined
+                && arrText[i + 1].startsWith(match[j + 1])) {
+                arrText[i] += '\n';
+            }
+        }
+    }
+    return arrText.join('\n');
+
 }
 
 module.exports = sendSticker;
