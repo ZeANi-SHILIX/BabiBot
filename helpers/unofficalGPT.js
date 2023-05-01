@@ -86,7 +86,9 @@ UnofficalGPT.prototype.ask = async function (prompt) {
 UnofficalGPT.prototype.ask2 = async function (prompt) {
     let data = {
         "max_tokens": 256,
-        "model":"gpt-3.5-turbo",
+        //"model": "alpaca-13b",
+        "model":"vicuna-13b",
+        //"model":"gpt-3.5-turbo",
         "messages": [
             {
                 role: "system",
@@ -213,7 +215,7 @@ UnofficalGPT.prototype.tldr = async function (msgs) {
     //stopsChat = [...new Set(stopsChat)];
 
     let data = {
-        "model":"gpt-3.5-turbo",
+        "model": "gpt-3.5-turbo",
         //"model": "text-davinci-003",
         "prompt": prompt,
         "temperature": 0.7,
@@ -274,6 +276,12 @@ UnofficalGPT.prototype.image = async function (prompt) {
 
 module.exports = UnofficalGPT;
 
+async function test() {
+    const gpt = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY);
+    let res = await gpt.ask2("hi there how are you?");
+    console.log(res);
+}
+//test();
 //const gpt = new UnofficalGPT();
 // async function example() {
 //     let data = {

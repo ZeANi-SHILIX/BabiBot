@@ -3,7 +3,7 @@ const { Sticker, StickerTypes } = require('wa-sticker-formatter');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-const text2png = require('text2png');
+//const text2png = require('text2png');
 const { UltimateTextToImage } = require("ultimate-text-to-image");
 
 const messageRetryHandler = require("../src/retryHandler")
@@ -104,45 +104,45 @@ async function sendSticker(msg, sock, msgTypeSticker) {
  * @param {String} text 
  * @returns {Buffer} buffer as default 
  */
-function textToSticker(text) {
+// function textToSticker(text) {
 
-    const MAX_CHARS_IN_ROW = 20;
-    const style = {
-        font: "100px San Francisco",
-        textAlign: "center",
-        color: "white",
-        size: 20,
-        padding: 10,
-        strokeWidth: 3,
-        strokeColor: "black",
-    };
+//     const MAX_CHARS_IN_ROW = 20;
+//     const style = {
+//         font: "100px San Francisco",
+//         textAlign: "center",
+//         color: "white",
+//         size: 20,
+//         padding: 10,
+//         strokeWidth: 3,
+//         strokeColor: "black",
+//     };
 
-    let v1 = "";
-    let v1_arr = [];
-    let count = 0;
-    for (let ch of text) {
-        if (ch === '\n') {
-            count = 0;
-            v1_arr.push(v1);
-            v1 = "";
-        }
-        else if (ch === ' ' && count >= MAX_CHARS_IN_ROW) {
-            count = 0;
-            v1_arr.push(v1);
-            v1 = "";
-        }
-        else {
-            v1 += ch;
-            count++;
-        }
-    }
-    if (v1 != "") v1_arr.push(v1);
+//     let v1 = "";
+//     let v1_arr = [];
+//     let count = 0;
+//     for (let ch of text) {
+//         if (ch === '\n') {
+//             count = 0;
+//             v1_arr.push(v1);
+//             v1 = "";
+//         }
+//         else if (ch === ' ' && count >= MAX_CHARS_IN_ROW) {
+//             count = 0;
+//             v1_arr.push(v1);
+//             v1 = "";
+//         }
+//         else {
+//             v1 += ch;
+//             count++;
+//         }
+//     }
+//     if (v1 != "") v1_arr.push(v1);
 
-    console.log(v1_arr)
-    let v1_final = v1_arr.join('\n');
+//     console.log(v1_arr)
+//     let v1_final = v1_arr.join('\n');
 
-    return text2png(v1_final, style);
-}
+//     return text2png(v1_final, style);
+// }
 
 function textToSticker2(text) {
     text = putEnterBetweenEmojis(text);

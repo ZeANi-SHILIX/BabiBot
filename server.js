@@ -91,10 +91,14 @@ async function connectToWhatsApp() {
             if (!PRODUCTION) return; // avoid double handling in dev
 
             for (const msg of messages) {
-                if (!msg.message) return; // if there is no text or media message
-                if (msg.key.fromMe) return;
-
-                handlerQueue.add(() => handleMessage(sock, msg, mongo));
+                if (!msg.message || // if there is no text or media message
+                    msg.key.fromMe) {
+                    //do nothing
+                    continue;
+                }
+                else {
+                    handlerQueue.add(() => handleMessage(sock, msg, mongo));
+                }
             }
         }
     })
