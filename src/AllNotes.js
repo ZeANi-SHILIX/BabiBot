@@ -8,6 +8,7 @@ const Schema = mongoose.Schema;
  * @param type
  * @param mimetype
  * @param fileName
+ * @param caption
  * ##################
  *    access level
  * ##################
@@ -33,6 +34,10 @@ let allNotes = new Schema(
             required: false
         },
         fileName: {
+            type: String,
+            required: false
+        },
+        caption: {
             type: String,
             required: false
         },

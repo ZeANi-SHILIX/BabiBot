@@ -32,8 +32,9 @@ const fs = require("fs");
  *                       tempParticipates: {
  *                          "userID": {timestamp: Number, group: string}
  *                      },
- *                      tempAnswer: any
- *                  }
+ *                      tempAnswer: {
+ *                         type: string, answer: any    
+ *                      }
  *              },
  *              participates : {
  *                  "userID": {

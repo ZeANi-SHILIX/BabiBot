@@ -48,7 +48,7 @@ async function sendSticker(msg, sock, msgTypeSticker) {
                 categories: ['🤩', '🎉'],
                 quality: 30
             });
-            sock.sendMessage(id, await sticker.toMessage());
+            sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
             console.log("sended sticker message", type)
         }
         return;
@@ -71,7 +71,7 @@ async function sendSticker(msg, sock, msgTypeSticker) {
                 categories: ['🤩', '🎉'],
                 quality: 30
             });
-            return sock.sendMessage(id, await sticker.toMessage());
+            return sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
         }
     } catch (error) {
         console.log(error);

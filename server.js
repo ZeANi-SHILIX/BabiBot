@@ -37,9 +37,8 @@ async function connectToWhatsApp() {
         logger,
         version,
         msgRetryCounterMap,
-        retryRequestDelayMs: 300,
+        retryRequestDelayMs: 100,
         //syncFullHistory: true,
-        //shouldSyncHistoryMessage
         getMessage: messageRetryHandler.messageRetryHandler
     })
 
@@ -62,11 +61,13 @@ async function connectToWhatsApp() {
                 connectToWhatsApp()
             }
         } else if (connection === 'open') {
-            console.log('opened connection')
+            // consol in green color
+            console.log('\x1b[32m%s\x1b[0m', 'Baileys is connected!')
             GLOBAL.sock = sock;
         }
         if (connection === "connecting") {
-            console.log("connecting");
+            //console in yellow color
+            console.log('\x1b[33m%s\x1b[0m', 'connecting');
         }
         qr = update.qr;
     })

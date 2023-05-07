@@ -319,6 +319,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
                 question: q, answer: base64,
                 type: type, mimetype: mime,
                 fileName: nameFile,
+                caption: quoted.message.imageMessage?.caption || quoted.message.videoMessage?.caption || quoted.message.audioMessage?.caption || "",
                 chat: id, federation: feder
             }, (err, res) => {
                 console.log(res);

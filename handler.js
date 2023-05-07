@@ -476,12 +476,13 @@ async function handleMessage(sock, msg, mongo) {
         let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
         let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
 
-        return Downloader(vidID, id, sock)
+        Downloader(vidID, id, sock)
             .then(async data => {
                 await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' }).then(messageRetryHandler.addMessage)
                 await sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
                 fs.unlinkSync(data.file);
             });
+        return;
     }
     // get youtube progress
     if (textMsg.includes('%')) {

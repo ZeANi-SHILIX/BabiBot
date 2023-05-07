@@ -26,7 +26,7 @@ function isHebrewHolyday(date) {
         "Shushan Purim",
         "Yom HaAliyah",
         //"Yom HaShoah",
-        "Yom HaZikaron",
+        //"Yom HaZikaron",
         "Yom HaAtzma'ut",
         "Herzl Day",
         "Pesach Sheni",
