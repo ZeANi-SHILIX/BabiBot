@@ -1,5 +1,8 @@
+const { get } = require('mongoose');
 const { GLOBAL } = require('../src/storeMsg');
-const { getOmerDay } = require('./hebrewDate');
+const { getOmerDay, isHebrewHolyday } = require('./hebrewDate');
+const { getFireBaseQuiz } = require('./firebase');
+const messageRetryHandler = require('../src/retryHandler');
 
 const HOUR = 60 * 60 * 1000;
 const DEFAULT_HOUR_OF_QUIZ = 22;
@@ -7,16 +10,49 @@ let intervalID;
 
 /**
  * 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {import('@adiwajshing/baileys').WASocket} sock
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
  */
-function handleAnswerQuiz(msg, sock) {
-    let id = msg.key.remoteJid;
+function handleAnswerQuiz(msg) {
+    const id = msg.key.remoteJid;
+    const user = msg.key.participant;
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
 
     let groups = Object.keys(GLOBAL?.quizLev?.groups);
 
     if (!id in groups) return;
+
+    // uniq char for answer
+    if (!textMsg.includes("uniq")) return;
+
+    /** 
+     * @type {{isActive: boolean,hourOfQuiz: number,
+     *         progress: {ProgrammingQuiz: number, MathQuiz: number, BibleQuiz: number},
+     *         tempParticipates: {"userID": {timestamp: Number, group: string}},
+     *         tempAnswer: {typeQuestion: string, question: string, typeAnswer: string, answer: string}   
+     * }} 
+     * */
+    let currentGroup = GLOBAL.quizLev.groups[id];
+
+    // check the answer
+    if (currentGroup.tempAnswer.typeAnswer === "ABCD") {
+        // remove all non-english char
+        const tempText = textMsg.replace(/^[a-z]|[A-Z]/, "") // ??
+        if (textMsg.toLocaleLowerCase().includes(currentGroup.tempAnswer.answer.toLocaleLowerCase()))
+            currentGroup.tempParticipates[user] = {
+                timestamp : (new Date()).getTime(),
+                group: id
+            }
+    }
+
+    if (currentGroup.tempAnswer.typeAnswer === "freeText"){
+
+    }
+
+    if (currentGroup.tempAnswer.typeAnswer === "math"){
+
+    }
+
+
 }
 
 
@@ -31,13 +67,19 @@ async function sendQuizToGroups() {
         /** 
          * @type { {   isActive: boolean,hourOfQuiz: number,
          *              progress: {
-         *                  bible: number, math: number, programming: number
+         *                  ProgrammingQuiz: number, MathQuiz: number, BibleQuiz: number
          *              }
          *              tempParticipates: {
          *                  "userID": {timestamp: Number, group: string}
          *              },
-         *              tempAnswer: any
-         * }} */
+         *              tempAnswer: {
+         *                  typeQuestion: string;
+         *                  question: string;
+         *                  typeAnswer: string;
+         *                  answer: string;
+         *              }
+         * }} 
+         * */
         let currentGroup = GLOBAL.quizLev.groups[grp];
 
         // not active
@@ -48,33 +90,24 @@ async function sendQuizToGroups() {
         // not the time to send quiz
         if (time !== quizTime) continue;
 
+        const typeQuiz = day === 0 || day === 3 ? "ProgrammingQuiz" : day === 1 || day === 4 ? "MathQuiz" : day === 2 ? "BibleQuiz" : null;
 
-        // send quiz
-        switch (day) {
-            // send programming quiz
-            case 0:
-            case 3:
-                break;
-
-            // send math quiz
-            case 1:
-            case 4:
-                break;
-
-            // send bible quiz
-            case 2:
-                break;
-
-            // case 5:
-            //     break;
-            // case 6:
-            //     break;
-            default:
-                break;
+        if (process.env.NODE_ENV !== "production") {
+            // "Testing"?
+            console.log("typeQuiz", typeQuiz);
         }
 
-    }
+        const quizData = await getFireBaseQuiz(typeQuiz, currentGroup?.progress[typeQuiz]);
 
+        currentGroup.tempAnswer = quizData;
+
+        if (quizData.typeQuestion === "text") {
+            await GLOBAL.sock.sendMessage(grp, quizData.question).then(messageRetryHandler.addMessage);
+        }
+        else if (quizData.typeQuestion === "image") {
+            await GLOBAL.sock.sendMessage(grp, { image: { url: quizData.question } }).then(messageRetryHandler.addMessage);
+        }
+    }
 }
 
 async function dailyQuiz() {
@@ -82,10 +115,10 @@ async function dailyQuiz() {
         let date = new Date();
 
         // don't send on weekend
-        if (date.getDay() === 6 ||date.getDay() === 5) return;
-            
+        if (date.getDay() === 6 || date.getDay() === 5) return;
+
         // don't send on holidays
-        
+        if (isHebrewHolyday(date)) return;
 
         sendQuizToGroups()
     }, HOUR)

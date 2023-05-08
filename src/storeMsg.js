@@ -27,7 +27,7 @@ const fs = require("fs");
  *                      isActive: boolean, 
  *                      hourOfQuiz: number,
  *                      progress: {
-*                           bible: number, math: number, programming: number
+*                           ProgrammingQuiz: number, MathQuiz: number, BibleQuiz: number
 *                       },
  *                       tempParticipates: {
  *                          "userID": {timestamp: Number, group: string}

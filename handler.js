@@ -4,8 +4,6 @@ const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
 const { getOmerDay } = require('./helpers/hebrewDate')
-//const { msgQueue } = require('./src/QueueObj')
-//const savedNotes = require('./src/notes')
 const { store, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
 //const ChatGPT = require('./helpers/chatgpt')
@@ -14,6 +12,8 @@ const { info } = require("./helpers/globals");
 require('dotenv').config();
 const fetch = require('node-fetch');
 const fs = require("fs");
+const { getMsgType, MsgType } = require('./helpers/msgType');
+const { downloadMediaMessage } = require('@adiwajshing/baileys');
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
@@ -29,7 +29,7 @@ const url_end = '/gviz/tq?&tqx=out:json';
 let commands = {
     "!פינג": "בדוק אם אני חי",
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
-    "!יוטיוב": "שלח לי קישור לסרטון ביוטיוב ואני אשלח לך אותו לכאן",
+    "!יוטיוב": "שלח לי קישור לשיר ביוטיוב ואני אשלח לך אותו לכאן",
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
     "!השתק": "השתק את הקבוצה לפי זמן מסוים",
     "!בטלהשתקה": "בטל השתקה",
@@ -150,6 +150,8 @@ async function handleMessage(sock, msg, mongo) {
                 //console.log(key, value);
                 text += `\n${key}: ${value}`;
             }
+
+            text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
 
             return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
         }
@@ -439,7 +441,7 @@ async function handleMessage(sock, msg, mongo) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
             console.log(resImage?.data?.[0]?.url || resImage.error);
-            if(resImage?.data?.[0]?.url)
+            if (resImage?.data?.[0]?.url)
                 return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
             return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
         } catch (error) {
@@ -495,6 +497,48 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!omer") || textMsg.includes("!עומר")) {
         return sock.sendMessage(id, { text: `היום ${getOmerDay().render("he")}` }).then(messageRetryHandler.addMessage)
     }
+
+    // stt
+    if (textMsg.includes("!stt") || textMsg.includes("!טקסט")) {
+        console.log(msg);
+        // has quoted message?
+        if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
+            return sock.sendMessage(id, { text: "יש לצטט הודעה" }).then(messageRetryHandler.addMessage)
+
+        // get from store
+        let quotedMsg = await store.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        if (!quotedMsg)
+            return sock.sendMessage(id, { text: "חלה שגיאה בטעינת ההודעה המצוטטת" }).then(messageRetryHandler.addMessage)
+
+        // get type
+        let { type } = getMsgType(quotedMsg);
+
+        if (type !== MsgType.AUDIO)
+            return sock.sendMessage(id, { text: "ההודעה המצוטטת אינה קובץ שמע" }).then(messageRetryHandler.addMessage)
+
+        try {
+            // download file
+            let file = await downloadMediaMessage(quotedMsg, "buffer");
+            // convert to text
+            let info = await stt_heb(file);
+            console.log(info);
+
+            if (info.estimated_time)
+                return sock.sendMessage(id, { text: `נסה שוב בעוד ${info.estimated_time} שניות` }).then(messageRetryHandler.addMessage)
+
+            if (info.error)
+                return sock.sendMessage(id, { text: "something went wrong" }).then(messageRetryHandler.addMessage)
+
+            // send text
+            return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
+
+        } catch (error) {
+            console.error(error);
+            return sock.sendMessage(id, { text: "something went wrong" }).then(messageRetryHandler.addMessage)
+        }
+    }
+
+
 
     // no command - answer with ChatGPT
     if (!msg.key.remoteJid.includes("@g.us")) {
@@ -574,6 +618,29 @@ function getGroupConfig(id) {
 
     msgToSend = GLOBAL.groupConfig?.[id] ? msgToSend : "אין הגדרות קבוצה";
     return msgToSend;
+}
+
+/**
+ * 
+ * @param {string | Buffer} data 
+ * @returns {Promise<{text?: string, error?: string, estimated_time?: number>}}
+ */
+async function stt_heb(data) {
+    // if not buffer - load from file
+    if (typeof data !== "object")
+        data = fs.readFileSync(data);
+
+    const response = await fetch(
+        //"https://api-inference.huggingface.co/models/imvladikon/wav2vec2-xls-r-300m-hebrew",
+        "https://api-inference.huggingface.co/models/imvladikon/wav2vec2-xls-r-300m-lm-hebrew",
+        {
+            headers: { Authorization: `Bearer ${process.env.HUGGINGFACE_TOKEN}` },
+            method: "POST",
+            body: data,
+        }
+    );
+    const result = await response.json();
+    return result;
 }
 
 module.exports = { handleMessage }

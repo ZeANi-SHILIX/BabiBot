@@ -6,11 +6,12 @@ const { HebrewCalendar, HDate, Location, Event, OmerEvent, months, CalOptions } 
  */
 function isHebrewHolyday(date) {
     let hebToday = new HDate(date);
+    console.log(hebToday.toString());
 
     /** @type {CalOptions} */
     const options = {
-        year: 2023,
-        isHebrewYear: false,
+        year: hebToday.getFullYear(),
+        isHebrewYear: true,
         location: Location.lookup('Jerusalem'),
         //omer: true,
         il: true,
@@ -46,23 +47,18 @@ function isHebrewHolyday(date) {
     const events = allEvents.filter(ev => !filters.includes(ev.getDesc()));
     for (const ev of events) {
         const hd = ev.getDate();
-        //console.log(ev.render('he'), hd.toString());
-        //console.log(ev.getDesc())
 
         if (hd.isSameDate(hebToday)) {
-            //console.log("\n------- same day -------\n")
-
-            
-
+            console.log(ev.render('he'), hd.toString());
             return true;
         }
-
-
     }
     return false;
 
 }
-//isHebrewHolyday(new Date())
+// console.log(isHebrewHolyday(new Date(2021, 3, 14)))
+// console.log(isHebrewHolyday(new Date(2021, 3, 15)))
+// console.log(isHebrewHolyday(new Date(2023, 11, 10)))
 
 /**
  * 
@@ -76,5 +72,6 @@ function getOmerDay() {
 }
 
 module.exports = {
-    getOmerDay
+    getOmerDay,
+    isHebrewHolyday
 }
