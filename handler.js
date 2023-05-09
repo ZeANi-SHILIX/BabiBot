@@ -175,10 +175,10 @@ async function handleMessage(sock, msg, mongo) {
 
         //get group members
         let groupData = await sock.groupMetadata(id);
-        
+
         // sender is admin?
         let sender = groupData.participants.find(p => p.id === msg.participant);
-        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.participant.includes(superuser)) return;
+        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.key.participant?.includes(superuser)) return;
 
         let members = groupData.participants.map(p => p.id);
         let quoteAll = members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
