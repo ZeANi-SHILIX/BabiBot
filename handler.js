@@ -165,7 +165,18 @@ async function handleMessage(sock, msg, mongo) {
             text += `\n${key}: ${value}`;
         }
 
+        text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
+
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+    }
+
+    if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
+        //get group members
+        let groupData = await sock.groupMetadata(id);
+        let members = groupData.participants.map(p => p.id);
+        let quoteAll = members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
+
+        return sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage);
     }
 
     if (caption.startsWith('!sticker') || caption.startsWith('!סטיקר'))
