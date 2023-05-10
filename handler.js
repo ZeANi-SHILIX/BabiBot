@@ -171,7 +171,7 @@ async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
-        if (!msg.key.remoteJid.includes("@g.us")) 
+        if (!msg.key.remoteJid.includes("@g.us"))
             return sock.sendMessage(id, { text: "הפקודה זמינה רק בקבוצות" }).then(messageRetryHandler.addMessage);
 
         //get group members
@@ -179,7 +179,7 @@ async function handleMessage(sock, msg, mongo) {
 
         // sender is admin?
         let sender = groupData.participants.find(p => p.id === msg.participant);
-        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.key.participant?.includes(superuser)) 
+        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.key.participant?.includes(superuser))
             return sock.sendMessage(id, { text: "אין לך הרשאות לבצע פקודה זו" }).then(messageRetryHandler.addMessage);
 
         let members = groupData.participants.map(p => p.id);
@@ -206,17 +206,23 @@ async function handleMessage(sock, msg, mongo) {
      * ##########*/
     if (textMsg.startsWith("!translate") || textMsg.startsWith("!תרגם")) {
         let textToTranslate = textMsg.replace("!translate", "").replace("!תרגם", "").trim();
+
+        // check if has quoted message
+        if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
+            let quotedMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage;
+            textToTranslate = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
+        }
         if (!textToTranslate) return sock.sendMessage(id, { text: "לא נמצא טקסט לתרגום" }).then(messageRetryHandler.addMessage);
-        
+
         let translateUrl = "https://api.pawan.krd/mtranslate?from=en&to=iw&text=" + encodeURIComponent(textToTranslate);
+
         /** @type {{status:boolean, translated?: string, "time": number}} */
         let translateResult = await fetch(translateUrl).then(res => res.json());
-        if (translateResult.status && translateResult.translated) {
+
+        if (translateResult.status && translateResult.translated)
             return sock.sendMessage(id, { text: translateResult.translated }).then(messageRetryHandler.addMessage);
-        }
-        else {
-            return sock.sendMessage(id, { text: "משהו לא עבד טוב... נסה שנית" }).then(messageRetryHandler.addMessage);
-        }
+
+        return sock.sendMessage(id, { text: "משהו לא עבד טוב... נסה שנית" }).then(messageRetryHandler.addMessage);
     }
 
 
