@@ -6,7 +6,7 @@ const Downloader = require('./helpers/downloader')
 const { getOmerDay } = require('./helpers/hebrewDate')
 const { store, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
-//const ChatGPT = require('./helpers/chatgpt')
+const ChatGPT = require('./helpers/chatgpt')
 const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 require('dotenv').config();
@@ -15,7 +15,7 @@ const fs = require("fs");
 const { getMsgType, MsgType } = require('./helpers/msgType');
 const { downloadMediaMessage } = require('@adiwajshing/baileys');
 
-//const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
+const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
@@ -171,14 +171,16 @@ async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
-        if (!msg.key.remoteJid.includes("@g.us")) return;
+        if (!msg.key.remoteJid.includes("@g.us")) 
+            return sock.sendMessage(id, { text: "הפקודה זמינה רק בקבוצות" }).then(messageRetryHandler.addMessage);
 
         //get group members
         let groupData = await sock.groupMetadata(id);
 
         // sender is admin?
         let sender = groupData.participants.find(p => p.id === msg.participant);
-        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.key.participant?.includes(superuser)) return;
+        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.key.participant?.includes(superuser)) 
+            return sock.sendMessage(id, { text: "אין לך הרשאות לבצע פקודה זו" }).then(messageRetryHandler.addMessage);
 
         let members = groupData.participants.map(p => p.id);
         let quoteAll = members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
@@ -197,6 +199,27 @@ async function handleMessage(sock, msg, mongo) {
      ########## */
     if (textMsg.startsWith("!barkuni") || textMsg.startsWith("!ברקוני"))
         return BarkuniSticker(msg, sock, superuser);
+
+
+    /**#########
+     * TRANSLATE
+     * ##########*/
+    if (textMsg.startsWith("!translate") || textMsg.startsWith("!תרגם")) {
+        let textToTranslate = textMsg.replace("!translate", "").replace("!תרגם", "").trim();
+        if (!textToTranslate) return sock.sendMessage(id, { text: "לא נמצא טקסט לתרגום" }).then(messageRetryHandler.addMessage);
+        
+        let translateUrl = "https://api.pawan.krd/mtranslate?from=en&to=iw&text=" + encodeURIComponent(textToTranslate);
+        /** @type {{status:boolean, translated?: string, "time": number}} */
+        let translateResult = await fetch(translateUrl).then(res => res.json());
+        if (translateResult.status && translateResult.translated) {
+            return sock.sendMessage(id, { text: translateResult.translated }).then(messageRetryHandler.addMessage);
+        }
+        else {
+            return sock.sendMessage(id, { text: "משהו לא עבד טוב... נסה שנית" }).then(messageRetryHandler.addMessage);
+        }
+    }
+
+
 
 
     /**########
@@ -563,13 +586,18 @@ async function handleMessage(sock, msg, mongo) {
         try {
             await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
             let history = await store.loadMessages(id, 20);
-            let res = await unofficalGPT.waMsgs(history)
-            console.log(JSON.stringify(res, null, 2));
-            if (res?.choices?.[0]?.message?.content !== undefined) {
-                await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-                return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
-            }
-            await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
+            let res = await chatGPT.chat(history)
+            await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
+
+
+            // //let res = await unofficalGPT.waMsgs(history)
+            // console.log(JSON.stringify(res, null, 2));
+            // if (res?.choices?.[0]?.message?.content !== undefined) {
+            //     await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+            //     return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+            // }
+            // await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
         } catch (error) {
             console.error(error);
             await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })

@@ -50,19 +50,12 @@ ChatGPT.prototype.chat = async function (msgs, user) {
     { role: "system", content: "You are a chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript." }
   ];
 
-  for (let msg of msgs) {
-    let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || undefined;
-
-    if (!text)
-      continue;
-
-    if (msg.key.fromMe) {
-      messages.push({ role: "assistant", content: text });
-    }
-    else {
-      messages.push({ role: "user", content: text });
-    }
-
+  for (let i = 0; i < msgs.length; i++) {
+    const msg = msgs[i];
+    messages.push({
+      "role": msg.key.fromMe ? "assistant" : "user",
+      "content": msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ""
+    })
   }
 
   const response = await this.openai.createChatCompletion({
@@ -130,5 +123,12 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
 };
 
 
+require("dotenv").config();
+async function test() {
+  const chatgpt = new ChatGPT(process.env.OPENAI_API_KEY);
+  const res = await chatgpt.ask("What is the meaning of life?\n");
+  console.log(res);
+}
+//test();
 
 module.exports = ChatGPT;
