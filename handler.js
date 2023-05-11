@@ -1,5 +1,6 @@
-const noteHendler = require('./helpers/noteHandler');
+require('dotenv').config();
 
+const noteHendler = require('./helpers/noteHandler');
 const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
@@ -9,7 +10,6 @@ const messageRetryHandler = require("./src/retryHandler")
 const ChatGPT = require('./helpers/chatgpt')
 const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
-require('dotenv').config();
 const fetch = require('node-fetch');
 const fs = require("fs");
 const { getMsgType, MsgType } = require('./helpers/msgType');
@@ -33,6 +33,14 @@ let commands = {
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
     "!השתק": "השתק את הקבוצה לפי זמן מסוים",
     "!בטלהשתקה": "בטל השתקה",
+    "!תרגם" : "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
+    "!גוגל" : "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
+    "!בוט" : "שאל את GPT שאלה",
+    "!אמלק" :"קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
+    "!כולם" : "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)", 
+
+
+    "!אודות" : "קבל מידע אודות הבוט",
 }
 
 /**
@@ -134,9 +142,9 @@ async function handleMessage(sock, msg, mongo) {
 
 
     if (textMsg === "!ping" || textMsg === "!פינג")
-        return sock.sendMessage(id, { text: "pong" }).then(messageRetryHandler.addMessage);
+        return sock.sendMessage(id, { text: "פונג" }).then(messageRetryHandler.addMessage);
     if (textMsg === "!pong" || textMsg === "!פונג")
-        return sock.sendMessage(id, { text: "ping" }).then(messageRetryHandler.addMessage);
+        return sock.sendMessage(id, { text: "פינג" }).then(messageRetryHandler.addMessage);
 
     // commands list
     let helpCommand = ["help", "command", "עזרה", "פקודות"];
@@ -157,7 +165,7 @@ async function handleMessage(sock, msg, mongo) {
         }
     }
     // in private
-    else if (helpCommand.some(com => textMsg.startsWith(com))) {
+    else if (helpCommand.some(com => textMsg.includes(com))) {
         let text = "*רשימת הפקודות הזמינות בבוט:*"
 
         for (const [key, value] of Object.entries(commands)) {
@@ -167,6 +175,22 @@ async function handleMessage(sock, msg, mongo) {
 
         text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
 
+        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+    }
+
+    /**##########
+     * INFO
+     ############*/
+    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.startsWith("!אודות")) {
+        let text = "*מידע על הבוט:*\n\n" +
+            "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
+            "אל תשלחו מידע רגיש לבוט.\n\n" +
+
+            "על מנת לראות מה הבוט מסוגל לעשות יש לשלוח את הפקודה '!פקודות'\n"+
+            "(הבוט בתהליכי בנייה... רשימת הפקודות איננה סופית!)\n" +
+            "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
+            "בוט זה נוצר על ידי שילה בבילה";
+        
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
@@ -471,8 +495,8 @@ async function handleMessage(sock, msg, mongo) {
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
-            let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            //let res = await unofficalGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            let res = await chatGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0] || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res.error + "\n" + res.hint;
             await sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
@@ -500,7 +524,7 @@ async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
         try {
             // get num from message
-            let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 15);
+            let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
 
             let history = await store.loadMessages(id, numMsgToLoad);
             history.pop(); // we don't want the last message (the one we got now)
@@ -508,7 +532,7 @@ async function handleMessage(sock, msg, mongo) {
 
             let res = await unofficalGPT.tldr(history)
             console.log(res);
-            let resText = res.choices?.[0]?.text?.trim() || res.error + "\n" + res.hint;
+            let resText = res.choices?.[0]?.text?.trim() || res.error;
             return sock.sendMessage(id, { text: resText })
         } catch (error) {
             console.error(error);

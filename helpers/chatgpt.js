@@ -11,13 +11,33 @@ function ChatGPT(apiKey) {
 ChatGPT.prototype.ask = async function (prompt) {
   const res = await this.openai.createCompletion({
     prompt: prompt,
-    model: "text-davinci-003",
-    temperature: 0.4,
-    max_tokens: 180,
+    model: "gpt-3.5-turbo",
+    temperature: 0.6,
+    max_tokens: 480,
   });
   console.log("Total Tokens: " + res.data.usage?.total_tokens);
   return res.data.choices[0].text;
 };
+
+ChatGPT.prototype.ask2 = async function (prompt) {
+  let data = {
+      "max_tokens": 480,
+      "model":"gpt-3.5-turbo",
+      "messages": [
+          {
+              role: "system",
+              content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
+                  + process.env.MAILLIST ? `only if ask for a mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
+          },
+          {
+              "role": "user",
+              "content": prompt
+          }
+      ]
+  }
+  let res = await this.openai.createChatCompletion(data);
+  return res.data;
+}
 
 /**
  * 
@@ -122,12 +142,24 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
   return res.trim();
 };
 
-
+const fs = require("fs");
 require("dotenv").config();
+
 async function test() {
   const chatgpt = new ChatGPT(process.env.OPENAI_API_KEY);
-  const res = await chatgpt.ask("What is the meaning of life?\n");
+  //const res = await chatgpt.ask("What is the meaning of life?\n");
+  // const blob = new Blob(["C:/Users/shilo/Desktop/BabiBot/testingFiles/test4.mp3"], { type: "audio/mp3" });
+  // const file = new File([blob], "test4.mp3", { type: "audio/mp3" });
+  console.log("Starting transcription");
+  //console.log(audio.bytesRead);
+  let res = await chatgpt.openai.createTranscription(
+    fs.createReadStream("C:/Users/shilo/Desktop/BabiBot/testingFiles/test4.mp3"),
+    //file,
+    "whisper-1"
+  );
+
   console.log(res);
+  //"whisper-1",
 }
 //test();
 
