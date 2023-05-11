@@ -179,8 +179,11 @@ async function handleMessage(sock, msg, mongo) {
         let groupData = await sock.groupMetadata(id);
 
         // sender is admin?
-        let sender = groupData.participants.find(p => p.id === msg.participant);
-        if (!sender?.isAdmin && !sender?.isSuperAdmin && !msg.key.participant?.includes(superuser))
+        let sender = groupData.participants.find(p => p.id === msg.key.participant);
+        console.log(sender);
+
+        const isAdmin = sender?.admin || msg.key.participant?.includes(superuser) || false;
+        if (!isAdmin)
             return sock.sendMessage(id, { text: "אין לך הרשאות לבצע פקודה זו" }).then(messageRetryHandler.addMessage);
 
         let members = groupData.participants.map(p => p.id);
