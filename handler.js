@@ -33,14 +33,13 @@ let commands = {
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
     "!השתק": "השתק את הקבוצה לפי זמן מסוים",
     "!בטלהשתקה": "בטל השתקה",
-    "!תרגם" : "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
-    "!גוגל" : "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
-    "!בוט" : "שאל את GPT שאלה",
-    "!אמלק" :"קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
-    "!כולם" : "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)", 
+    "!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
+    "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
+    "!בוט": "שאל את GPT שאלה",
+    "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
+    "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
 
 
-    "!אודות" : "קבל מידע אודות הבוט",
 }
 
 /**
@@ -118,26 +117,18 @@ async function handleMessage(sock, msg, mongo) {
 
     // text message
     if (!PRODUCTION && textMsg.startsWith("test")) {
-        const vcard = 'BEGIN:VCARD\n' // metadata of the contact card
-            + 'VERSION:3.0\n'
-            + 'FN:test\n' // full name
-            //+ 'ORG:Ashoka Uni;\n' // the organization of the contact
-            + 'TEL;type=CELL;waid=911234567890:+91 12345 67890\n' // WhatsApp ID + phone number
-            + 'EMAIL;INTERNET:test1@gmail.com\n' // email ID
-            + 'END:VCARD'
-        // const sentMsg = await sock.sendMessage(
-        //     id,
-        //     {
-        //         contacts: {
-        //             displayName: 'Jeff',
-        //             contacts: [{ vcard }]
-        //         }
-        //     }
-        // )
-        //     .then(messageRetryHandler.addMessage);
+        const sended = await sock.sendMessage(id, { text: "test" }).then(messageRetryHandler.addMessage);
+        const edited = await sock.relayMessage(id, {
+            protocolMessage: {
+                key: sended.key,
+                type: 14,
+                editedMessage: {
+                    conversation: "new text"
+                }
+            }
+        }, {})
 
-        let groupData = await sock.groupMetadata(id);
-        console.log(groupData);
+        return;
     }
 
 
@@ -166,31 +157,17 @@ async function handleMessage(sock, msg, mongo) {
     }
     // in private
     else if (helpCommand.some(com => textMsg.includes(com))) {
-        let text = "*רשימת הפקודות הזמינות בבוט:*"
+        let text = "*רשימת הפקודות הזמינות בבוט:*\n"
 
         for (const [key, value] of Object.entries(commands)) {
             //console.log(key, value);
-            text += `\n${key}: ${value}`;
+            text += `\n*${key}*: ${value}`;
         }
+        
+        text += `\n*!אודות*: קבל מידע אודות הבוט`;
 
         text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
 
-        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
-    }
-
-    /**##########
-     * INFO
-     ############*/
-    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.startsWith("!אודות")) {
-        let text = "*מידע על הבוט:*\n\n" +
-            "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
-            "אל תשלחו מידע רגיש לבוט.\n\n" +
-
-            "על מנת לראות מה הבוט מסוגל לעשות יש לשלוח את הפקודה '!פקודות'\n"+
-            "(הבוט בתהליכי בנייה... רשימת הפקודות איננה סופית!)\n" +
-            "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
-            "בוט זה נוצר על ידי שילה בבילה";
-        
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
@@ -255,7 +232,7 @@ async function handleMessage(sock, msg, mongo) {
     /**########
      * GOOGLE
      ##########*/
-    else if (textMsg.startsWith("!google") || textMsg.startsWith("!גוגל")) {
+    if (textMsg.startsWith("!google") || textMsg.startsWith("!גוגל")) {
         let textSearch = textMsg.replace("!google", "").replace("!גוגל", "").trim();
 
         if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
@@ -594,46 +571,95 @@ async function handleMessage(sock, msg, mongo) {
             let info = await stt_heb(file);
             console.log(info);
 
-            if (info.estimated_time)
-                return sock.sendMessage(id, { text: `נסה שוב בעוד ${info.estimated_time} שניות` }).then(messageRetryHandler.addMessage)
+            if (info.estimated_time){
+                const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
+                resendToSTT(file, id, sock, sended.key);
+                return 
+            }
 
             if (info.error)
-                return sock.sendMessage(id, { text: "something went wrong" }).then(messageRetryHandler.addMessage)
+                return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
 
             // send text
             return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
 
         } catch (error) {
             console.error(error);
-            return sock.sendMessage(id, { text: "something went wrong" }).then(messageRetryHandler.addMessage)
+            return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
         }
     }
 
 
+    // ##############
+    // ##############
+    //  NOT IN GROUP
+    // ##############
+    // ##############
+    if (msg.key.remoteJid.includes("@g.us")) return;
+
+
+    /**##########
+     * INFO
+     ############*/
+    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.startsWith("!אודות")) {
+        let text = "*מידע על הבוט:*\n\n" +
+            "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
+            "אל תשלחו מידע רגיש לבוט.\n\n" +
+
+            "על מנת לראות מה הבוט מסוגל לעשות יש לשלוח את הפקודה '!פקודות'\n" +
+            "(הבוט בתהליכי בנייה... רשימת הפקודות איננה סופית!)\n" +
+            "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
+            "בוט זה נוצר על ידי שילה בבילה";
+
+        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+    }
+
+    const {type} = getMsgType(msg);
+    if (type === MsgType.AUDIO) {
+        // get file
+        let file = await downloadMediaMessage(msg, "buffer");
+        // convert to text
+        let info = await stt_heb(file);
+        console.log(info);
+
+        if (info.estimated_time){
+            const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
+            resendToSTT(file, id, sock, sended.key);
+            return
+        }
+
+        if (info.error)
+            return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+
+        // send text
+        return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
+    }
+
+    if (type !== MsgType.TEXT) return;
 
     // no command - answer with ChatGPT
-    if (!msg.key.remoteJid.includes("@g.us")) {
-        try {
-            await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
-            let history = await store.loadMessages(id, 20);
-            let res = await chatGPT.chat(history)
-            await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
+    try {
+        await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
+        let history = await store.loadMessages(id, 20);
+        let res = await chatGPT.chat(history)
+        await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+        return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
 
 
-            // //let res = await unofficalGPT.waMsgs(history)
-            // console.log(JSON.stringify(res, null, 2));
-            // if (res?.choices?.[0]?.message?.content !== undefined) {
-            //     await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-            //     return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
-            // }
-            // await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
-        } catch (error) {
-            console.error(error);
-            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-        }
-        await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
+        // //let res = await unofficalGPT.waMsgs(history)
+        // console.log(JSON.stringify(res, null, 2));
+        // if (res?.choices?.[0]?.message?.content !== undefined) {
+        //     await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+        //     return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
+        // }
+        // await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
+    } catch (error) {
+        console.error(error);
+        await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
     }
+    await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
+
+
 }
 
 /**
@@ -717,6 +743,52 @@ async function stt_heb(data) {
     );
     const result = await response.json();
     return result;
+}
+
+async function resendToSTT(file, id, sock, msgkey){
+    for (let i = 0; i < 10; i++) {
+        console.log("try", i);
+        let res = await stt_heb(file);
+        console.log(res);
+        if (res.estimated_time) {
+            await sleep(10 * 1000);
+            continue;
+        }
+        if (res.error) {
+            await sock.relayMessage(id, {
+                protocolMessage: {
+                    key: msgkey,
+                    type: 14,
+                    editedMessage: {
+                        conversation: res.error,
+                    }
+                }
+            }, {})
+            return;
+        }
+        return await sock.relayMessage(id, {
+            protocolMessage: {
+                key: msgkey,
+                type: 14,
+                editedMessage: {
+                    conversation: res.text,
+                }
+            }
+        }, {})
+    }
+    await sock.relayMessage(id, {
+        protocolMessage: {
+            key: msgkey,
+            type: 14,
+            editedMessage: {
+                conversation: "אני לא מצליח לתמלל את ההודעה שלך\nנסה שוב בעוד כמה דקות",
+            }
+        }
+    }, {})
+}
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = { handleMessage }
