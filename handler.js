@@ -492,8 +492,11 @@ async function handleMessage(sock, msg, mongo) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
             console.log(resImage?.data?.[0]?.url || resImage.error);
-            if (resImage?.data?.[0]?.url)
-                return sock.sendMessage(id, { image: { url: resImage.data[0].url } }).then(messageRetryHandler.addMessage);
+            if (resImage?.data?.[0]?.url){
+                for (const urlObj of resImage.data)
+                    await sock.sendMessage(id, { image: { url: urlObj.url } }).then(messageRetryHandler.addMessage);
+                return;
+            }
             return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
@@ -589,6 +592,15 @@ async function handleMessage(sock, msg, mongo) {
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+        }
+    }
+
+    // if the bot got mentioned
+    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
+        let mentionedJids = msg.message.extendedTextMessage.contextInfo.mentionedJid;
+        const SOCK_NUM = sock.user.id.split(":")[0].split("@")[0];
+        if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM))) {
+            return sock.sendMessage(id, { text: "הי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות" }).then(messageRetryHandler.addMessage)
         }
     }
 
@@ -754,7 +766,16 @@ async function resendToSTT(file, id, sock, msgkey){
         let res = await stt_heb(file);
         console.log(res);
         if (res.estimated_time) {
-            await sleep(10 * 1000);
+            await sock.relayMessage(id, {
+                protocolMessage: {
+                    key: msgkey,
+                    type: 14,
+                    editedMessage: {
+                        conversation: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן \nניסיון מספר " + (i + 1) + "/10"
+                    }
+                }
+            }, {})
+            await sleep(15 * 1000);
             continue;
         }
         if (res.error) {
@@ -784,7 +805,7 @@ async function resendToSTT(file, id, sock, msgkey){
             key: msgkey,
             type: 14,
             editedMessage: {
-                conversation: "אני לא מצליח לתמלל את ההודעה שלך\nנסה שוב בעוד כמה דקות",
+                conversation: "אני לא מצליח לתמלל את ההודעה שלך כרגע\nנסה שוב בעוד כמה דקות",
             }
         }
     }, {})

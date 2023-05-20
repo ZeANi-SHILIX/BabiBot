@@ -82,6 +82,8 @@ async function connectToWhatsApp() {
             for (const msg of messages) {
                 if (!msg.message) return; // if there is no text or media message
                 if (msg.key.fromMe) return;
+                if (msg.key.remoteJid === 'status@broadcast') return; // ignore status messages
+                if (msg.key.remoteJid.includes("call")) return; // ignore call messages
 
                 //handleMessage(sock, msg, mongo);
                 handlerQueue.add(() => handleMessage(sock, msg, mongo));
@@ -119,7 +121,8 @@ app.get('/qr', async (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    res.send('Hello World! its Babi Bot')
+    res.sendFile(__dirname + '/botIndex.html');
+    //res.send('Hello World! its Babi Bot')
 });
 
 
