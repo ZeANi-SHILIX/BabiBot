@@ -1,42 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html dir="rtl" lang="he">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babi Bot</title>
-</head>
-<style>
-    body{
-        background-color: #01d5ff;
-        color: #000000;
-        font-family: Arial, Helvetica, sans-serif;
+  <title>מידע על פקודות בוט WhatsApp</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #F6F8FA;
+      display: flex;
     }
-    .welcome{
-        padding: 10px;
-    }
-    .command{
-        margin-top: 10px;
-    }
-</style>
-<body>
-    <!-- welcome  -->
-    <div class="welcome">
-        <h1>Welcome to Babi Bot</h1>
-        <p>I'm babi bot</p>
-    </div>
-
-    <!-- list of command -->
-    <div class="command">
-        <h2>Command</h2>
-        <ul>
-            <li>!help</li>
-            <li>!hello</li>
-            <li>!time</li>
-            <li>!date</li>
-        </ul>
-    </div>
     
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    
+    h2 {
+      color: #555;
+      margin-top: 20px;
+    }
+    
+    pre {
+      background-color: #EAEAEA;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    
+    li {
+      margin-bottom: 10px;
+    }
+    
+    .command {
+      margin-bottom: 30px;
+      background-color: #FFFFFF;
+      border-radius: 4px;
+      padding: 20px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .command h2 {
+      color: #007BFF;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .command p {
+      color: #333;
+      font-size: 16px;
+    }
+    
+    .command h3 {
+      color: #555;
+      margin-top: 15px;
+    }
+    
+    .command pre {
+      background-color: #F0F0F0;
+      font-size: 14px;
+    }
+    
+    .command ul {
+      margin-top: 10px;
+    }
+    
+    .command li {
+      font-size: 14px;
+    }
+    
+    .index {
+      background-color: #FFFFFF;
+      border-radius: 4px;
+      padding: 20px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      min-width: 200px;
+      margin-right: 20px;
+    }
+    
+    .index ul {
+      margin: 0;
+      padding: 0;
+    }
+    
+    .index li {
+      margin-bottom: 10px;
+      list-style-type: none;
+    }
+    
+    .index a {
+      color: #007BFF;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    
+    .index a:hover {
+      text-decoration: underline;
+    }
 
+    .content {
+      margin-right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="index">
+    <h2>פקודות:</h2>
+    <ul>
+      <li><a href="#command-example">/דוגמה</a></li>
+      <li><a href="#command-another">/פקודה_נוספת</a></li>
+      <!-- Add more command links as needed -->
+    </ul>
+  </div>
+  
+  <div class="content">
+    <h1>מידע על פקודות בוט WhatsApp</h1>
+  
+    <div class="command" id="command-example">
+      <h2>/דוגמה</h2>
+      <p>פקודה זו מאפשרת למשתמשים לבצע פעולה מסוימת באמצעות בוט WhatsApp.</p>
+      <h3>שימוש:</h3>
+      <pre>/דוגמה [פרמטר1] [פרמטר2]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר1:</strong> זהו הפרמטר הראשון וצריך להיות מסוג מחרוזת.</li>
+        <li><strong>פרמטר2:</strong> זהו הפרמטר השני וצריך להיות מסוג מספר.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/דוגמה "שלום, עולם!" 42</pre>
+      <pre>/דוגמה "OpenAI" 12345</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת אישור לאחר ביצוע הפעולה עם הפרמטרים שסופקו.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערכי הפרמטרים בגרשיים אם הם מכילים רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+        <li>וודא כי הפרמטרים סופקו בסדר הנכון.</li>
+      </ul>
+    </div>
+  
+    <div class="command" id="command-another">
+      <h2>/פקודה_נוספת</h2>
+      <p>פקודה זו מאפשרת למשתמשים לבצע פעולה נוספת באמצעות בוט WhatsApp.</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
+  
+    <!-- Add more command sections as needed -->
+  </div>
 </body>
 </html>

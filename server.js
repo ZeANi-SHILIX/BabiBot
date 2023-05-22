@@ -13,6 +13,7 @@ const msgRetryCounterMap = {};
 
 const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
+const superuser = process.env.SUPERUSER ?? "";
 console.log("PRODUCTION:", PRODUCTION);
 
 const app = express()
@@ -74,6 +75,23 @@ async function connectToWhatsApp() {
     sock.ev.on('creds.update', () => {
         console.log('creds.update')
         saveCreds()
+    })
+
+    // join groups
+    sock.ev.on('groups.upsert', async (event) => {
+        for (const ev of event) {
+            console.log(event);
+
+            const superUser_inGroup = ev.participants.filter(p => p.admin && p.id.includes(superuser))
+            // superuser isn't falsy, and he admin at the group - do nothing
+            if (superuser && superUser_inGroup) return;
+
+            await sock.sendMessage(ev.id, {
+                text: "היי! אני באבי בוט 😃\n"
+                    + "שלחו לי את המילה '!פקודות' והתחילו להנות!\n\n"
+                    + "(לידעתכם ההודעות בקבוצה יהיו זמינות למפתח שלי לצורך בקרה ושיפור השירות)"
+            });
+        }
     })
 
     // handle messages

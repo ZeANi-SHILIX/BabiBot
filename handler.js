@@ -13,7 +13,7 @@ const { info } = require("./helpers/globals");
 const fetch = require('node-fetch');
 const fs = require("fs");
 const { getMsgType, MsgType } = require('./helpers/msgType');
-const { downloadMediaMessage } = require('@adiwajshing/baileys');
+const { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } = require('@adiwajshing/baileys');
 
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
@@ -33,11 +33,15 @@ let commands = {
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
     "!השתק": "השתק את הקבוצה לפי זמן מסוים",
     "!בטלהשתקה": "בטל השתקה",
+    "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
     "!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
     "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
     "!בוט": "שאל את GPT שאלה",
     "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
-    "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
+    "!תמונה": "תאר לי תמונה (באנגלית) ואני אכין לך אותה",
+
+    // "!הערות" : "קבל את כל ההערות בצאט זה",
+
 
 
 }
@@ -114,21 +118,45 @@ async function handleMessage(sock, msg, mongo) {
 
     // send ACK
     sock.readMessages([msg.key])
+    if (textMsg.startsWith("!page")) {
+        const page = "http://129.159.140.102:3000/"
+        sock.sendMessage(id, { text: page }).then(messageRetryHandler.addMessage);
+        return;
+    }
 
     // text message
     if (!PRODUCTION && textMsg.startsWith("test")) {
-        const sended = await sock.sendMessage(id, { text: "test" }).then(messageRetryHandler.addMessage);
-        const edited = await sock.relayMessage(id, {
-            protocolMessage: {
-                key: sended.key,
-                type: 14,
-                editedMessage: {
-                    conversation: "new text"
-                }
+        const poll = await sock.sendMessage(id, {
+            poll: {
+                name: "hello there!",
+                values: [
+                    "test123",
+                    "test231"
+                ],
+                selectableCount: 1,
             }
-        }, {})
+        })
+        console.log(poll)
 
         return;
+    }
+
+    if (msg.message?.pollUpdateMessage) {
+        return;
+        const pollUpdate = msg.message.pollUpdateMessage;
+        const pollmsg = await store.loadMessage(id, msg.message.pollUpdateMessage.pollCreationMessageKey.id)
+        console.log(msg.pollUpdates)
+        console.log(pollmsg)
+
+        const res = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
+        console.log(res)
+
+        updateMessageWithPollUpdate(pollmsg, msg.pollUpdates)
+
+        const res1 = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
+        console.log(res1)
+
+        
     }
 
 
@@ -163,7 +191,7 @@ async function handleMessage(sock, msg, mongo) {
             //console.log(key, value);
             text += `\n*${key}*: ${value}`;
         }
-        
+
         text += `\n*!אודות*: קבל מידע אודות הבוט`;
 
         text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
@@ -185,6 +213,10 @@ async function handleMessage(sock, msg, mongo) {
         const isAdmin = sender?.admin || msg.key.participant?.includes(superuser) || false;
         if (!isAdmin)
             return sock.sendMessage(id, { text: "אין לך הרשאות לבצע פקודה זו" }).then(messageRetryHandler.addMessage);
+
+        // dont include bot
+        const botnum = sock.user.id.split("@")[0].split(":")[0];
+        groupData.participants = groupData.participants.filter(p => !p.id.includes(botnum));
 
         let members = groupData.participants.map(p => p.id);
         let quoteAll = members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
@@ -492,7 +524,7 @@ async function handleMessage(sock, msg, mongo) {
         try {
             let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
             console.log(resImage?.data?.[0]?.url || resImage.error);
-            if (resImage?.data?.[0]?.url){
+            if (resImage?.data?.[0]?.url) {
                 for (const urlObj of resImage.data)
                     await sock.sendMessage(id, { image: { url: urlObj.url } }).then(messageRetryHandler.addMessage);
                 return;
@@ -577,10 +609,10 @@ async function handleMessage(sock, msg, mongo) {
             let info = await stt_heb(file);
             console.log(info);
 
-            if (info.estimated_time){
+            if (info.estimated_time) {
                 const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
                 resendToSTT(file, id, sock, sended.key);
-                return 
+                return
             }
 
             if (info.error)
@@ -616,7 +648,7 @@ async function handleMessage(sock, msg, mongo) {
     /**##########
      * INFO
      ############*/
-    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.startsWith("!אודות")) {
+    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("אודות")) {
         let text = "*מידע על הבוט:*\n\n" +
             "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
             "אל תשלחו מידע רגיש לבוט.\n\n" +
@@ -629,7 +661,7 @@ async function handleMessage(sock, msg, mongo) {
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
-    const {type} = getMsgType(msg);
+    const { type } = getMsgType(msg);
     if (type === MsgType.AUDIO) {
         // get file
         let file = await downloadMediaMessage(msg, "buffer");
@@ -637,7 +669,7 @@ async function handleMessage(sock, msg, mongo) {
         let info = await stt_heb(file);
         console.log(info);
 
-        if (info.estimated_time){
+        if (info.estimated_time) {
             const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
             resendToSTT(file, id, sock, sended.key);
             return
@@ -760,13 +792,13 @@ async function stt_heb(data) {
     return result;
 }
 
-async function resendToSTT(file, id, sock, msgkey){
+async function resendToSTT(file, id, sock, msgkey) {
     for (let i = 0; i < 10; i++) {
         console.log("try", i);
         let res = await stt_heb(file);
         console.log(res);
         if (res.estimated_time) {
-            await sock.relayMessage(id, {
+            sock.relayMessage(id, {
                 protocolMessage: {
                     key: msgkey,
                     type: 14,
