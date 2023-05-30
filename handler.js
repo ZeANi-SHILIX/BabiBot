@@ -620,6 +620,7 @@ async function handleMessage(sock, msg, mongo) {
             // download file
             let file = await downloadMediaMessage(quotedMsg, "buffer");
             let res = await chatGPT.stt(Readable.from(file))
+            console.log(res)
             return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
 
             // let file = await downloadMediaMessage(quotedMsg, "buffer");
