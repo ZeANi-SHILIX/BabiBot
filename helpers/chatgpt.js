@@ -148,7 +148,7 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
 ChatGPT.prototype.stt = async function (rs) {
   try {
     const res = await this.openai.createTranscription(rs, "whisper-1")
-    return res.data.text;
+    return res.data?.text || res.data?.error;
   } catch (error) {
     console.log(error)
   }
