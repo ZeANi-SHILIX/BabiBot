@@ -11,6 +11,7 @@ const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 const fetch = require('node-fetch');
 const fs = require("fs");
+const { Readable } = require('stream');
 const { getMsgType, MsgType } = require('./helpers/msgType');
 const { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } = require('@adiwajshing/baileys');
 
@@ -618,21 +619,25 @@ async function handleMessage(sock, msg, mongo) {
         try {
             // download file
             let file = await downloadMediaMessage(quotedMsg, "buffer");
-            // convert to text
-            let info = await stt_heb(file);
-            console.log(info);
+            let res = await chatGPT.stt(Readable.from(file))
+            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
 
-            if (info.estimated_time) {
-                const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
-                resendToSTT(file, id, sock, sended.key);
-                return
-            }
+            // let file = await downloadMediaMessage(quotedMsg, "buffer");
+            // // convert to text
+            // let info = await stt_heb(file);
+            // console.log(info);
 
-            if (info.error)
-                return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+            // if (info.estimated_time) {
+            //     const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
+            //     resendToSTT(file, id, sock, sended.key);
+            //     return
+            // }
 
-            // send text
-            return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
+            // if (info.error)
+            //     return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+
+            // // send text
+            // return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
 
         } catch (error) {
             console.error(error);

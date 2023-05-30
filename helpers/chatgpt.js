@@ -142,24 +142,30 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
   return res.trim();
 };
 
+/**
+ * @param {fs.ReadStream} rs
+ */
+ChatGPT.prototype.stt = async function (rs) {
+  try {
+    const res = await this.openai.createTranscription(rs, "whisper-1")
+    return res.data.text;
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 const fs = require("fs");
 require("dotenv").config();
 
 async function test() {
+  const filename = "C:/Users/shilo/Desktop/BabiBot/testingFiles/audio.mp3";
   const chatgpt = new ChatGPT(process.env.OPENAI_API_KEY);
-  //const res = await chatgpt.ask("What is the meaning of life?\n");
-  // const blob = new Blob(["C:/Users/shilo/Desktop/BabiBot/testingFiles/test4.mp3"], { type: "audio/mp3" });
-  // const file = new File([blob], "test4.mp3", { type: "audio/mp3" });
   console.log("Starting transcription");
-  //console.log(audio.bytesRead);
-  let res = await chatgpt.openai.createTranscription(
-    fs.createReadStream("C:/Users/shilo/Desktop/BabiBot/testingFiles/test4.mp3"),
-    //file,
-    "whisper-1"
-  );
+  let res = await chatgpt.stt(
+    fs.createReadStream(filename),
+  )
 
   console.log(res);
-  //"whisper-1",
 }
 //test();
 
