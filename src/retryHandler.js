@@ -14,7 +14,7 @@ class MessageRetryHandler {
     const id = message.key.id ?? "";
 
     //console.log(this);
-    console.log("adding message to retry handler" + id);
+    console.log("adding message to retry handler", id);
 
     this.messagesMap[id] = this.cleanMessage(message);
 

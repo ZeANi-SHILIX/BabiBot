@@ -11,7 +11,6 @@ const UnofficalGPT = require('./helpers/unofficalGPT')
 const { info } = require("./helpers/globals");
 const fetch = require('node-fetch');
 const fs = require("fs");
-const { Readable } = require('stream');
 const { getMsgType, MsgType } = require('./helpers/msgType');
 const { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } = require('@adiwajshing/baileys');
 
@@ -448,7 +447,7 @@ async function handleMessage(sock, msg, mongo) {
             .replace("המתרגל ", "").replace("מתרגל ", "")
             .trim();
 
-        if ((" "+searchText).includes(" דר "))
+        if ((" " + searchText).includes(" דר "))
             searchText = searchText.replace("דר ", "")
 
         let arr_search = searchText.split(" ");
@@ -528,7 +527,7 @@ async function handleMessage(sock, msg, mongo) {
             // get only english letters
             let imgdesc_en = imgdesc.replace(/[^a-zA-Z0-9 ]/g, '').trim();
 
-            if (imgdesc_en.length < 2){
+            if (imgdesc_en.length < 2) {
                 let translatedText = await translate(imgdesc, 'iw', 'en');
                 console.log(translatedText);
                 imgdesc_en = translatedText.translated || "";
@@ -616,33 +615,7 @@ async function handleMessage(sock, msg, mongo) {
         if (type !== MsgType.AUDIO)
             return sock.sendMessage(id, { text: "ההודעה המצוטטת אינה קובץ שמע" }).then(messageRetryHandler.addMessage)
 
-        try {
-            // download file
-            let file = await downloadMediaMessage(quotedMsg, "buffer");
-            let res = await chatGPT.stt(Readable.from(file));
-            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
-
-            // let file = await downloadMediaMessage(quotedMsg, "buffer");
-            // // convert to text
-            // let info = await stt_heb(file);
-            // console.log(info);
-
-            // if (info.estimated_time) {
-            //     const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
-            //     resendToSTT(file, id, sock, sended.key);
-            //     return
-            // }
-
-            // if (info.error)
-            //     return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
-
-            // // send text
-            // return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
-
-        } catch (error) {
-            console.error(error);
-            return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
-        }
+        return whisper(quotedMsg, sock);
     }
 
     // if the bot got mentioned
@@ -681,23 +654,24 @@ async function handleMessage(sock, msg, mongo) {
 
     const { type } = getMsgType(msg);
     if (type === MsgType.AUDIO) {
-        // get file
-        let file = await downloadMediaMessage(msg, "buffer");
-        // convert to text
-        let info = await stt_heb(file);
-        console.log(info);
+        return whisper(msg, sock);
+        // // get file
+        // let file = await downloadMediaMessage(msg, "buffer");
+        // // convert to text
+        // let info = await stt_heb(file);
+        // console.log(info);
 
-        if (info.estimated_time) {
-            const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
-            resendToSTT(file, id, sock, sended.key);
-            return
-        }
+        // if (info.estimated_time) {
+        //     const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
+        //     resendToSTT(file, id, sock, sended.key);
+        //     return
+        // }
 
-        if (info.error)
-            return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+        // if (info.error)
+        //     return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
 
-        // send text
-        return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
+        // // send text
+        // return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
     }
 
     if (type !== MsgType.TEXT) return;
@@ -867,6 +841,35 @@ async function resendToSTT(file, id, sock, msgkey) {
             }
         }
     }, {})
+}
+
+/**
+ * 
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+ * @param {import('@adiwajshing/baileys').WASocket} sock 
+ */
+async function whisper(msg, sock){
+    const id = msg.key.remoteJid;
+    try {
+        const filename = `./${id}_whisper.ogg`;
+
+        // download file
+        /** @type {Buffer} */
+        let buffer = await downloadMediaMessage(msg, "buffer");
+        // save temp file
+        fs.writeFileSync(filename, buffer);
+        // send to stt
+        let res = await chatGPT.stt(filename);
+        // delete file
+        fs.unlinkSync(filename);
+
+        // send the result
+        return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
+
+    } catch (error) {
+        console.error(error);
+        return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+    }
 }
 
 async function sleep(ms) {

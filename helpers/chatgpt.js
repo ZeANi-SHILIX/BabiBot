@@ -1,4 +1,6 @@
 const { Configuration, OpenAIApi } = require("openai");
+const fs = require("fs");
+const {convertOGGToMp3, isOGGFile} = require("./convertor")
 
 function ChatGPT(apiKey) {
   const configuration = new Configuration({
@@ -21,19 +23,19 @@ ChatGPT.prototype.ask = async function (prompt) {
 
 ChatGPT.prototype.ask2 = async function (prompt) {
   let data = {
-      "max_tokens": 480,
-      "model":"gpt-3.5-turbo",
-      "messages": [
-          {
-              role: "system",
-              content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
-                  + process.env.MAILLIST ? `only if ask for a mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
-          },
-          {
-              "role": "user",
-              "content": prompt
-          }
-      ]
+    "max_tokens": 480,
+    "model": "gpt-3.5-turbo",
+    "messages": [
+      {
+        role: "system",
+        content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
+          + process.env.MAILLIST ? `only if ask for a mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
+      },
+      {
+        "role": "user",
+        "content": prompt
+      }
+    ]
   }
   let res = await this.openai.createChatCompletion(data);
   return res.data;
@@ -143,32 +145,47 @@ ChatGPT.prototype.tldr = async function (msgs, user) {
 };
 
 /**
- * @param {fs.ReadStream} rs
+ * @param {string} filename
  */
-ChatGPT.prototype.stt = async function (rs) {
+ChatGPT.prototype.stt = async function (filename) {
   try {
-    const res = await this.openai.createTranscription(rs, "whisper-1")
-    console.log(res)
+    if (!isOGGFile(filename)) return "Not ogg";
+
+    let newFilename = await convertOGGToMp3(filename);
+
+    const res = await this.openai.createTranscription(
+      fs.createReadStream(newFilename),
+      "whisper-1")
+
+    fs.unlinkSync(newFilename);
+
     return res?.data?.text;
   } catch (error) {
-    console.log(error)
+    console.error(error)
   }
   return "Error";
 }
 
-const fs = require("fs");
+
 require("dotenv").config();
 
 async function test() {
   const filename = "C:/Users/shilo/Desktop/BabiBot/testingFiles/audio.mp3";
+  const filename3 = "C:/Users/shilo/Desktop/BabiBot/audio.ogg";
+  let filenameTest = await convertWavToMp3(filename3)
+
+
   const chatgpt = new ChatGPT(process.env.OPENAI_API_KEY);
   console.log("Starting transcription");
   let res = await chatgpt.stt(
-    fs.createReadStream(filename),
+    fs.createReadStream(filenameTest),
   )
 
   console.log(res);
 }
 //test();
+
+
+
 
 module.exports = ChatGPT;
