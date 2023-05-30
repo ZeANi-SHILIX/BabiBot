@@ -4,7 +4,6 @@ const noteHendler = require('./helpers/noteHandler');
 const BarkuniSticker = require('./helpers/berkuniHandler')
 const sendSticker = require('./helpers/stickerMaker')
 const Downloader = require('./helpers/downloader')
-const { getOmerDay } = require('./helpers/hebrewDate')
 const { store, GLOBAL } = require('./src/storeMsg')
 const messageRetryHandler = require("./src/retryHandler")
 const ChatGPT = require('./helpers/chatgpt')
@@ -36,9 +35,9 @@ let commands = {
     "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
     "!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
     "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
-    "!בוט": "שאל את GPT שאלה",
+    "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
     "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
-    "!תמונה": "תאר לי תמונה (באנגלית) ואני אכין לך אותה",
+    "!תמונה": "תאר לי תמונה ואני אכין לך אותה",
 
     // "!הערות" : "קבל את כל ההערות בצאט זה",
 
@@ -156,7 +155,7 @@ async function handleMessage(sock, msg, mongo) {
         const res1 = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
         console.log(res1)
 
-        
+
     }
 
 
@@ -250,10 +249,7 @@ async function handleMessage(sock, msg, mongo) {
         }
         if (!textToTranslate) return sock.sendMessage(id, { text: "לא נמצא טקסט לתרגום" }).then(messageRetryHandler.addMessage);
 
-        let translateUrl = "https://api.pawan.krd/mtranslate?from=en&to=iw&text=" + encodeURIComponent(textToTranslate);
-
-        /** @type {{status:boolean, translated?: string, "time": number}} */
-        let translateResult = await fetch(translateUrl).then(res => res.json());
+        let translateResult = await translate(textToTranslate);
 
         if (translateResult.status && translateResult.translated)
             return sock.sendMessage(id, { text: translateResult.translated }).then(messageRetryHandler.addMessage);
@@ -446,9 +442,14 @@ async function handleMessage(sock, msg, mongo) {
         let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7)
             .replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
             .replace(/[?]/g, "")
-            .replace("בבקשה", "").replace("המרצה ", "").replace("מרצה ", "")
+            .replace("בבקשהה", "").replace("בבקשה", "")
+            .replace("המרצה ", "").replace("מרצה ", "")
             .replace("המתרגל ", "").replace("מתרגל ", "")
             .trim();
+
+        if ((" "+searchText).includes(" דר "))
+            searchText = searchText.replace("דר ", "")
+
         let arr_search = searchText.split(" ");
         console.log(arr_search)
 
@@ -461,7 +462,7 @@ async function handleMessage(sock, msg, mongo) {
                 //console.log(str, arr_search);
 
                 if (arr_search.every(s => str.includes(s) || nickname.includes(s))) {
-                    console.log(mail);
+                    console.log(mail.c[0]);
                     countMails += 1;
                     retunText += str + "\n";
                 }
@@ -522,7 +523,19 @@ async function handleMessage(sock, msg, mongo) {
     // get image from GPT
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
         try {
-            let resImage = await unofficalGPT.image(textMsg.replace("!image", "").replace("!תמונה", "").trim() + '\n');
+            let imgdesc = textMsg.replace("!image", "").replace("!תמונה", "").trim();
+            // get only english letters
+            let imgdesc_en = imgdesc.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+
+            if (imgdesc_en.length < 2){
+                let translatedText = await translate(imgdesc, 'iw', 'en');
+                console.log(translatedText);
+                imgdesc_en = translatedText.translated || "";
+            }
+
+            console.log(imgdesc_en);
+
+            let resImage = await unofficalGPT.image(imgdesc_en + '\n');
             console.log(resImage?.data?.[0]?.url || resImage.error);
             if (resImage?.data?.[0]?.url) {
                 for (const urlObj of resImage.data)
@@ -579,10 +592,10 @@ async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` }).then(messageRetryHandler.addMessage)
     }
 
-    // Omer count
-    if (textMsg.includes("!omer") || textMsg.includes("!עומר")) {
-        return sock.sendMessage(id, { text: `היום ${getOmerDay().render("he")}` }).then(messageRetryHandler.addMessage)
-    }
+    // // Omer count
+    // if (textMsg.includes("!omer") || textMsg.includes("!עומר")) {
+    //     return sock.sendMessage(id, { text: `היום ${getOmerDay().render("he")}` }).then(messageRetryHandler.addMessage)
+    // }
 
     // stt
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט")) {
@@ -689,17 +702,12 @@ async function handleMessage(sock, msg, mongo) {
         await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
         let history = await store.loadMessages(id, 20);
         let res = await chatGPT.chat(history)
+        if (res == "") {
+            res = await chatGPT.chat(history);
+        }
         await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
 
-
-        // //let res = await unofficalGPT.waMsgs(history)
-        // console.log(JSON.stringify(res, null, 2));
-        // if (res?.choices?.[0]?.message?.content !== undefined) {
-        //     await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-        //     return sock.sendMessage(id, { text: res.choices[0].message.content }).then(messageRetryHandler.addMessage)
-        // }
-        // await sock.sendMessage(id, { text: res.error + "\n" + res.hint }).then(messageRetryHandler.addMessage)
     } catch (error) {
         console.error(error);
         await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
@@ -790,6 +798,19 @@ async function stt_heb(data) {
     );
     const result = await response.json();
     return result;
+}
+
+/**
+ * 
+ * @param {string} text 
+ * @param {"iw" | "en"} source 
+ * @param {"iw" | "en"} target 
+ * @returns {Promise<{status:boolean, translated?: string, time: number}>}
+ */
+async function translate(text, source = "en", target = "iw") {
+    let translateUrl = `https://api.pawan.krd/mtranslate?from=${source}&to=${target}&text=` + encodeURIComponent(text);
+
+    return await fetch(translateUrl).then(res => res.json());
 }
 
 async function resendToSTT(file, id, sock, msgkey) {

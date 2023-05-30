@@ -88,5 +88,5 @@ async function getFireBaseQuiz(typeQuiz ,num_quiz) {
 //getFireBaseQuiz("Testing", 1);
 
 module.exports = {
-    getFireBaseQuiz
+    //getFireBaseQuiz
 }
