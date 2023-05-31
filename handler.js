@@ -38,6 +38,7 @@ let commands = {
     "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
     "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
     "!תמונה": "תאר לי תמונה ואני אכין לך אותה",
+    "!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
 
     // "!הערות" : "קבל את כל ההערות בצאט זה",
 
@@ -117,8 +118,9 @@ async function handleMessage(sock, msg, mongo) {
 
     // send ACK
     sock.readMessages([msg.key])
+
     if (textMsg.startsWith("!page")) {
-        const page = "http://129.159.140.102:3000/"
+        const page = ""
         sock.sendMessage(id, { text: page }).then(messageRetryHandler.addMessage);
         return;
     }
@@ -598,7 +600,7 @@ async function handleMessage(sock, msg, mongo) {
     // }
 
     // stt
-    if (textMsg.includes("!stt") || textMsg.includes("!טקסט")) {
+    if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
         console.log(msg);
         // has quoted message?
         if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)

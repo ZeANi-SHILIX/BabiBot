@@ -82,14 +82,14 @@ async function connectToWhatsApp() {
         for (const ev of event) {
             console.log(event);
 
-            const superUser_inGroup = ev.participants.filter(p => p.admin && p.id.includes(superuser))
+            const superUser_inGroup = ev.participants.some(p => p.admin && p.id.includes(superuser))
             // superuser isn't falsy, and he admin at the group - do nothing
             if (superuser && superUser_inGroup) return;
 
             await sock.sendMessage(ev.id, {
                 text: "היי! אני באבי בוט 😃\n"
                     + "שלחו לי את המילה '!פקודות' והתחילו להנות!\n\n"
-                    + "(לידעתכם ההודעות בקבוצה יהיו זמינות למפתח שלי לצורך בקרה ושיפור השירות)"
+                    + "(לידעתכם ההודעות שנשלחות לבוט בקבוצה או בפרטי אינן פרטיות)"
             });
         }
     })
