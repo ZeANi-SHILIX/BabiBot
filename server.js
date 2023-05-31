@@ -139,7 +139,7 @@ app.get('/qr', async (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/botIndex.html');
+    res.sendFile(__dirname + '/index.html');
     //res.send('Hello World! its Babi Bot')
 });
 

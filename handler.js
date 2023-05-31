@@ -119,8 +119,8 @@ async function handleMessage(sock, msg, mongo) {
     // send ACK
     sock.readMessages([msg.key])
 
-    if (textMsg.startsWith("!page")) {
-        const page = ""
+    if (textMsg.startsWith("!page") || textMsg.startsWith("!אינטרנט")) {
+        const page = "babibot.live"
         sock.sendMessage(id, { text: page }).then(messageRetryHandler.addMessage);
         return;
     }
