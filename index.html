@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
+
 <head>
   <title>מידע על פקודות בוט WhatsApp</title>
   <style>
@@ -9,33 +10,33 @@
       background-color: #F6F8FA;
       display: flex;
     }
-    
+
     h1 {
       color: #333;
       text-align: center;
     }
-    
+
     h2 {
       color: #555;
       margin-top: 20px;
     }
-    
+
     pre {
       background-color: #EAEAEA;
       padding: 10px;
       border-radius: 4px;
       overflow-x: auto;
     }
-    
+
     ul {
       list-style-type: none;
       padding: 0;
     }
-    
+
     li {
       margin-bottom: 10px;
     }
-    
+
     .command {
       margin-bottom: 30px;
       background-color: #FFFFFF;
@@ -43,36 +44,36 @@
       padding: 20px;
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .command h2 {
       color: #007BFF;
       font-size: 24px;
       margin-bottom: 10px;
     }
-    
+
     .command p {
       color: #333;
       font-size: 16px;
     }
-    
+
     .command h3 {
       color: #555;
       margin-top: 15px;
     }
-    
+
     .command pre {
       background-color: #F0F0F0;
       font-size: 14px;
     }
-    
+
     .command ul {
       margin-top: 10px;
     }
-    
+
     .command li {
       font-size: 14px;
     }
-    
+
     .index {
       background-color: #FFFFFF;
       border-radius: 4px;
@@ -81,23 +82,23 @@
       min-width: 200px;
       margin-right: 20px;
     }
-    
+
     .index ul {
       margin: 0;
       padding: 0;
     }
-    
+
     .index li {
       margin-bottom: 10px;
       list-style-type: none;
     }
-    
+
     .index a {
       color: #007BFF;
       text-decoration: none;
       font-weight: bold;
     }
-    
+
     .index a:hover {
       text-decoration: underline;
     }
@@ -107,39 +108,107 @@
     }
   </style>
 </head>
+
 <body>
   <div class="index">
     <h2>פקודות:</h2>
     <ul>
       <li><a href="#ping-command">!פינג</a></li>
-      <li><a href="#command-another">/פקודה_נוספת</a></li>
+      <li><a href="#command-sticker">!סטיקר</a></li>
+      <li><a href="#command-youtube">!יוטיוב</a></li>
+      <li><a href="#command-barkoni">!ברקוני</a></li>
+      <li><a href="#command-mute"></a></li>
+      <li><a href="#command-unmute"></a></li>
+      <li><a href="#command-tag"></a></li>
+      <li><a href="#command-translate"></a></li>
+      <li><a href="#command-google"></a></li>
+      <li><a href="#command-gpt"></a></li>
+      <li><a href="#command-summary"></a></li>
+      <li><a href="#command-image"></a></li>
+      <li><a href="#command-transcribe"></a></li>
+      <li><a href="#command-translate"></a></li>
+      <li><a href="#command-translate"></a></li>
+      <li><a href="#command-translate"></a></li>
+      <li><a href="#command-translate"></a></li>
+      <li><a href="#command-translate"></a></li>
       <!-- Add more command links as needed -->
     </ul>
   </div>
-  
+
   <div class="content">
     <h1>BabiBot - פקודות</h1>
 
     <div class="privacy">
       <h2>פרטיות</h2>
-      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.</p>
+      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.
+      </p>
     </div>
-  
+
     <div class="command" id="ping-command">
       <h2>!פינג</h2>
       <p>בדוק אם הבוט עובד</p>
       <h3>שימוש:</h3>
       <pre>!פינג</pre>
-      <h3>דוגמאות:</h3>
-      <pre>!פינג</pre>
-      <pre>!ping</pre>
       <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת "פונג".</p>    
+      <p>הבוט ישיב עם הודעת "פונג".</p>
     </div>
-  
-    <div class="command" id="command-another">
-      <h2>/פקודה_נוספת</h2>
-      <p>פקודה זו מאפשרת למשתמשים לבצע פעולה נוספת באמצעות בוט WhatsApp.</p>
+
+    <div class="command" id="command-sticker">
+      <h2>!סטיקר</h2>
+      <p>שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר</p>
+      <h3>שימוש:</h3>
+      <pre>!סטיקר [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> מלא \ חתוך \ עגול \ מעוגל</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>!סטיקר עגול</pre>
+      <pre>!סטיקר אין על באבי בוט</pre>
+      <h3>תגובה:</h3>
+      <p>אם קיימת מדיה בהודעה הנוכחית או המצוטטת - ישלח סטיקר מהמדיה לפי הפרמטר, <br>אחרת הבוט ייצור סטיקר מהמילים לאחר הפקודה.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>אם לא צויין פרמטר בעת שליחת מדיה - יוכנס "מלא" כברירת מחדל</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-youtube">
+      <h2>!יוטיוב</h2>
+      <p>שלח לי קישור לשיר ביוטיוב ואני אשלח לך אותו לכאן</p>
+      <h3>שימוש:</h3>
+      <pre>!יוטיוב [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> קישור לסרטון ביוטיוב</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>!יוטיוב http</pre>
+      <h3>תגובה:</h3>
+      <p>לאחר עיבוד, הבוט ישלח את קובץ השמע של הסרטון.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>פקודה זו נועדה להורדת שירים בלבד! נא לא לשלוח סרטונים ארוכים</li>
+        <li>לא ניתן להוריד שמע מסרטוני SHORTS</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-barkoni">
+      <h2>!ברקוני</h2>
+      <p>קבל סטיקר רנדומלי מברקוני</p>
+      <h3>שימוש:</h3>
+      <pre>!ברקוני</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם סטיקר רנדומלי של ברקוני.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>יש לכם סטיקרים של ברקוני שלא נמצאים בבוט? מוזמנים לשלוח</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-mute">
+      <h2>!השתק</h2>
+      <p>השתק את הקבוצה לפי זמן מסוים</p>
       <h3>שימוש:</h3>
       <pre>/פקודה_נוספת [פרמטר]</pre>
       <h3>פרמטרים:</h3>
@@ -157,11 +226,10 @@
         <li>הפקודה תלויה ברישיון.</li>
       </ul>
     </div>
-  
 
-    <div class="command" id="command-another">
-      <h2>/פקודה_נוספת</h2>
-      <p>פקודה זו מאפשרת למשתמשים לבצע פעולה נוספת באמצעות בוט WhatsApp.</p>
+    <div class="command" id="command-unmute">
+      <h2>!בטלהשתקה</h2>
+      <p>בטל השתקה</p>
       <h3>שימוש:</h3>
       <pre>/פקודה_נוספת [פרמטר]</pre>
       <h3>פרמטרים:</h3>
@@ -180,10 +248,135 @@
       </ul>
     </div>
 
+    <div class="command" id="command-tag">
+      <h2>!כולם</h2>
+      <p>תייג את כל המשתמשים בקבוצה (מנהלים בלבד)</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
 
-    <div class="command" id="command-another">
-      <h2>/פקודה_נוספת</h2>
-      <p>פקודה זו מאפשרת למשתמשים לבצע פעולה נוספת באמצעות בוט WhatsApp.</p>
+    <div class="command" id="command-translate">
+      <h2>!תרגם</h2>
+      <p>תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-google">
+      <h2>!גוגל</h2>
+      <p>קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-gpt">
+      <h2>!בוט</h2>
+      <p>שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-summary">
+      <h2>!אמלק</h2>
+      <p>קבל סיכום קצרצר של ההודעות האחרונות בשיחה</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-image">
+      <h2>!תמונה</h2>
+      <p>תאר לי תמונה ואני אכין לך אותה</p>
+      <h3>שימוש:</h3>
+      <pre>/פקודה_נוספת [פרמטר]</pre>
+      <h3>פרמטרים:</h3>
+      <ul>
+        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
+      </ul>
+      <h3>דוגמאות:</h3>
+      <pre>/פקודה_נוספת "שלום"</pre>
+      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
+      <h3>תגובה:</h3>
+      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
+      <h3>הערות:</h3>
+      <ul>
+        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
+        <li>הפקודה תלויה ברישיון.</li>
+      </ul>
+    </div>
+
+    <div class="command" id="command-transcribe">
+      <h2>!תמלל</h2>
+      <p>שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה</p>
       <h3>שימוש:</h3>
       <pre>/פקודה_נוספת [פרמטר]</pre>
       <h3>פרמטרים:</h3>
@@ -226,7 +419,8 @@
     <!-- Add more command sections as needed -->
   </div>
 
-  
+
 
 </body>
+
 </html>
