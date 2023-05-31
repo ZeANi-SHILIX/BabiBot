@@ -1,4 +1,4 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@adiwajshing/baileys')
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, proto } = require('@adiwajshing/baileys')
 const { handlerQueue } = require('./src/QueueObj');
 const { store, logger, GLOBAL } = require('./src/storeMsg');
 const bodyParser = require('body-parser');
@@ -103,6 +103,11 @@ async function connectToWhatsApp() {
                 if (msg.key.remoteJid === 'status@broadcast') return; // ignore status messages
                 if (msg.key.remoteJid.includes("call")) return; // ignore call messages
 
+                let proType = msg.message?.protocolMessage?.type;
+                if (proType == proto.Message.ProtocolMessage.Type.REVOKE ||
+                    proType == proto.Message.ProtocolMessage.Type.MESSAGE_EDIT)
+                    return;
+
                 //handleMessage(sock, msg, mongo);
                 handlerQueue.add(() => handleMessage(sock, msg, mongo));
             }
@@ -112,14 +117,17 @@ async function connectToWhatsApp() {
             if (!PRODUCTION) return; // avoid double handling in dev
 
             for (const msg of messages) {
-                if (!msg.message || // if there is no text or media message
-                    msg.key.fromMe) {
-                    //do nothing
+                if (!msg.message) continue; // if there is no text or media message
+                if (msg.key.fromMe) continue;
+                if (msg.key.remoteJid === 'status@broadcast') continue; // ignore status messages
+                
+                let proType = msg.message?.protocolMessage?.type;
+                if (proType == proto.Message.ProtocolMessage.Type.REVOKE ||
+                    proType == proto.Message.ProtocolMessage.Type.MESSAGE_EDIT)
                     continue;
-                }
-                else {
-                    handlerQueue.add(() => handleMessage(sock, msg, mongo));
-                }
+
+                handlerQueue.add(() => handleMessage(sock, msg, mongo));
+
             }
         }
     })
