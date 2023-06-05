@@ -1,6 +1,6 @@
 const { Configuration, OpenAIApi } = require("openai");
 const fs = require("fs");
-const {convertOGGToMp3, isOGGFile} = require("./convertor")
+const { convertOGGToMp3, isOGGFile } = require("./convertor")
 
 function ChatGPT(apiKey) {
   const configuration = new Configuration({
@@ -91,56 +91,43 @@ ChatGPT.prototype.chat = async function (msgs, user) {
 };
 
 /**
- * TL;DR the conversation (130 tokens)
+ * TL;DR the conversation (800 tokens)
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo[]} msgs 
- * @param {String} user 
- * @returns 
+ * @returns {Promise<String>}
  */
-ChatGPT.prototype.tldr = async function (msgs, user) {
-  let allUsers = ["BabiBOT:"]
-  let messages = [];
-
-  for (let msg of msgs) {
-    let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || undefined;
-    let name = (msg.pushName ?? user) + ":";
+ChatGPT.prototype.tldr = async function (msgs) {
+  let prompt = "";
+  for (const msg of msgs) {
+    let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text
+      || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+    let pushName = msg.key.fromMe ? "You" : msg.pushName
+      || msg.key.remoteJid.slice(0, msg.key.remoteJid.indexOf("@")) || "Unknown";
 
     if (!text)
       continue;
 
-    if (msg.key.fromMe) {
-      messages.push("BabiBOT:" + text);
-    }
-    else {
-      messages.push(name + text);
-
-      if (!allUsers.includes(name))
-        allUsers.push(name)
-    }
-
+    prompt += `${pushName}: ${text}\n`;
   }
-  messages.push("BabiBOT: Summarize the conversation")
-
-  let mission = messages.join("\n");
-  //console.log(mission)
+  prompt += "Summarize the conversation as briefly as possible but with as much detail as possible\n";
 
   const response = await this.openai.createCompletion({
     model: "text-davinci-003",
-    prompt: mission,
+    prompt: prompt,
     temperature: 0.7,
     max_tokens: 800,
     top_p: 1,
     frequency_penalty: 0,
-    presence_penalty: 0.6,
-    stop: allUsers,
+    presence_penalty: 0.6
   });
 
   console.log("Total Tokens: " + response.data.usage?.total_tokens);
 
-  let res = response.data.choices[0].text;
+  let res = response.data?.choices?.[0].text || "";
   if (res.startsWith(":"))
     res = res.replace(":", " ");
   if (res.startsWith("."))
     res = res.replace(".", " ");
+
   return res.trim();
 };
 

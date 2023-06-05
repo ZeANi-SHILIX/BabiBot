@@ -560,10 +560,11 @@ async function handleMessage(sock, msg, mongo) {
             history.pop(); // we don't want the last message (the one we got now)
             console.log('history length loaded:', history.length);
 
-            let res = await unofficalGPT.tldr(history)
-            console.log(res);
-            let resText = res.choices?.[0]?.text?.trim() || res.error;
-            return sock.sendMessage(id, { text: resText })
+            if (history.length < 1)
+                return sock.sendMessage(id, { text: "לא מצאתי היסטוריה עבור שיחה זו" })
+
+            let res = await chatGPT.tldr(history)
+            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
             return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })

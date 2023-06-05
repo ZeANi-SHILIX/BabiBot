@@ -259,14 +259,9 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
     // filter to only private or feder notes
     result = result.filter(res => res.chat === id || res.federation === feder)
 
-    // #########################################
-    // todo: check not multi saved on same name
-    // #########################################
-
     // not 0 - exist
     if (result.length)
-        return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
-
+        return sock.sendMessage(id, { text: "אופס... קיימת הערה עם שם זה\nנסה שם אחר" }).then(messageRetryHandler.addMessage);
 
     // check permissions to save as global (federation) note
     if (isGlobal && isAdmin !== true)
@@ -274,23 +269,35 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
     else
         feder = id; // will save as private note
 
-    let quoted = msg;
-    try {
-        quoted = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
-    } catch (error) {
-        console.log(error);
+
+    // ------------------ save the note ------------------
+
+     // TODO check all references to quoted message
+
+    // check if the msg is a reply
+    let isQuoted = false;
+    if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
+        // get the quoted message
+        try {
+            msg = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+            isQuoted = true;
+        } catch (error) {
+            console.log(error);
+            return sock.sendMessage(id, { text: "אופס... לא הצלחתי לגשת להודעה המצוטטת" }).then(messageRetryHandler.addMessage);
+        }
     }
 
     // get the message type
-    let { type, mime } = getMsgType(quoted);
+    let { type, mime } = getMsgType(msg); // ("msg" can be the current msg or the quoted msg)
     let nameFile;
 
     // save by type
     switch (type) {
-        // => text note (no quoted message or quoted message is text)
-        case MsgType.TEXT:
+        // ---- Text Note ----
+        // (no quoted message or quoted message is text)
+        case MsgType.TEXT: 
             // get body note
-            let a = msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || msgText.split(" ").slice(2).join(" ") || "";
+            let a = isQuoted ? msg.message.conversation : msgText.split(" ").slice(2).join(" ") || "";
             if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" }).then(messageRetryHandler.addMessage);
 
             // save the note
