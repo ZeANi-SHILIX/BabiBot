@@ -94,6 +94,19 @@ async function connectToWhatsApp() {
         }
     })
 
+    sock.ev.on("messages.update", async (MessagesUpdate) => {
+        console.log("message update", MessagesUpdate);
+        for (const msg of MessagesUpdate) {
+            let { key, update } = msg;
+            //if (key.fromMe) continue;
+            //if (key.remoteJid === 'status@broadcast') continue; // ignore status messages
+
+            console.log("message update", msg);
+            console.log(update.pollUpdates);
+
+        }
+    });
+
     // handle messages
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type == 'notify') {
@@ -120,7 +133,7 @@ async function connectToWhatsApp() {
                 if (!msg.message) continue; // if there is no text or media message
                 if (msg.key.fromMe) continue;
                 if (msg.key.remoteJid === 'status@broadcast') continue; // ignore status messages
-                
+
                 let proType = msg.message?.protocolMessage?.type;
                 if (proType == proto.Message.ProtocolMessage.Type.REVOKE ||
                     proType == proto.Message.ProtocolMessage.Type.MESSAGE_EDIT)

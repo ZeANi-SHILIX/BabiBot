@@ -297,7 +297,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
         // (no quoted message or quoted message is text)
         case MsgType.TEXT: 
             // get body note
-            let a = isQuoted ? msg.message.conversation : msgText.split(" ").slice(2).join(" ") || "";
+            let a = isQuoted ? msg.message.conversation || msg.message.extendedTextMessage.text : msgText.split(" ").slice(2).join(" ") || "";
             if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" }).then(messageRetryHandler.addMessage);
 
             // save the note
@@ -309,7 +309,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
             break;
         case MsgType.DOCUMENT:
             // check if the file is too big
-            nameFile = quoted.message.documentMessage.fileName;
+            nameFile = msg.message.documentMessage.fileName;
             let size = buffer.length / 1024 / 1024;
             if (size > 15) return sock.sendMessage(id, { text: "אופס... הקובץ גדול מדי" }).then(messageRetryHandler.addMessage);
 
@@ -317,7 +317,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
         case MsgType.VIDEO:
         case MsgType.AUDIO:
         case MsgType.STICKER:
-            let buffer = await downloadMediaMessage(quoted, "buffer");
+            let buffer = await downloadMediaMessage(msg, "buffer");
             const base64 = buffer.toString("base64")
             //const _buffer = Buffer.from(myBase64File, "base64")
 
@@ -326,7 +326,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
                 question: q, answer: base64,
                 type: type, mimetype: mime,
                 fileName: nameFile,
-                caption: quoted.message.imageMessage?.caption || quoted.message.videoMessage?.caption || quoted.message.audioMessage?.caption || "",
+                caption: msg.message.imageMessage?.caption || msg.message.videoMessage?.caption || msg.message.audioMessage?.caption || "",
                 chat: id, federation: feder
             }, (err, res) => {
                 console.log(res);

@@ -30,14 +30,14 @@ let commands = {
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
     "!יוטיוב": "שלח לי קישור לשיר ביוטיוב ואני אשלח לך אותו לכאן",
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
-    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
-    "!בטלהשתקה": "בטל השתקה",
+    // "!השתק": "השתק את הקבוצה לפי זמן מסוים",
+    // "!בטלהשתקה": "בטל השתקה",
     "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
     "!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
     "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
     "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
     "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
-    "!תמונה": "תאר לי תמונה ואני אכין לך אותה",
+    //"!תמונה": "תאר לי תמונה ואני אכין לך אותה",
     "!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
 
     // "!הערות" : "קבל את כל ההערות בצאט זה",
@@ -129,10 +129,11 @@ async function handleMessage(sock, msg, mongo) {
     if (!PRODUCTION && textMsg.startsWith("test")) {
         const poll = await sock.sendMessage(id, {
             poll: {
-                name: "hello there!",
+                name: "test poll",
                 values: [
-                    "test123",
-                    "test231"
+                    "option 1",
+                    "option 2",
+                    "option 3",
                 ],
                 selectableCount: 1,
             }
@@ -142,22 +143,37 @@ async function handleMessage(sock, msg, mongo) {
         return;
     }
 
-    if (msg.message?.pollUpdateMessage) {
-        return;
-        const pollUpdate = msg.message.pollUpdateMessage;
-        const pollmsg = await store.loadMessage(id, msg.message.pollUpdateMessage.pollCreationMessageKey.id)
+    if (msg.message?.pollUpdateMessage || msg.pollUpdates) {
         console.log(msg.pollUpdates)
-        console.log(pollmsg)
 
-        const res = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
-        console.log(res)
+        let key = msg.message.pollUpdateMessage.pollCreationMessageKey;
+        if (!key) return;
 
-        updateMessageWithPollUpdate(pollmsg, msg.pollUpdates)
+        let pollCreation = await store.loadMessage(id, key.id);
+        if (!pollCreation) return;
 
-        const res1 = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
-        console.log(res1)
+        const pollMessage = await getAggregateVotesInPollMessage({
+            message: pollCreation,
+            pollUpdates: msg.pollUpdates,
+        }, sock.user.id)
+
+        console.log(pollMessage)
+
+        // const pollUpdate = msg.message.pollUpdateMessage;
+        // const pollmsg = await store.loadMessage(id, msg.message.pollUpdateMessage.pollCreationMessageKey.id)
+        // console.log(msg.pollUpdates)
+        // console.log(pollmsg)
+
+        // const res = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
+        // console.log(res)
+
+        // updateMessageWithPollUpdate(pollmsg, msg.pollUpdates)
+
+        // const res1 = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
+        //console.log(res1)
 
 
+        return;
     }
 
 
@@ -524,6 +540,7 @@ async function handleMessage(sock, msg, mongo) {
 
     // get image from GPT
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
+        return sock.sendMessage(id, { text: "השירות כרגע לא זמין" }).then(messageRetryHandler.addMessage);
         try {
             let imgdesc = textMsg.replace("!image", "").replace("!תמונה", "").trim();
             // get only english letters
@@ -851,7 +868,7 @@ async function resendToSTT(file, id, sock, msgkey) {
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  * @param {import('@adiwajshing/baileys').WASocket} sock 
  */
-async function whisper(msg, sock){
+async function whisper(msg, sock) {
     const id = msg.key.remoteJid;
     try {
         const filename = `./${id}_whisper.ogg`;
