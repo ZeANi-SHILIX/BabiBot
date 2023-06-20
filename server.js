@@ -102,8 +102,8 @@ async function connectToWhatsApp() {
             //if (key.fromMe) continue;
             //if (key.remoteJid === 'status@broadcast') continue; // ignore status messages
 
-            console.log("message update", msg);
-            console.log(update.pollUpdates);
+            //console.log("message update", msg);
+            update.pollUpdates ? console.log("pollUpdates", update.pollUpdates): null;
 
         }
     });

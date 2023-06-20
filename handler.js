@@ -144,7 +144,8 @@ async function handleMessage(sock, msg, mongo) {
     }
 
     if (msg.message?.pollUpdateMessage || msg.pollUpdates) {
-        console.log(msg.pollUpdates)
+        return;
+        //console.log(msg.pollUpdates)
 
         let key = msg.message.pollUpdateMessage.pollCreationMessageKey;
         if (!key) return;
@@ -157,7 +158,7 @@ async function handleMessage(sock, msg, mongo) {
             pollUpdates: msg.pollUpdates,
         }, sock.user.id)
 
-        console.log(pollMessage)
+        //console.log(pollMessage)
 
         // const pollUpdate = msg.message.pollUpdateMessage;
         // const pollmsg = await store.loadMessage(id, msg.message.pollUpdateMessage.pollCreationMessageKey.id)
