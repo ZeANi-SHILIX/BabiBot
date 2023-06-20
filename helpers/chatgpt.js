@@ -108,7 +108,7 @@ ChatGPT.prototype.tldr = async function (msgs) {
 
     prompt += `${pushName}: ${text}\n`;
   }
-  prompt += "Summarize the conversation as briefly as possible but with as much detail as possible\n";
+  prompt += "Summarize the conversation as briefly as possible but with as much detail as possible without missing any important information\n";
 
   const response = await this.openai.createCompletion({
     model: "text-davinci-003",

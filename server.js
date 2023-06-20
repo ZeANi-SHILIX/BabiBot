@@ -14,6 +14,7 @@ const msgRetryCounterMap = {};
 const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const superuser = process.env.SUPERUSER ?? "";
+console.clear();
 console.log("PRODUCTION:", PRODUCTION);
 
 const app = express()
