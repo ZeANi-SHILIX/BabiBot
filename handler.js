@@ -12,7 +12,7 @@ const { info } = require("./helpers/globals");
 const fetch = require('node-fetch');
 const fs = require("fs");
 const { getMsgType, MsgType } = require('./helpers/msgType');
-const { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } = require('@adiwajshing/baileys');
+const { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate, proto } = require('@adiwajshing/baileys');
 
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
@@ -701,12 +701,20 @@ async function handleMessage(sock, msg, mongo) {
     try {
         await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
         let history = await store.loadMessages(id, 20);
-        let res = await chatGPT.chat(history)
+        let [res, finish_reason] = await chatGPT.chat(history)
         if (res == "") {
-            res = await chatGPT.chat(history);
+            [res, finish_reason] = await chatGPT.chat(history);
         }
         await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-        return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
+        let returnMsg = await sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
+        if (finish_reason == "length") {
+            history.push({
+                key: { fromMe: true },
+                message: { conversation: res }
+            })
+            continueChat(history, res, id, sock, returnMsg.key);
+        }
+        return;
 
     } catch (error) {
         console.error(error);
@@ -799,6 +807,33 @@ async function stt_heb(data) {
     const result = await response.json();
     return result;
 }
+
+/**
+ * 
+ * @param {proto.IWebMessageInfo[]} history 
+ * @param {string} oldRes 
+ * @param {string} id 
+ * @param {import('@adiwajshing/baileys').WASocket} sock 
+ * @param {proto.IWebMessageInfo.key} editMsgkey 
+ * @returns 
+ */
+async function continueChat(history, oldRes, id, sock, editMsgkey) {
+    let [res, finish_reason] = await chatGPT.chat(history);
+    if (res == "") return;
+
+    // edit the last message
+    sock.relayMessage(id, {
+        protocolMessage: {
+            key: editMsgkey,
+            type: 14,
+            editedMessage: {
+                conversation: oldRes + res
+            }
+        }
+    }, {})
+}
+
+
 
 /**
  * 

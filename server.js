@@ -96,16 +96,16 @@ async function connectToWhatsApp() {
     })
 
     sock.ev.on("messages.update", async (MessagesUpdate) => {
-        console.log("message update", MessagesUpdate);
-        for (const msg of MessagesUpdate) {
-            let { key, update } = msg;
-            //if (key.fromMe) continue;
-            //if (key.remoteJid === 'status@broadcast') continue; // ignore status messages
+        //console.log("message update", MessagesUpdate);
+        // for (const msg of MessagesUpdate) {
+        //     let { key, update } = msg;
+        //     //if (key.fromMe) continue;
+        //     //if (key.remoteJid === 'status@broadcast') continue; // ignore status messages
 
-            //console.log("message update", msg);
-            update.pollUpdates ? console.log("pollUpdates", update.pollUpdates): null;
+        //     //console.log("message update", msg);
+        //     update.pollUpdates ? console.log("pollUpdates", update.pollUpdates): null;
 
-        }
+        // }
     });
 
     // handle messages

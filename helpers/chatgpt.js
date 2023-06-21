@@ -1,6 +1,6 @@
 const { Configuration, OpenAIApi } = require("openai");
 const fs = require("fs");
-const { convertOGGToMp3, isOGGFile } = require("./convertor")
+const { convertOGGToMp3, isOGGFile } = require("./convertor");
 
 function ChatGPT(apiKey) {
   const configuration = new Configuration({
@@ -8,6 +8,27 @@ function ChatGPT(apiKey) {
   });
 
   this.openai = new OpenAIApi(configuration);
+}
+
+let commands = {
+  "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
+  "!יוטיוב": "שלח לי קישור לשיר ביוטיוב ואני אשלח לך את השיר",
+  "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
+  "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
+  "!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
+  "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
+  "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
+  "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
+  "!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
+}
+let commandText = (Object.entries(commands)).map(([key, value]) => `'${key}' - ${value}`).join("\n");
+
+const systemMessage = {
+  role: "system",
+  content: "You are a chatbot named 'Babi Bot' / 'באבי בוט'. Your code has written by Shilo Babila (שילה בבילה) using JavaScript.\n" +
+    "your purpose is to chat with people and answer their questions.\n" +
+    "You cannot remind others to perform any type of task.\n" +
+    "you have the commands as follow:\n" + commandText
 }
 
 ChatGPT.prototype.ask = async function (prompt) {
@@ -26,11 +47,7 @@ ChatGPT.prototype.ask2 = async function (prompt) {
     "max_tokens": 480,
     "model": "gpt-3.5-turbo",
     "messages": [
-      {
-        role: "system",
-        content: "You are a male chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript."
-          + process.env.MAILLIST ? `only if ask for a mail, you have the mail list at https://docs.google.com/spreadsheets/d/${process.env.MAILLIST || ""}}` : ""
-      },
+      systemMessage,
       {
         "role": "user",
         "content": prompt
@@ -65,11 +82,12 @@ ChatGPT.prototype.conversion = async function (msgs) {
  * quick chat with the bot (80 tokens)
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo[]} msgs 
  * @param {String} user 
- * @returns 
+ * @returns [String, String | null]
  */
 ChatGPT.prototype.chat = async function (msgs, user) {
+
   let messages = [
-    { role: "system", content: "You are a chatbot named 'Babi Bot'. Your code has written by Shilo Babila using JavaScript." }
+    systemMessage
   ];
 
   for (let i = 0; i < msgs.length; i++) {
@@ -87,7 +105,12 @@ ChatGPT.prototype.chat = async function (msgs, user) {
     user
   });
   console.log("Total Tokens: " + response.data.usage?.total_tokens);
-  return (response.data.choices[0].message.content);
+
+  /** @summary “stop” (indicating the completion was generated successfully),
+   *           and “length” (indicating the language model ran out of tokens before being able to finish the completion) */
+  let finish_reason = response.data.choices[0].finish_reason;
+
+  return [response.data.choices[0].message.content, finish_reason];
 };
 
 /**
@@ -157,18 +180,49 @@ ChatGPT.prototype.stt = async function (filename) {
 require("dotenv").config();
 
 async function test() {
-  const filename = "C:/Users/shilo/Desktop/BabiBot/testingFiles/audio.mp3";
-  const filename3 = "C:/Users/shilo/Desktop/BabiBot/audio.ogg";
-  let filenameTest = await convertWavToMp3(filename3)
+  let gpt = new ChatGPT(process.env.OPENAI_API_KEY);
+  let messages = [
+    systemMessage
+  ];
+
+  messages.push({
+    "role": "user",
+    "content": "ספר לי על עצמך"
+  })
 
 
-  const chatgpt = new ChatGPT(process.env.OPENAI_API_KEY);
-  console.log("Starting transcription");
-  let res = await chatgpt.stt(
-    fs.createReadStream(filenameTest),
-  )
+  let response = await gpt.openai.createChatCompletion({
+    model: "gpt-3.5-turbo",
+    messages,
+    max_tokens: 15,
+  });
 
-  console.log(res);
+  console.log(response.data.choices[0]);
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  let counter = 0;
+
+  while (response.data.choices[0].finish_reason == "length" && counter++ < 3) {
+    console.log("length");
+
+    messages.push({
+      "role": "assistant",
+      "content": response.data.choices[0].message.content
+    })
+
+    await sleep(1000);
+    response = await gpt.openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages,
+      max_tokens: 15,
+    });
+
+    console.log(response.data.choices[0]);
+  }
+
 }
 //test();
 
