@@ -1,9 +1,7 @@
-const fs = require("fs");
-require("dotenv").config();
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const ffmpeg = require('fluent-ffmpeg');
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-const path = require("path");
+import path from "path";
 
 function isOGGFile(oggFilename) {
     const ext = path.extname(oggFilename);

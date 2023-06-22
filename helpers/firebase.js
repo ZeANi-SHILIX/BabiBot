@@ -1,7 +1,8 @@
-const { initializeApp } = require("firebase/app");
-const { getStorage, ref, listAll, getDownloadURL, uploadBytes, getBytes } = require("firebase/storage");
-require('dotenv').config();
-const fs = require('fs');
+import { initializeApp } from "firebase/app";
+import { getStorage, ref, listAll, getDownloadURL, uploadBytes, getBytes } from "firebase/storage";
+import dotenv from 'dotenv';
+import fs from 'fs';
+
 
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,

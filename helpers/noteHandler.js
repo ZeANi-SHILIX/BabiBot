@@ -1,12 +1,12 @@
-const { downloadMediaMessage } = require('@adiwajshing/baileys')
-const messageRetryHandler = require("../src/retryHandler")
+import { downloadMediaMessage } from '@adiwajshing/baileys';
+import messageRetryHandler from "../src/retryHandler";
 
-const savedNotes = require('../src/notes');
-const mediaNote = require('../src/mediaNote');
-const allNotes = require('../src/AllNotes');
+import savedNotes from '../src/notes';
+import mediaNote from '../src/mediaNote';
+import allNotes from '../src/AllNotes';
 
-const { MsgType, getMsgType } = require('./msgType');
-const { GLOBAL, store } = require('../src/storeMsg')
+import { MsgType, getMsgType } from './msgType';
+import { GLOBAL, store } from '../src/storeMsg';
 
 function NoteHendler() {
     this.savedNotes = savedNotes;

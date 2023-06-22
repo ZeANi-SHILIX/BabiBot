@@ -1,15 +1,16 @@
-const { downloadMediaMessage } = require('@adiwajshing/baileys')
-const { Sticker, StickerTypes } = require('wa-sticker-formatter');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const ffmpeg = require('fluent-ffmpeg');
+import { downloadMediaMessage } from '@adiwajshing/baileys';
+import { Sticker, StickerTypes } from 'wa-sticker-formatter';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 //const text2png = require('text2png');
-const { UltimateTextToImage } = require("ultimate-text-to-image");
+import { UltimateTextToImage } from "ultimate-text-to-image";
 
-const messageRetryHandler = require("../src/retryHandler")
+import messageRetryHandler from "../src/retryHandler";
 
-const { store } = require('../src/storeMsg');
-const { MsgType, getMsgType } = require('./msgType');
+import { store } from '../src/storeMsg';
+import { MsgType, getMsgType } from './msgType';
+
 
 const sticker_types = {
     "חתוך": StickerTypes.CROPPED,

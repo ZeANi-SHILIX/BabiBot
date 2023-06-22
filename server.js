@@ -1,13 +1,15 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, proto } = require('@adiwajshing/baileys')
-const { handlerQueue } = require('./src/QueueObj');
-const { store, logger, GLOBAL } = require('./src/storeMsg');
-const bodyParser = require('body-parser');
-//const jwt = require('jsonwebtoken');
-const { handleMessage } = require('./handler');
-const Mongo = require('./mongo');
-const express = require('express');
-const QRCode = require('qrcode');
-const messageRetryHandler = require("./src/retryHandler")
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, proto } from '@adiwajshing/baileys';
+import bodyParser from 'body-parser';
+import express from 'express';
+import QRCode from 'qrcode';
+import dotenv from 'dotenv';
+import Mongo from './mongo';
+import { handlerQueue } from './src/QueueObj';
+import { store, logger, GLOBAL } from './src/storeMsg';
+//import jwt from 'jsonwebtoken';
+import handleMessage from './handler';
+import messageRetryHandler from "./src/retryHandler"
+dotenv.config();
 
 const msgRetryCounterMap = {};
 

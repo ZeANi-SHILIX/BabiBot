@@ -1,6 +1,7 @@
-const { Configuration, OpenAIApi } = require("openai");
-const fs = require("fs");
-const { convertOGGToMp3, isOGGFile } = require("./convertor");
+import { Configuration, OpenAIApi } from "openai";
+import fs from "fs";
+import { convertOGGToMp3, isOGGFile } from "./convertor";
+
 
 function ChatGPT(apiKey) {
   const configuration = new Configuration({

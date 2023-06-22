@@ -1,8 +1,8 @@
-const { store } = require('../src/storeMsg');
-const { downloadMediaMessage } = require('@adiwajshing/baileys');
-const barkuniDB = require('../src/barkuni');
-const { Sticker } = require('wa-sticker-formatter');
-const messageRetryHandler = require("../src/retryHandler")
+import { store } from '../src/storeMsg';
+import { downloadMediaMessage } from '@adiwajshing/baileys';
+import barkuniDB from '../src/barkuni';
+import { Sticker } from 'wa-sticker-formatter';
+import messageRetryHandler from "../src/retryHandler";
 
 
 /**

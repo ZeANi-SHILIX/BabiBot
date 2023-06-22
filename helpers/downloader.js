@@ -1,6 +1,6 @@
-var YoutubeMp3Downloader = require("youtube-mp3-downloader");
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const { info } = require("./globals");
+import YoutubeMp3Downloader from "youtube-mp3-downloader";
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { info } from "./globals";
 
 /**
  * 

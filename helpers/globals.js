@@ -1,4 +1,4 @@
-const { GLOBAL } = require('../src/storeMsg');
+import { GLOBAL } from '../src/storeMsg';
 
 function Information() {
     this.map = new Map();

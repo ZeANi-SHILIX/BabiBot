@@ -1,8 +1,8 @@
-const { get } = require('mongoose');
-const { GLOBAL } = require('../src/storeMsg');
-const { getOmerDay, isHebrewHolyday } = require('./hebrewDate');
-const { getFireBaseQuiz } = require('./firebase');
-const messageRetryHandler = require('../src/retryHandler');
+import { get } from 'mongoose';
+import { GLOBAL } from '../src/storeMsg';
+import { getOmerDay, isHebrewHolyday } from './hebrewDate';
+import { getFireBaseQuiz } from './firebase';
+import messageRetryHandler from '../src/retryHandler';
 
 const HOUR = 60 * 60 * 1000;
 const DEFAULT_HOUR_OF_QUIZ = 22;

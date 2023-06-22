@@ -1,5 +1,4 @@
-const fetch = require('node-fetch');
-require('dotenv').config();
+import fetch from 'node-fetch';
 
 /**
  * apikey from https://discord.pawan.krd/

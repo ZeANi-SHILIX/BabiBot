@@ -1,18 +1,17 @@
-require('dotenv').config();
-
-const noteHendler = require('./helpers/noteHandler');
-const BarkuniSticker = require('./helpers/berkuniHandler')
-const sendSticker = require('./helpers/stickerMaker')
-const Downloader = require('./helpers/downloader')
-const { store, GLOBAL } = require('./src/storeMsg')
-const messageRetryHandler = require("./src/retryHandler")
-const ChatGPT = require('./helpers/chatgpt')
-const UnofficalGPT = require('./helpers/unofficalGPT')
-const { info } = require("./helpers/globals");
-const fetch = require('node-fetch');
-const fs = require("fs");
-const { getMsgType, MsgType } = require('./helpers/msgType');
-const { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate, proto } = require('@adiwajshing/baileys');
+import dotenv from 'dotenv';
+import noteHendler from './helpers/noteHandler';
+import BarkuniSticker  from './helpers/berkuniHandler';
+import sendSticker from './helpers/stickerMaker';
+import Downloader from './helpers/downloader';
+import { store, GLOBAL } from './src/storeMsg';
+import messageRetryHandler from './src/retryHandler';
+import ChatGPT from './helpers/chatgpt';
+import UnofficalGPT from './helpers/unofficalGPT';
+import { info } from './helpers/globals';
+import fetch from 'node-fetch';
+import fs from 'fs';
+import { getMsgType, MsgType } from './helpers/msgType';
+import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate, proto } from '@adiwajshing/baileys';
 
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)

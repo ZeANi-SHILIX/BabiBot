@@ -1,6 +1,6 @@
-const { proto, makeInMemoryStore } = require('@adiwajshing/baileys')
-const { pino } = require("pino");
-const fs = require("fs");
+import { proto, makeInMemoryStore } from '@adiwajshing/baileys';
+import { pino, } from "pino";
+import fs from "fs";
 
 /**
  * this sock is updating while getting messages
