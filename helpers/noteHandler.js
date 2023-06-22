@@ -1,19 +1,20 @@
 import { downloadMediaMessage } from '@adiwajshing/baileys';
-import messageRetryHandler from "../src/retryHandler";
+import messageRetryHandler from "../src/retryHandler.js";
 
-import savedNotes from '../src/notes';
-import mediaNote from '../src/mediaNote';
-import allNotes from '../src/AllNotes';
+import savedNotes from '../src/notes.js';
+import mediaNote from '../src/mediaNote.js';
+import allNotes from '../src/AllNotes.js';
 
-import { MsgType, getMsgType } from './msgType';
-import { GLOBAL, store } from '../src/storeMsg';
+import { MsgType, getMsgType } from './msgType.js';
+import { GLOBAL, store } from '../src/storeMsg.js';
 
 function NoteHendler() {
     this.savedNotes = savedNotes;
     this.mediaNote = mediaNote;
     this.allNotes = allNotes;
 }
-let noteHendler = new NoteHendler();
+const noteHendler = new NoteHendler();
+export default noteHendler;
 
 
 /**
@@ -489,6 +490,3 @@ NoteHendler.prototype.getNote1 = async function (msg, sock) {
 function getFeder(id) {
     return GLOBAL.groupConfig?.[id]?.feder
 }
-
-
-exports = module.exports = noteHendler;

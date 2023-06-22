@@ -1,9 +1,9 @@
 import { Configuration, OpenAIApi } from "openai";
 import fs from "fs";
-import { convertOGGToMp3, isOGGFile } from "./convertor";
+import { convertOGGToMp3, isOGGFile } from "./convertor.js";
 
 
-function ChatGPT(apiKey) {
+export default function ChatGPT(apiKey) {
   const configuration = new Configuration({
     apiKey: apiKey,
   });
@@ -177,8 +177,7 @@ ChatGPT.prototype.stt = async function (filename) {
   return "Error";
 }
 
-
-require("dotenv").config();
+import dotenv from "dotenv";
 
 async function test() {
   let gpt = new ChatGPT(process.env.OPENAI_API_KEY);
@@ -226,8 +225,3 @@ async function test() {
 
 }
 //test();
-
-
-
-
-module.exports = ChatGPT;

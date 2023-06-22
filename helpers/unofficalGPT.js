@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
  * apikey from https://discord.pawan.krd/
  * @param {String} auth 
  */
-function UnofficalGPT(auth) {
+export default function UnofficalGPT(auth) {
     this.auth = auth;
 
     this.completions = "https://api.pawan.krd/v1/chat/completions"
@@ -272,8 +272,6 @@ UnofficalGPT.prototype.image = async function (prompt) {
     })
 }
 
-
-module.exports = UnofficalGPT;
 
 async function test() {
     const gpt = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY);

@@ -1,4 +1,4 @@
-import { proto, makeInMemoryStore } from '@adiwajshing/baileys';
+import { makeInMemoryStore } from '@adiwajshing/baileys';
 import { pino, } from "pino";
 import fs from "fs";
 
@@ -45,15 +45,15 @@ import fs from "fs";
  *          }
  *      }}
 */
-const GLOBAL = {
+export const GLOBAL = {
     sock: null,
     muteGroup: {},
 };
 
-const logger = pino();
+export const logger = pino();
 logger.level = "silent";
 
-const store = makeInMemoryStore({ logger });
+export const store = makeInMemoryStore({ logger });
 store?.readFromFile("./baileys_store_multi.json");
 // save every 10s
 setInterval(() => {
@@ -83,10 +83,4 @@ function saveConfig() {
     const groupConfig = GLOBAL.groupConfig;
     fs.writeFileSync("./groupConfig.json", JSON.stringify(groupConfig));
     console.log("Group Config saved");
-}
-
-module.exports = {
-    store,
-    logger,
-    GLOBAL
 }

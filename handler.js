@@ -1,17 +1,18 @@
 import dotenv from 'dotenv';
-import noteHendler from './helpers/noteHandler';
-import BarkuniSticker  from './helpers/berkuniHandler';
-import sendSticker from './helpers/stickerMaker';
-import Downloader from './helpers/downloader';
-import { store, GLOBAL } from './src/storeMsg';
-import messageRetryHandler from './src/retryHandler';
-import ChatGPT from './helpers/chatgpt';
-import UnofficalGPT from './helpers/unofficalGPT';
-import { info } from './helpers/globals';
+dotenv.config();
+import noteHendler from './helpers/noteHandler.js';
+import BarkuniSticker from './helpers/berkuniHandler.js';
+import sendSticker from './helpers/stickerMaker.js';
+import Downloader from './helpers/downloader.js';
+import { store, GLOBAL } from './src/storeMsg.js';
+import messageRetryHandler from './src/retryHandler.js';
+import ChatGPT from './helpers/chatgpt.js';
+import UnofficalGPT from './helpers/unofficalGPT.js';
+import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
-import { getMsgType, MsgType } from './helpers/msgType';
-import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate, proto } from '@adiwajshing/baileys';
+import { getMsgType, MsgType } from './helpers/msgType.js';
+import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
@@ -51,7 +52,7 @@ let commands = {
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  * @param {import('./mongo')} mongo 
  */
-async function handleMessage(sock, msg, mongo) {
+export default async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
 
     // early check if action need to be done
@@ -930,5 +931,3 @@ async function whisper(msg, sock) {
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-module.exports = { handleMessage }

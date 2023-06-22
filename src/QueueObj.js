@@ -1,4 +1,4 @@
-import PQueue from "p-queue";
+import PQueue from 'p-queue';
 
 /** queue of handlers promises.
  * 

@@ -1,8 +1,8 @@
-import { store } from '../src/storeMsg';
+import { store } from '../src/storeMsg.js';
 import { downloadMediaMessage } from '@adiwajshing/baileys';
-import barkuniDB from '../src/barkuni';
+import barkuniDB from '../src/barkuni.js';
 import { Sticker } from 'wa-sticker-formatter';
-import messageRetryHandler from "../src/retryHandler";
+import messageRetryHandler from "../src/retryHandler.js";
 
 
 /**
@@ -72,4 +72,4 @@ async function searchBarkuni(sock, id) {
     sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);;
 }
 
-exports = module.exports = BarkuniSticker;
+export default BarkuniSticker;

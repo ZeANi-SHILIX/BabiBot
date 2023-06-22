@@ -3,7 +3,7 @@ import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 import path from "path";
 
-function isOGGFile(oggFilename) {
+export function isOGGFile(oggFilename) {
     const ext = path.extname(oggFilename);
     return ext === ".ogg";
 }
@@ -13,7 +13,7 @@ function isOGGFile(oggFilename) {
  * @param {String} oggFilename 
  * @returns {Promise<string>}
  */
-function convertOGGToMp3(oggFilename) {
+export function convertOGGToMp3(oggFilename) {
     return new Promise((resolve, reject) => {
         if (!isOGGFile(oggFilename)) {
             throw new Error(`Not a ogg file`);
@@ -27,9 +27,4 @@ function convertOGGToMp3(oggFilename) {
             resolve(outputFile);
         }).save(outputFile);
     });
-}
-
-module.exports = {
-    convertOGGToMp3,
-    isOGGFile
 }

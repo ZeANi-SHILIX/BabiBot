@@ -4,12 +4,12 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 //const text2png = require('text2png');
-import { UltimateTextToImage } from "ultimate-text-to-image";
+//import { UltimateTextToImage } from "ultimate-text-to-image";
 
-import messageRetryHandler from "../src/retryHandler";
+import messageRetryHandler from "../src/retryHandler.js";
 
-import { store } from '../src/storeMsg';
-import { MsgType, getMsgType } from './msgType';
+import { store } from '../src/storeMsg.js';
+import { MsgType, getMsgType } from './msgType.js';
 
 
 const sticker_types = {
@@ -26,7 +26,7 @@ const sticker_types = {
  * @param {import('@adiwajshing/baileys').WASocket} sock 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  */
-async function sendSticker(msg, sock, msgTypeSticker) {
+export default async function sendSticker(msg, sock, msgTypeSticker) {
     let id = msg.key.remoteJid;
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
@@ -195,5 +195,3 @@ function putEnterBetweenEmojis(text) {
     return arrText.join('\n');
 
 }
-
-module.exports = sendSticker;

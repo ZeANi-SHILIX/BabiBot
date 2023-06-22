@@ -2,13 +2,13 @@ import mongoose from "mongoose";
 mongoose.set('strictQuery', false);
 
 /** set model by schema  */
-import apiKeys from './src/apikeys';
-import savedNotes from './src/notes';
-import barkuni from './src/barkuni';
-import mediaNote from './src/mediaNote';
+import apiKeys from './src/apikeys.js';
+import savedNotes from './src/notes.js';
+import barkuni from './src/barkuni.js';
+import mediaNote from './src/mediaNote.js';
 
 
-class Mongo {
+export default class Mongo {
   isConnected = false;
   constructor() {
     this.mongoose = mongoose;
@@ -46,5 +46,3 @@ class Mongo {
   }
 
 }
-
-module.exports = Mongo;

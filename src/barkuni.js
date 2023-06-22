@@ -20,4 +20,4 @@ let barkuni = new Schema(
     { collection: "BarkunisStickers" }
 );
 
-module.exports  = mongoose.model("Barkuni", barkuni);
+export default mongoose.model("Barkuni", barkuni);
