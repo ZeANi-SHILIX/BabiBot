@@ -1,4 +1,4 @@
-const { HebrewCalendar, HDate, Location, Event, OmerEvent, months, CalOptions } = require('@hebcal/core');
+import { HebrewCalendar, HDate, Location, Event, OmerEvent, months, CalOptions } from '@hebcal/core';
 
 /**
  * 

@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
@@ -24,4 +24,4 @@ let apiKeys = new Schema(
     { collection: "API_Keys" }
 );
 
-module.exports  = mongoose.model("APIKeys", apiKeys);
+export default mongoose.model("APIKeys", apiKeys);

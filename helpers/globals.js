@@ -1,9 +1,9 @@
-const { GLOBAL } = require('../src/storeMsg');
+import { GLOBAL } from '../src/storeMsg.js';
 
 function Information() {
     this.map = new Map();
 }
-let info = new Information()
+export const info = new Information()
 
 /**
  * 
@@ -240,7 +240,3 @@ Information.prototype.startDialog = function (msg) {
     });
     this.map.set(idUser, userInfo);
 }
-
-
-
-module.exports = { info }

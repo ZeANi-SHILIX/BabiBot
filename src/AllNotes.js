@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
@@ -15,7 +15,7 @@ const Schema = mongoose.Schema;
  * @param chat
  * @param federation if private, chat and federation will be equals
  */
-let allNotes = new Schema(
+export const allNotes = new Schema(
     {
         question: {
             type: String,
@@ -54,4 +54,4 @@ let allNotes = new Schema(
     { collection: "AllNotes" }
 );
 
-module.exports = mongoose.model("AllNotes", allNotes);
+export default mongoose.model("AllNotes", allNotes);

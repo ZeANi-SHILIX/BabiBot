@@ -1,14 +1,14 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 mongoose.set('strictQuery', false);
 
 /** set model by schema  */
-const apiKeys = require('./src/apikeys');
-const savedNotes = require('./src/notes');
-const barkuni = require('./src/barkuni');
-const mediaNote = require('./src/mediaNote');
+import apiKeys from './src/apikeys.js';
+import savedNotes from './src/notes.js';
+import barkuni from './src/barkuni.js';
+import mediaNote from './src/mediaNote.js';
 
-class Mongo {
+
+export default class Mongo {
   isConnected = false;
   constructor() {
     this.mongoose = mongoose;
@@ -46,5 +46,3 @@ class Mongo {
   }
 
 }
-
-module.exports = Mongo;

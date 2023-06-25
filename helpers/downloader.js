@@ -1,6 +1,6 @@
-var YoutubeMp3Downloader = require("youtube-mp3-downloader");
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const { info } = require("./globals");
+import YoutubeMp3Downloader from "youtube-mp3-downloader";
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { info } from "./globals.js";
 
 /**
  * 
@@ -23,7 +23,7 @@ const { info } = require("./globals");
         thumbnail: String
     }>}
  */
-function Downloader(track, userID, sock) {
+export default function Downloader(track, userID, sock) {
 
     const filename = `${track}-${userID}-${new Date().toLocaleDateString("en-GB")}`;
 
@@ -69,5 +69,3 @@ function Downloader(track, userID, sock) {
 
 
 };
-
-module.exports = Downloader;

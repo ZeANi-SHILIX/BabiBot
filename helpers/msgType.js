@@ -1,4 +1,4 @@
-const MsgType = {
+export const MsgType = {
     TEXT: "text",
     IMAGE: "image",
     VIDEO: "video",
@@ -12,7 +12,7 @@ const MsgType = {
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  * @returns default {type: MsgType.TEXT, mime: undefined}
  */
-function getMsgType(msg) {
+export function getMsgType(msg) {
     if (msg?.message?.imageMessage) return {type: MsgType.IMAGE, mime: msg.message.imageMessage.mimetype};
     if (msg?.message?.videoMessage) return {type: MsgType.VIDEO, mime: msg.message.videoMessage.mimetype};
     if (msg?.message?.audioMessage) return {type: MsgType.AUDIO, mime: msg.message.audioMessage.mimetype};
@@ -20,5 +20,3 @@ function getMsgType(msg) {
     if (msg?.message?.documentMessage) return {type: MsgType.DOCUMENT, mime: msg.message.documentMessage.mimetype}
     return {type: MsgType.TEXT, mime: undefined};
 }
-
-module.exports = { MsgType, getMsgType };

@@ -1,15 +1,16 @@
-const { downloadMediaMessage } = require('@adiwajshing/baileys')
-const { Sticker, StickerTypes } = require('wa-sticker-formatter');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const ffmpeg = require('fluent-ffmpeg');
+import { downloadMediaMessage } from '@adiwajshing/baileys';
+import { Sticker, StickerTypes } from 'wa-sticker-formatter';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 //const text2png = require('text2png');
-const { UltimateTextToImage } = require("ultimate-text-to-image");
+//import { UltimateTextToImage } from "ultimate-text-to-image";
 
-const messageRetryHandler = require("../src/retryHandler")
+import messageRetryHandler from "../src/retryHandler.js";
 
-const { store } = require('../src/storeMsg');
-const { MsgType, getMsgType } = require('./msgType');
+import { store } from '../src/storeMsg.js';
+import { MsgType, getMsgType } from './msgType.js';
+
 
 const sticker_types = {
     "חתוך": StickerTypes.CROPPED,
@@ -25,7 +26,7 @@ const sticker_types = {
  * @param {import('@adiwajshing/baileys').WASocket} sock 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  */
-async function sendSticker(msg, sock, msgTypeSticker) {
+export default async function sendSticker(msg, sock, msgTypeSticker) {
     let id = msg.key.remoteJid;
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
@@ -194,5 +195,3 @@ function putEnterBetweenEmojis(text) {
     return arrText.join('\n');
 
 }
-
-module.exports = sendSticker;

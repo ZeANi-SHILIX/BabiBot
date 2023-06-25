@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "type": "module",
+  "files": [
+    "server.js",
+    "handler.js",
+    "mongo.js",
+    "**/*.js"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -24,7 +31,7 @@
     "mongoose": "^6.8.4",
     "openai": "^3.2.1",
     "openai-authenticator": "^0.0.3",
-    "p-queue": "6.6.2",
+    "p-queue": "^7.3.4",
     "text2png": "^2.3.0",
     "ultimate-text-to-image": "^1.0.1",
     "wa-sticker-formatter": "^4.4.4",

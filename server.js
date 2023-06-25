@@ -1,20 +1,24 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, proto } = require('@adiwajshing/baileys')
-const { handlerQueue } = require('./src/QueueObj');
-const { store, logger, GLOBAL } = require('./src/storeMsg');
-const bodyParser = require('body-parser');
-//const jwt = require('jsonwebtoken');
-const { handleMessage } = require('./handler');
-const Mongo = require('./mongo');
-const express = require('express');
-const QRCode = require('qrcode');
-const messageRetryHandler = require("./src/retryHandler")
+import dotenv from 'dotenv';
+dotenv.config();
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } from '@adiwajshing/baileys';
+import pkg from '@adiwajshing/baileys/WAProto/index.js';
+const { proto } = pkg;
+import bodyParser from 'body-parser';
+import express from 'express';
+import QRCode from 'qrcode';
+import Mongo from './mongo.js';
+import { handlerQueue } from './src/QueueObj.js';
+import { store, logger, GLOBAL } from './src/storeMsg.js';
+//import jwt from 'jsonwebtoken';
+import handleMessage from './handler.js';
+import messageRetryHandler from "./src/retryHandler.js";
 
 const msgRetryCounterMap = {};
 
 const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const superuser = process.env.SUPERUSER ?? "";
-console.clear();
+
 console.log("PRODUCTION:", PRODUCTION);
 
 const app = express()
@@ -29,7 +33,7 @@ async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info')
     const { version, isLatest } = await fetchLatestBaileysVersion();
     console.log('version', version.join("."), 'isLatest', isLatest)
-    const sock = makeWASocket({
+    const sock = makeWASocket.default({
         // can provide additional config here
         printQRInTerminal: true,
         auth: {

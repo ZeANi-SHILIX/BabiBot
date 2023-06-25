@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
@@ -42,4 +42,4 @@ let mediaNote = new Schema(
     { collection: "MediaNotes" }
 );
 
-module.exports = mongoose.model("MediaNotes", mediaNote);
+export default mongoose.model("MediaNotes", mediaNote);

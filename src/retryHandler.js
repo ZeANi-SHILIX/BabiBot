@@ -48,4 +48,4 @@ class MessageRetryHandler {
 
 const messageRetryHandler = new MessageRetryHandler();
 
-module.exports = messageRetryHandler
+export default messageRetryHandler
