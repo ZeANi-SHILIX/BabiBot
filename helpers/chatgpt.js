@@ -36,12 +36,12 @@ const systemMessage = {
 ChatGPT.prototype.ask = async function (prompt) {
   const res = await this.openai.createCompletion({
     prompt: prompt,
-    model: "gpt-3.5-turbo",
-    temperature: 0.6,
-    max_tokens: 480,
+    model: "text-davinci-003",
+    temperature: 0.5,
+    max_tokens: 512,
   });
   console.log("Total Tokens: " + res.data.usage?.total_tokens);
-  return res.data.choices[0].text;
+  return res.data?.choices?.[0].text.trim() || res.data;
 };
 
 ChatGPT.prototype.ask2 = async function (prompt) {

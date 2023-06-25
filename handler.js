@@ -528,10 +528,10 @@ export default async function handleMessage(sock, msg, mongo) {
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
-            let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            //let res = await chatGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            let res = await chatGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0] || res.error);
-            let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res.error.message;
+            let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res?.error?.message || res;
             await sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
