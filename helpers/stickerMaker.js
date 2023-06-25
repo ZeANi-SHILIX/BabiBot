@@ -4,7 +4,7 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 //const text2png = require('text2png');
-//import { UltimateTextToImage } from "ultimate-text-to-image";
+import { UltimateTextToImage } from "ultimate-text-to-image";
 
 import messageRetryHandler from "../src/retryHandler.js";
 
