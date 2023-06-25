@@ -21,7 +21,7 @@ let commands = {
   "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
   "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
   "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
-  "!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
+  //"!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
 }
 let commandText = (Object.entries(commands)).map(([key, value]) => `'${key}' - ${value}`).join("\n");
 
@@ -113,6 +113,45 @@ ChatGPT.prototype.chat = async function (msgs, user) {
   let finish_reason = response.data.choices[0].finish_reason;
 
   return [response.data.choices[0].message.content, finish_reason];
+};
+
+/**
+ * quick chat with the bot (80 tokens)
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo[]} msgs 
+ * @param {String} user 
+ * @returns [String, String | null]
+ */
+ChatGPT.prototype.chatDevinci = async function (msgs, user) {
+
+  let messages = [
+    systemMessage
+  ];
+
+  for (let i = 0; i < msgs.length; i++) {
+    const msg = msgs[i];
+    messages.push({
+      "role": msg.key.fromMe ? "assistant" : "user",
+      "content": msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ""
+    })
+  }
+
+  const str = messages.map(m => m.role + ": " + m.content).join("\n");
+
+  const response = await this.openai.createCompletion({
+    model: "text-davinci-003",
+    prompt: str,
+    max_tokens: 256,
+    temperature: 0.6,
+  });
+  console.log("Total Tokens: " + response.data.usage?.total_tokens);
+
+  /** @summary “stop” (indicating the completion was generated successfully),
+   *           and “length” (indicating the language model ran out of tokens before being able to finish the completion) */
+  let finish_reason = response.data.choices[0].finish_reason;
+  console.log(response.data.choices[0].text);
+  const text = response.data.choices[0].text.slice(response.data.choices[0].text.indexOf("assistant:")).replace(/assistant:/g, "").trim();
+
+  return [text, finish_reason];
 };
 
 /**

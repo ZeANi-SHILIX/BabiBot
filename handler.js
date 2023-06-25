@@ -14,7 +14,8 @@ import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 
-const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY)
+//const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
+const chatGPT = new ChatGPT(process.env.UNOFFICALGPT_API_KEY , false)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
@@ -38,7 +39,7 @@ let commands = {
     "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
     "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
     //"!תמונה": "תאר לי תמונה ואני אכין לך אותה",
-    "!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
+    //"!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
 
     // "!הערות" : "קבל את כל ההערות בצאט זה",
 
@@ -527,10 +528,10 @@ export default async function handleMessage(sock, msg, mongo) {
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         try {
-            //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            let res = await chatGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            //let res = await chatGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0] || res.error);
-            let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res.error + "\n" + res.hint;
+            let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res.error.message;
             await sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
         } catch (error) {
             console.error(error);
@@ -701,9 +702,9 @@ export default async function handleMessage(sock, msg, mongo) {
     try {
         await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
         let history = await store.loadMessages(id, 20);
-        let [res, finish_reason] = await chatGPT.chat(history)
+        let [res, finish_reason] = await chatGPT.chatDevinci(history)
         if (res == "") {
-            [res, finish_reason] = await chatGPT.chat(history);
+            [res, finish_reason] = await chatGPT.chatDevinci(history);
         }
         await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
         let returnMsg = await sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
@@ -818,7 +819,7 @@ async function stt_heb(data) {
  * @returns 
  */
 async function continueChat(history, oldRes, id, sock, editMsgkey) {
-    let [res, finish_reason] = await chatGPT.chat(history);
+    let [res, finish_reason] = await chatGPT.chatDevinci(history);
     if (res == "") return;
 
     // edit the last message
