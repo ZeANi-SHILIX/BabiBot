@@ -211,7 +211,7 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
     if (!resultMedia) resultMedia = await mediaNote.findOne({ q: q, isGlobal: true });
 
     // note not found
-    if (!result && !resultMedia) return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" }).then(messageRetryHandler.addMessage);
+    if (!result && !resultMedia) return //sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" }).then(messageRetryHandler.addMessage);
 
     // send the media
     switch (resultMedia.type) {
