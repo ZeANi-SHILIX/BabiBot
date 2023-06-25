@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { downloadMediaMessage } from '@adiwajshing/baileys';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
