@@ -3,9 +3,10 @@ import fs from "fs";
 import { convertOGGToMp3, isOGGFile } from "./convertor.js";
 
 
-export default function ChatGPT(apiKey) {
+export default function ChatGPT(apiKey, useOfficial = true) {
   const configuration = new Configuration({
     apiKey: apiKey,
+    basePath: useOfficial ? "https://api.openai.com/v1" : "https://api.pawan.krd/v1"
   });
 
   this.openai = new OpenAIApi(configuration);

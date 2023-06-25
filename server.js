@@ -20,6 +20,7 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 const superuser = process.env.SUPERUSER ?? "";
 
 console.log("PRODUCTION:", PRODUCTION);
+PRODUCTION ? null : process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 
 const app = express()
 const port = 3000;
