@@ -184,39 +184,7 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg === "!pong" || textMsg === "!פונג")
         return sock.sendMessage(id, { text: "פינג" }).then(messageRetryHandler.addMessage);
 
-    // commands list
-    let helpCommand = ["help", "command", "עזרה", "פקודות"];
-
-    //in group
-    if (msg.key.remoteJid.includes("@g.us")) {
-        if (helpCommand.some(com => textMsg.includes("!" + com))) {
-            let text = "*רשימת הפקודות הזמינות בבוט:*"
-
-            for (const [key, value] of Object.entries(commands)) {
-                //console.log(key, value);
-                text += `\n${key}: ${value}`;
-            }
-
-            text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
-
-            return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
-        }
-    }
-    // in private
-    else if (helpCommand.some(com => textMsg.includes(com))) {
-        let text = "*רשימת הפקודות הזמינות בבוט:*\n"
-
-        for (const [key, value] of Object.entries(commands)) {
-            //console.log(key, value);
-            text += `\n*${key}*: ${value}`;
-        }
-
-        text += `\n*!אודות*: קבל מידע אודות הבוט`;
-
-        text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
-
-        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
-    }
+    
 
     if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
         if (!msg.key.remoteJid.includes("@g.us"))
@@ -647,6 +615,40 @@ export default async function handleMessage(sock, msg, mongo) {
         if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM))) {
             return sock.sendMessage(id, { text: "הי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות" }).then(messageRetryHandler.addMessage)
         }
+    }
+
+    // commands list
+    let helpCommand = ["help", "command", "עזרה", "פקודות"];
+
+    //in group
+    if (msg.key.remoteJid.includes("@g.us")) {
+        if (helpCommand.some(com => textMsg.includes("!" + com))) {
+            let text = "*רשימת הפקודות הזמינות בבוט:*"
+
+            for (const [key, value] of Object.entries(commands)) {
+                //console.log(key, value);
+                text += `\n${key}: ${value}`;
+            }
+
+            text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
+
+            return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+        }
+    }
+    // in private
+    else if (helpCommand.some(com => textMsg.includes(com))) {
+        let text = "*רשימת הפקודות הזמינות בבוט:*\n"
+
+        for (const [key, value] of Object.entries(commands)) {
+            //console.log(key, value);
+            text += `\n*${key}*: ${value}`;
+        }
+
+        text += `\n*!אודות*: קבל מידע אודות הבוט`;
+
+        text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
+
+        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
 

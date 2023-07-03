@@ -48,7 +48,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
                 author: 'BabiBot',
                 type: type,
                 categories: ['🤩', '🎉'],
-                quality: 30
+                quality: 18
             });
             sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
             console.log("sended sticker message", type)
@@ -85,7 +85,15 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
     if (msgTypeSticker === "text") {
         let message = textMsg.replace('!sticker', "").replace('!סטיקר', '').trim();
 
-        if (message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+        // no content, check if quoted message
+        if (message == ""){
+            message = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
+            message = message.message?.conversation || message.message?.extendedTextMessage?.text || "";
+        }
+
+        // no content and no quoted message
+        if (!message) return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+
 
         const sticker = new Sticker(
             //textToSticker(message),
@@ -102,6 +110,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
 
 function textToSticker2(text) {
     text = putEnterBetweenEmojis(text);
+    text = doubleEnter(text);
     console.log(text);
     return new UltimateTextToImage(text, {
         width: 350,
@@ -149,4 +158,14 @@ function putEnterBetweenEmojis(text) {
     }
     return arrText.join('\n');
 
+}
+
+/**
+ * 
+ * @param {String} text 
+ * @returns 
+ */
+function doubleEnter(text) {
+    if (!text) return text;
+    return text.replace(/\n/g, '\n\n');
 }
