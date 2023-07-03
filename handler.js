@@ -15,7 +15,7 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
-const chatGPT = new ChatGPT(process.env.UNOFFICALGPT_API_KEY , false)
+const chatGPT = new ChatGPT(process.env.UNOFFICALGPT_API_KEY, false)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
@@ -31,18 +31,18 @@ let commands = {
     "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
     "!יוטיוב": "שלח לי קישור לשיר ביוטיוב ואני אשלח לך אותו לכאן",
     "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
-    // "!השתק": "השתק את הקבוצה לפי זמן מסוים",
-    // "!בטלהשתקה": "בטל השתקה",
+    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
+    "!בטלהשתקה": "בטל השתקה",
     "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
-    "!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
+    //"!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
     "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
-    "!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
-    "!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
+    //"!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
+    //"!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
     //"!תמונה": "תאר לי תמונה ואני אכין לך אותה",
     //"!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
 
     // "!הערות" : "קבל את כל ההערות בצאט זה",
-
+    '!אודות': 'קבל מידע אודות הבוט'
 
 
 }
@@ -184,7 +184,7 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg === "!pong" || textMsg === "!פונג")
         return sock.sendMessage(id, { text: "פינג" }).then(messageRetryHandler.addMessage);
 
-    
+
 
     if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
         if (!msg.key.remoteJid.includes("@g.us"))
@@ -495,6 +495,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
+        return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
             //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             let res = await chatGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
@@ -505,7 +506,6 @@ export default async function handleMessage(sock, msg, mongo) {
             console.error(error);
             await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
         }
-        return;
     }
 
     // get image from GPT
@@ -539,6 +539,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+        return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
             // get num from message
             let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
@@ -589,6 +590,8 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
+        return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
+
         console.log(msg);
         // has quoted message?
         if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
@@ -644,14 +647,26 @@ export default async function handleMessage(sock, msg, mongo) {
             text += `\n*${key}*: ${value}`;
         }
 
-        text += `\n*!אודות*: קבל מידע אודות הבוט`;
-
         text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
 
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
+    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("אודות")) {
+        let text = "*מידע על הבוט:*\n\n" +
+            "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
+            "אל תשלחו מידע רגיש לבוט.\n\n" +
+            "*השימוש בבוט מהווה הסכמה לכך שהמפתח יכול להשתמש בהודעות שנשלחו לבוט לצורך פיתוח ושיפור הבוט.*\n\n" +
 
+            "על מנת לראות מה הבוט מסוגל לעשות יש לשלוח את הפקודה '!פקודות'\n" +
+            "(הבוט בתהליכי בנייה... רשימת הפקודות איננה סופית!)\n" +
+            "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
+            "בוט זה נוצר על ידי שילה בבילה";
+
+        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+    }
+
+    return
     // ##############
     // ##############
     //  NOT IN GROUP
@@ -663,18 +678,6 @@ export default async function handleMessage(sock, msg, mongo) {
     /**##########
      * INFO
      ############*/
-    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("אודות")) {
-        let text = "*מידע על הבוט:*\n\n" +
-            "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
-            "אל תשלחו מידע רגיש לבוט.\n\n" +
-
-            "על מנת לראות מה הבוט מסוגל לעשות יש לשלוח את הפקודה '!פקודות'\n" +
-            "(הבוט בתהליכי בנייה... רשימת הפקודות איננה סופית!)\n" +
-            "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
-            "בוט זה נוצר על ידי שילה בבילה";
-
-        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
-    }
 
     const { type } = getMsgType(msg);
     if (type === MsgType.AUDIO) {

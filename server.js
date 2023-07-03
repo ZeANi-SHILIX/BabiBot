@@ -95,7 +95,8 @@ async function connectToWhatsApp() {
             await sock.sendMessage(ev.id, {
                 text: "היי! אני באבי בוט 😃\n"
                     + "שלחו לי את המילה '!פקודות' והתחילו להנות!\n\n"
-                    + "(לידעתכם ההודעות שנשלחות לבוט בקבוצה או בפרטי אינן פרטיות)"
+                    + "(לידעתכם ההודעות שתשלחו לבוט אינן חסויות ויש למפתח גישה לראותן, השימוש בבוט מהווה את הסכמתכם לכך)"
+
             });
         }
     })
