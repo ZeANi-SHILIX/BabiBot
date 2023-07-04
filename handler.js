@@ -652,7 +652,8 @@ export default async function handleMessage(sock, msg, mongo) {
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
-    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("אודות")) {
+
+    if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("!אודות")) {
         let text = "*מידע על הבוט:*\n\n" +
             "לידעתכם, ההודעות שנשלחות לבוט אינן חסויות לגמריי, ולמפתח יש גישה לראותן.\n" +
             "אל תשלחו מידע רגיש לבוט.\n\n" +
