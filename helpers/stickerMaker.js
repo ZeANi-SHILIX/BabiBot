@@ -90,7 +90,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
         if (message == ""){
             isQuoted = true;
             message = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
-            message = message?.message?.conversation || message.message?.extendedTextMessage?.text || "";
+            message = message?.message?.conversation || message?.message?.extendedTextMessage?.text || "";
         }
 
         // no content and no quoted message
