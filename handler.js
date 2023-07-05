@@ -282,7 +282,7 @@ export default async function handleMessage(sock, msg, mongo) {
         let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
         console.log(bot);
         if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול" });
 
         // get mute time
         let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
@@ -337,7 +337,7 @@ export default async function handleMessage(sock, msg, mongo) {
         let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
         console.log(bot);
         if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול" });
 
         sock.groupSettingUpdate(id, 'not_announcement');
         sock.sendMessage(id, { text: "הקבוצה פתוחה" });

@@ -85,14 +85,16 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
     if (msgTypeSticker === "text") {
         let message = textMsg.replace('!sticker', "").replace('!סטיקר', '').trim();
 
+        let isQuoted = false;
         // no content, check if quoted message
         if (message == ""){
+            isQuoted = true;
             message = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
-            message = message.message?.conversation || message.message?.extendedTextMessage?.text || "";
+            message = message?.message?.conversation || message.message?.extendedTextMessage?.text || "";
         }
 
         // no content and no quoted message
-        if (!message) return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+        if (isQuoted && message != "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
 
 
         const sticker = new Sticker(
