@@ -94,7 +94,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
         }
 
         // no content and no quoted message
-        if (isQuoted && message != "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+        if (isQuoted && message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
 
 
         const sticker = new Sticker(
