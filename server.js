@@ -163,11 +163,11 @@ app.get('/qr', async (req, res) => {
     if (qr === undefined) return res.send("Already connected")
 
     await QRCode.toFile('./qr_code.png', qr);
-    res.sendFile(__dirname + '/qr_code.png');
+    res.sendFile(process.cwd() + '/qr_code.png');
 })
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(process.cwd() + '/index.html');
     //res.send('Hello World! its Babi Bot')
 });
 
@@ -303,4 +303,6 @@ app.listen(port, () => {
 
 process.on('uncaughtException', (err, origin) => {
     console.error("uncaughtException:", err);
+    const myself = GLOBAL.sock.user.id;
+    GLOBAL.sock.sendMessage(myself, { text: `uncaughtException: ${err}` })  
 });

@@ -258,12 +258,12 @@ export default async function handleMessage(sock, msg, mongo) {
             let quotedMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage;
             let quotedText = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
             let linkMsg = textSearch.length === 0 ? "https://www.google.com/search?q=" + encodeURIComponent(quotedText.trim()) : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
-            return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! למה שלא שתנסה לשאול אותו?\n" + linkMsg }).then(messageRetryHandler.addMessage);
+            return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! למה שלא תנסה לשאול אותו?\n" + linkMsg }).then(messageRetryHandler.addMessage);
 
         }
 
         let linkMsg = textSearch.length === 0 ? "https://giybf.com/" : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
-        return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! למה שלא שתנסה לשאול אותו?\n" + linkMsg }).then(messageRetryHandler.addMessage);
+        return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! בואו נשאל אותו?\n" + linkMsg }).then(messageRetryHandler.addMessage);
 
     }
 

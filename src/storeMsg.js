@@ -53,18 +53,35 @@ export const GLOBAL = {
 export const logger = pino();
 logger.level = "silent";
 
+let time = getTime();
+
+// check if the folder exist
+fs.existsSync("./store") || fs.mkdirSync("./store");
+
 export const store = makeInMemoryStore({ logger });
-store?.readFromFile("./baileys_store_multi.json");
+store?.readFromFile(`./store/baileys_store_multi_${time}.json`);
 // save every 10s
 setInterval(() => {
-    store?.writeToFile("./baileys_store_multi.json");
+    const newTime = getTime();
+
+    // if new day, save to new file and reset store
+    if (newTime !== time) {
+        time = newTime;
+        store?.readFromFile(`./store/baileys_store_multi_${time}.json`); // not exist yet
+
+        store?.writeToFile(`./store/baileys_store_multi_${time}.json`);
+    }
+    else {
+        store?.writeToFile(`./store/baileys_store_multi_${time}.json`);
+    }
+
 }, 10_000);
 
 readConfig();
 
 setInterval(() => {
     saveConfig();
-}, 60_000);
+}, 100_000);
 
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {
@@ -82,5 +99,11 @@ function readConfig() {
 function saveConfig() {
     const groupConfig = GLOBAL.groupConfig;
     fs.writeFileSync("./groupConfig.json", JSON.stringify(groupConfig));
-    console.log("Group Config saved");
+    //console.log("Group Config saved");
 }
+
+function getTime(){
+    const date = new Date();
+    return date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate();
+}
+
