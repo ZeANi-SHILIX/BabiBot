@@ -616,7 +616,7 @@ export default async function handleMessage(sock, msg, mongo) {
         let mentionedJids = msg.message.extendedTextMessage.contextInfo.mentionedJid;
         const SOCK_NUM = sock.user.id.split(":")[0].split("@")[0];
         if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM))) {
-            return sock.sendMessage(id, { text: "הי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות" }).then(messageRetryHandler.addMessage)
+            return sock.sendMessage(id, { text: "היי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות" }).then(messageRetryHandler.addMessage)
         }
     }
 
@@ -630,11 +630,11 @@ export default async function handleMessage(sock, msg, mongo) {
 
             for (const [key, value] of Object.entries(commands)) {
                 //console.log(key, value);
-                text += `\n${key}: ${value}`;
+                text += `\n*${key}:* _${value}_`;
             }
 
             text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
-
+            text += "\n\nלקריאת הפקודות בצורה נוחה: babibot.live "
             return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
         }
     }
@@ -644,11 +644,12 @@ export default async function handleMessage(sock, msg, mongo) {
 
         for (const [key, value] of Object.entries(commands)) {
             //console.log(key, value);
-            text += `\n*${key}*: ${value}`;
+            text += `\n*${key}*: _${value}_`;
         }
 
         text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
 
+        text += "\n\nלקריאת הפקודות בצורה נוחה: babibot.live "
         return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
     }
 
