@@ -43,6 +43,10 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
         if (messageType === 'imageMessage' || messageType === 'videoMessage') {
 
             const buffer = await downloadMediaMessage(msg, 'buffer', {})
+            // not bigger than 2MB
+            const size  = buffer.byteLength / 1024 / 1024
+            if (size > 2) return sock.sendMessage(id, { text: "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר" })
+
             const sticker = new Sticker(buffer, {
                 pack: '🎉',
                 author: 'BabiBot',

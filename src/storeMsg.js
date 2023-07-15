@@ -60,16 +60,18 @@ fs.existsSync("./store") || fs.mkdirSync("./store");
 
 export const store = makeInMemoryStore({ logger });
 store?.readFromFile(`./store/baileys_store_multi_${time}.json`);
+
 // save every 10s
 setInterval(() => {
     const newTime = getTime();
 
     // if new day, save to new file and reset store
     if (newTime !== time) {
-        time = newTime;
-        store?.readFromFile(`./store/baileys_store_multi_${time}.json`); // not exist yet
-
         store?.writeToFile(`./store/baileys_store_multi_${time}.json`);
+
+
+        time = newTime;
+        store?.messages = {};
     }
     else {
         store?.writeToFile(`./store/baileys_store_multi_${time}.json`);

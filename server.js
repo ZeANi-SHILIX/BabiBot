@@ -159,6 +159,13 @@ async function connectToWhatsApp() {
 // run in main file
 connectToWhatsApp();
 
+// const console_info = console.info
+// console.info = function() {
+//     if(!require("util").format(...arguments).includes("SessionEntry")){
+//         return console_info(...arguments)
+//     }
+// }
+
 
 
 app.get('/qr', async (req, res) => {
