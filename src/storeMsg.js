@@ -71,7 +71,9 @@ setInterval(() => {
 
 
         time = newTime;
-        store?.messages = {};
+        for (const id of Object.keys(store?.messages)){
+            store?.messages[id].clear();
+        }
     }
     else {
         store?.writeToFile(`./store/baileys_store_multi_${time}.json`);
