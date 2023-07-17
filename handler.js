@@ -15,7 +15,7 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
-const chatGPT = new ChatGPT(process.env.UNOFFICALGPT_API_KEY, false)
+const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
@@ -495,7 +495,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // ask GPT
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
-        return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
+        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
             //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             let res = await chatGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
@@ -539,7 +539,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
+        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
             // get num from message
             let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
@@ -590,7 +590,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
-        return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
+        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
 
         console.log(msg);
         // has quoted message?

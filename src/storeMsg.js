@@ -67,28 +67,28 @@ setInterval(() => {
     const newTime = getTime();
 
     // check server load
-    const { avg5min, memUsage } = getServerLoad();
+    const { avg1min, memUsage } = getServerLoad();
 
-    console.log("CPU Average (5 min): " + avg5min);
+    console.log("CPU Average (1 min): " + avg1min);
     console.log("Memory Usage: " + memUsage.toFixed(1) + "%");
 
-    if (memUsage > 90) {
+    if (memUsage > 80) {
         console.log("Memory usage is too high, restart server");
-        GLOBAL.sock.sendMessage(GLOBAL.sock.user.id, "Memory usage is too high, restart server");
+        GLOBAL.sock.sendMessage(GLOBAL.sock.user.id, "Memory usage is too high, plz restart server");
         //process.exit(1);
     }
 
-    // if new day, save to new file and reset store
+    // reset store every 12 hours
     if (newTime !== time) {
         store?.writeToFile(`./store/baileys_store_multi_${time}.json`);
 
 
         time = newTime;
 
-        console.log("new day, reset store");
-        GLOBAL.sock.sendMessage(GLOBAL.sock.user.id, "new day, reset store")
+        console.log("12 hour... resetting store");
+        GLOBAL.sock.sendMessage(GLOBAL.sock.user.id, "12 hour... resetting store")
 
-        for (const id of Object.keys(store?.messages)){
+        for (const id of Object.keys(store?.messages)) {
             store?.messages[id].clear();
         }
     }
@@ -123,19 +123,21 @@ function saveConfig() {
     //console.log("Group Config saved");
 }
 
-function getTime(){
+function getTime() {
     const date = new Date();
-    return date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate();
+    const AM_PM = date.getHours() < 12 ? "AM" : "PM";
+
+    return date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate() + "_" + AM_PM;
 }
 
-function getServerLoad(){
+function getServerLoad() {
     const totalmem = os.totalmem();
     const freemem = os.freemem()
-    const avg5min = os.loadavg()[1];
+    const avg1min = os.loadavg()[0];
     const memUsage = (totalmem - freemem) / totalmem * 100;
 
     return {
-        avg5min,
+        avg1min,
         memUsage
     }
 }

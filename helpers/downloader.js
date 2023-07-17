@@ -1,7 +1,9 @@
 import YoutubeMp3Downloader from "youtube-mp3-downloader";
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { info } from "./globals.js";
+import fs from "fs";
 
+fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
 /**
  * 
  * @param {String} track 
@@ -29,7 +31,7 @@ export default function Downloader(track, userID, sock) {
 
     var YD = new YoutubeMp3Downloader({
         ffmpegPath: ffmpegInstaller.path,
-        outputPath: "./",    // Output file location (default: the home directory)
+        outputPath: "./youtubeDL/",    // Output file location (default: the home directory)
         youtubeVideoQuality: 'lowest'
     });
 
@@ -47,7 +49,7 @@ export default function Downloader(track, userID, sock) {
 
         // save progress
         if (info.updateYouTubeProgress(userID, progress)){
-            sock.sendMessage(userID, { text: "מתחיל בהורדה...\nתוכל לראות את התקדמות ההורדה על ידי שליחת '%'" });
+            sock.sendMessage(userID, { text: "מתחיל בהורדה...\nניתן לראות את התקדמות ההורדה על ידי שליחת '%'" });
         }
     });
 
