@@ -208,7 +208,8 @@ export default async function handleMessage(sock, msg, mongo) {
         let members = groupData.participants.map(p => p.id);
         let quoteAll = members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
 
-        return sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage);
+        let everybody_msg  = await sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage)
+        return //everybodyMSG(everybody_msg, sock);
     }
 
     if (caption.startsWith('!sticker') || caption.startsWith('!סטיקר'))
@@ -566,7 +567,21 @@ export default async function handleMessage(sock, msg, mongo) {
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
 
         let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
-        let vidID = link.replace("https://", "").replace("www.youtube.com/watch?v=", '').replace("youtu.be/", "");
+
+        // get queted message
+        if (!link) {
+            link = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || "";
+        }
+
+        // if no link found
+        if (!link) {
+            return sock.sendMessage(id, { text: "לא מצאתי קישור ליוטיוב" }).then(messageRetryHandler.addMessage);
+        }
+
+        let vidID = link.replace("https://", "")
+            .replace("m.youtube.com/watch?v=", '')
+            .replace("www.youtube.com/watch?v=", '')
+            .replace("youtu.be/", "");
 
         Downloader(vidID, id, sock)
             .then(async data => {
@@ -934,6 +949,27 @@ async function whisper(msg, sock) {
         console.error(error);
         return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
     }
+}
+
+/**
+ * 
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+ * @param {import('@adiwajshing/baileys').WASocket} sock 
+ * @returns 
+ */
+async function everybodyMSG(msg, sock) {
+    const id = msg.key.remoteJid;
+    await sleep(1000);
+    await sock.relayMessage(id, {
+        protocolMessage: {
+            key: msg.key,
+            type: 14,
+            editedMessage: {
+                conversation: "כל משתמשי הקבוצה תוייגו בהצלחה!",
+            }
+        }
+    }, {})
+    return;
 }
 
 async function sleep(ms) {
