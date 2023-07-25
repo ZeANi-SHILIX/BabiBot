@@ -9,6 +9,7 @@ import QRCode from 'qrcode';
 import Mongo from './mongo.js';
 import { handlerQueue } from './src/QueueObj.js';
 import { store, logger, GLOBAL } from './src/storeMsg.js';
+import MemoryStore from './src/store.js';
 //import jwt from 'jsonwebtoken';
 import handleMessage from './handler.js';
 import messageRetryHandler from "./src/retryHandler.js";
@@ -44,12 +45,13 @@ async function connectToWhatsApp() {
         logger,
         version,
         msgRetryCounterMap,
-        retryRequestDelayMs: 100,
+        retryRequestDelayMs: 50,
         //syncFullHistory: true,
         getMessage: messageRetryHandler.messageRetryHandler
     })
 
-    store.bind(sock.ev)
+    //store.bind(sock.ev)
+    MemoryStore.store.bind(sock.ev)
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update
@@ -61,8 +63,8 @@ async function connectToWhatsApp() {
                 || lastDisconnect.error?.output?.statusCode === DisconnectReason.connectionClosed) {
                 setTimeout(() => {
                     connectToWhatsApp()
-                }, 10000)
-                console.log('reconnecting after 10 second')
+                }, 5000)
+                console.log('reconnecting after 5 second')
             }
             else if (shouldReconnect) {
                 connectToWhatsApp()

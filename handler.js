@@ -5,6 +5,7 @@ import BarkuniSticker from './helpers/berkuniHandler.js';
 import sendSticker from './helpers/stickerMaker.js';
 import Downloader from './helpers/downloader.js';
 import { store, GLOBAL } from './src/storeMsg.js';
+import MemoryStore from './src/store.js';
 import messageRetryHandler from './src/retryHandler.js';
 import ChatGPT from './helpers/chatgpt.js';
 import UnofficalGPT from './helpers/unofficalGPT.js';
@@ -545,7 +546,8 @@ export default async function handleMessage(sock, msg, mongo) {
             // get num from message
             let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
 
-            let history = await store.loadMessages(id, numMsgToLoad);
+            //let history = await store.loadMessages(id, numMsgToLoad);
+            let history = await MemoryStore.loadMessages(id, numMsgToLoad);
             history.pop(); // we don't want the last message (the one we got now)
             console.log('history length loaded:', history.length);
 
@@ -613,7 +615,8 @@ export default async function handleMessage(sock, msg, mongo) {
             return sock.sendMessage(id, { text: "יש לצטט הודעה" }).then(messageRetryHandler.addMessage)
 
         // get from store
-        let quotedMsg = await store.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        //let quotedMsg = await store.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
         if (!quotedMsg)
             return sock.sendMessage(id, { text: "חלה שגיאה בטעינת ההודעה המצוטטת" }).then(messageRetryHandler.addMessage)
 
