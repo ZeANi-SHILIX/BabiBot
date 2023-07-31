@@ -70,11 +70,13 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
     try {
         let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         let { type } = getMsgType(quoted);
-        if (type === MsgType.IMAGE || type === MsgType.VIDEO || type === MsgType.STICKER) {
 
+        if (type === MsgType.IMAGE || type === MsgType.VIDEO || type === MsgType.STICKER) {
+            const buffer = await downloadMediaMessage(quoted, 'buffer', {})
+            
             let setType = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
             const type = sticker_types[setType] || StickerTypes.FULL;
-
+            
             // not bigger than 1.5MB
             const size = buffer.byteLength / 1024 / 1024
             if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
@@ -82,7 +84,6 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
             const quality = size > 0.8 ? 10 : 30;
             console.log("making sticker...")
 
-            const buffer = await downloadMediaMessage(quoted, 'buffer', {})
             const sticker = new Sticker(buffer, {
                 pack: '🎉',
                 author: 'BabiBot',
