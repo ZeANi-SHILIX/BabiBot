@@ -1,6 +1,5 @@
 import fs from "fs";
 
-
 /**
  * this sock is updating while getting messages
  * @type {{ sock: import('@adiwajshing/baileys').WASocket
@@ -17,9 +16,14 @@ import fs from "fs";
  *              "idGroup": {
  *                  countUsers: number,
  *                  spam: string,
- *                  feder: string
+ *                  feder: string,
+ *                  paidGroup: boolean,
+ *                  lastUsedGPT: number,
+ *                  lastUsedEveryBodyCommand: number,
  *             }
  *          },
+ *         timeouts: { "groupID": NodeJS.Timeout },
+ *         clearTimeout: function clearTimeout(id) {},
  *          quizLev: {
  *              groups : {
  *                  "groupID" : { 
@@ -47,6 +51,12 @@ import fs from "fs";
 export const GLOBAL = {
     sock: null,
     muteGroup: {},
+    groupConfig: {},
+    timeouts: {},
+    clearTimeout: function (id) {
+        clearTimeout(this.timeouts[id]);
+        console.log("cleared the timeout", this.timeouts[id], " for", id)
+    },
 };
 
 export const temp = 5;

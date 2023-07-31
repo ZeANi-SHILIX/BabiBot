@@ -789,7 +789,8 @@ async function muteGroup(msg, muteTime_min) {
     else
         GLOBAL.sock.sendMessage(id, { text: `הקבוצה נעולה לשיחה ל-${muteTime_min} דקות` })
 
-    setTimeout(async () => {
+    GLOBAL.clearTimeout(id);
+    GLOBAL.timeouts[id] = setTimeout(async () => {
         let groupData = await GLOBAL.sock.groupMetadata(id);
         if (!groupData.announce) return;
 

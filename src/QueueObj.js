@@ -31,3 +31,15 @@ export function sendMsgQueue(jid, text) {
         await GLOBAL.sock.sendMessage(jid, { text }).then(messageRetryHandler.addMessage);
     });
 }
+
+/**
+ * 
+ * @param {string} jid
+ * @param {string} text
+ */
+export function errorMsgQueue(text) {
+    const botNum = GLOBAL.sock.user.id.split("@")[0].split(":")[0] + "@s.whatsapp.net";
+    msgQueue.add(async () => {
+        await GLOBAL.sock.sendMessage(botNum, { text }).then(messageRetryHandler.addMessage);
+    });
+}

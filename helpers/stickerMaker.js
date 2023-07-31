@@ -5,14 +5,14 @@ import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-const { UltimateTextToImage } = process.env.NODE_ENV === 'production' ? await import("ultimate-text-to-image") : { UltimateTextToImage: null };
+
+const { UltimateTextToImage, registerFont } = process.env.NODE_ENV === 'production' ? await import("ultimate-text-to-image") : { UltimateTextToImage: null, registerFont: null };
+registerFont?.('./src/Gveret Levin Alef Alef Alef.ttf', { family: 'Alef' });
 
 import messageRetryHandler from "../src/retryHandler.js";
-
 import { MsgType, getMsgType } from './msgType.js';
-
 import MemoryStore from '../src/store.js';
-import { msgQueue, sendMsgQueue } from '../src/QueueObj.js';
+import { msgQueue, sendMsgQueue, errorMsgQueue } from '../src/QueueObj.js';
 
 
 const sticker_types = {
@@ -70,7 +70,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
     try {
         let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         let { type } = getMsgType(quoted);
-        if (type === MsgType.IMAGE || type === MsgType.VIDEO) {
+        if (type === MsgType.IMAGE || type === MsgType.VIDEO || type === MsgType.STICKER) {
 
             let setType = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
             const type = sticker_types[setType] || StickerTypes.FULL;
@@ -98,6 +98,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
         }
     } catch (error) {
         console.log(error);
+        errorMsgQueue(error)
         return sendMsgQueue(id, "אופס... נראה שההודעה שציטטת אינה תקינה")
     }
 
@@ -115,7 +116,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
         }
 
         // no content and no quoted message
-        if (isQuoted && message == "") return sendMsgQueue(id, "אופס... שלחת לי הודעה ריקה");
+        if (isQuoted && message == "") return sendMsgQueue(id, "אופס! לא מצאתי תוכן להפוך לסטיקר...\nיש לכתוב טקסט לאחר הפקודה או לצטט הודעה אחרת")
 
 
         const sticker = new Sticker(
@@ -142,7 +143,7 @@ function textToSticker2(text) {
         width: 350,
         maxWidth: 400,
         maxHeight: 400,
-        fontFamily: "Arial",
+        fontFamily: "Alef",
         // white color
         fontColor: "#ffffff",
         fontSize: 150,
