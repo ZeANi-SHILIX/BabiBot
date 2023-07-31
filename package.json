@@ -35,6 +35,7 @@
     "text2png": "^2.3.0",
     "ultimate-text-to-image": "^1.0.1",
     "wa-sticker-formatter": "^4.4.4",
+    "xmldom": "^0.6.0",
     "youtube-mp3-downloader": "^0.7.11",
     "ytdl-core": "^4.11.2"
   },
