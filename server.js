@@ -8,7 +8,7 @@ import express from 'express';
 import QRCode from 'qrcode';
 import Mongo from './mongo.js';
 import { handlerQueue } from './src/QueueObj.js';
-import { store, logger, GLOBAL } from './src/storeMsg.js';
+import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
 //import jwt from 'jsonwebtoken';
 import handleMessage from './handler.js';
@@ -42,10 +42,11 @@ async function connectToWhatsApp() {
             creds: state.creds,
             keys: state.keys,
         },
-        logger,
+        logger: MemoryStore.logger,
         version,
         msgRetryCounterMap,
-        retryRequestDelayMs: 50,
+        retryRequestDelayMs: 10,
+        defaultQueryTimeoutMs: undefined,
         //syncFullHistory: true,
         getMessage: messageRetryHandler.messageRetryHandler
     })

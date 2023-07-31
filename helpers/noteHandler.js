@@ -6,7 +6,11 @@ import mediaNote from '../src/mediaNote.js';
 import allNotes from '../src/AllNotes.js';
 
 import { MsgType, getMsgType } from './msgType.js';
-import { GLOBAL, store } from '../src/storeMsg.js';
+import { GLOBAL } from '../src/storeMsg.js'; // TODO: "store" change to memory store
+
+import MemoryStore from '../src/store.js';
+import { msgQueue, sendMsgQueue } from '../src/QueueObj.js';
+
 
 function NoteHendler() {
     this.savedNotes = savedNotes;
@@ -29,15 +33,15 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
 
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
     let q = msgText.split(" ")[1];
-    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" }).then(messageRetryHandler.addMessage);
+    if (!q) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את שם ההערה");
 
     // check premissions
     if (isGlobal && issuperuser !== true)
-        return sock.sendMessage(id, { text: "אופס... אין לך הרשאה לשמור הערה גלובלית" }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, "אופס... אין לך הרשאה לשמור הערה גלובלית")
 
     let quoted;
     try {
-        quoted = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
     } catch (error) {
         console.log(error);
     }
@@ -47,18 +51,18 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
     if (type == MsgType.TEXT) {
         let a = msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || msgText.split(" ").slice(2).join(" ") || "";
         //console.log(a);
-        if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" }).then(messageRetryHandler.addMessage);
+        if (!a) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את תוכן ההערה")
 
         // check if the note already exist in global or in the chat
         let result = await savedNotes.findOne({ q: q });
 
         if (result?.isGlobal || result?.chat === id)
-            return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
+            return sendMsgQueue(id, "אופס... ההערה כבר קיימת במאגר");
 
         return savedNotes.create({ q: q, a: a, chat: id, isGlobal: isGlobal }, (err, res) => {
-            if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" });
+            if (err) return sendMsgQueue(id, "אופס... ההערה כבר קיימת במאגר");
 
-            sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" }).then(messageRetryHandler.addMessage);;
+            sendMsgQueue(id, "ההערה נשמרה בהצלחה");
         });
     }
 
@@ -71,7 +75,7 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
     if (type == MsgType.DOCUMENT) {
         nameFile = quoted.message.documentMessage.fileName;
         let size = buffer.length / 1024 / 1024;
-        if (size > 15) return sock.sendMessage(id, { text: "אופס... הקובץ גדול מדי" }).then(messageRetryHandler.addMessage);
+        if (size > 15) return sendMsgQueue(id, "אופס... הקובץ גדול מדי");
     }
 
     mediaNote.create({
@@ -81,9 +85,9 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
         chat: id, isGlobal: isGlobal
     }, (err, res) => {
         console.log(res);
-        if (err) return sock.sendMessage(id, { text: "אופס... ההערה כבר קיימת במאגר" }).then(messageRetryHandler.addMessage);
+        if (err) return sendMsgQueue(id, "אופס... ההערה כבר קיימת במאגר");
 
-        sock.sendMessage(id, { text: "ההערה נשמרה בהצלחה" }).then(messageRetryHandler.addMessage);
+        sendMsgQueue(id, "ההערה נשמרה בהצלחה")
     });
 
 }
@@ -100,7 +104,7 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = fals
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
     let q = msgText.split(" ")[1];
 
-    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" }).then(messageRetryHandler.addMessage);
+    if (!q) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את שם ההערה");
 
     let search = await savedNotes.find({ q: q });
     let searchMedia = await mediaNote.find({ q: q });
@@ -110,32 +114,32 @@ NoteHendler.prototype.deleteNote = async function (msg, sock, issuperuser = fals
     searchMedia = searchMedia.filter(note => note.chat === id || note.isGlobal == true);
 
     if (search.length === 0 && searchMedia.length === 0)
-        return sock.sendMessage(id, { text: "אופס... אין הערה בשם זה" }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, "אופס... אין הערה בשם זה")
 
 
     for (const note of search) {
         // check permissions
         if (note.isGlobal == true && issuperuser !== true)
-            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, "אופס... אין לך הרשאה למחוק הערה זו")
 
         // delete the note
         savedNotes.deleteOne({ _id: note._id }, (err, res) => {
-            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" }).then(messageRetryHandler.addMessage);
+            if (err) return sendMsgQueue(id, "אופס... משהו השתבש");
 
-            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" }).then(messageRetryHandler.addMessage);
+            sendMsgQueue(id, "ההערה נמחקה בהצלחה")
         })
     }
 
     for (const note of searchMedia) {
         // check permissions
         if (note.isGlobal == true && issuperuser !== true)
-            return sock.sendMessage(id, { text: "אופס... אין לך הרשאה למחוק הערה זו" }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, "אופס... אין לך הרשאה למחוק הערה זו")
 
         // delete the note
         mediaNote.deleteOne({ _id: note._id }, (err, res) => {
-            if (err) return sock.sendMessage(id, { text: "אופס... משהו השתבש" }).then(messageRetryHandler.addMessage);
+            if (err) return sendMsgQueue(id, "אופס... משהו השתבש")
 
-            sock.sendMessage(id, { text: "ההערה נמחקה בהצלחה" }).then(messageRetryHandler.addMessage);
+            sendMsgQueue(id, "ההערה נמחקה בהצלחה")
         });
     }
 }
@@ -164,7 +168,7 @@ NoteHendler.prototype.getAllNotes = async function (msg, sock) {
     let privateNotes = [...resultPrivate, ...resultPrivateMedia];
 
     if (globalNotes.length === 0 && privateNotes.length === 0)
-        return sock.sendMessage(id, { text: "לא קיימות הערות" }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, "לא קיימות הערות")
 
     // create the message
     let str = "";
@@ -183,7 +187,7 @@ NoteHendler.prototype.getAllNotes = async function (msg, sock) {
 
     str += "\nניתן לגשת להערה על ידי # או על ידי הפקודה !get";
 
-    return sock.sendMessage(id, { text: str }).then(messageRetryHandler.addMessage);
+    return sendMsgQueue(id, str)
 }
 
 /**
@@ -197,14 +201,14 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
     let q = msgText.replace("#", "").split(" ")[0] || msgText.split(" ")[1];
-    if (!q) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את שם ההערה" });
+    if (!q) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את שם ההערה");
 
     // note with text
     let result = await savedNotes.findOne({ q: q, chat: id });
-    if (result) return sock.sendMessage(id, { text: result.a }).then(messageRetryHandler.addMessage);
+    if (result) return sendMsgQueue(id, result.a)
 
     result = await savedNotes.findOne({ q: q, isGlobal: true });
-    if (result) return sock.sendMessage(id, { text: result.a }).then(messageRetryHandler.addMessage);
+    if (result) return sendMsgQueue(id, result.a)
 
     // note with media
     let resultMedia = await mediaNote.findOne({ q: q, chat: id });
@@ -216,20 +220,15 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
     // send the media
     switch (resultMedia.type) {
         case MsgType.IMAGE:
-            return sock.sendMessage(id, { image: resultMedia.buffer, mimetype: resultMedia.mimetype })
-                .then(messageRetryHandler.addMessage);
+            return msgQueue.add(async () => { await sock.sendMessage(id, { image: resultMedia.buffer, mimetype: resultMedia.mimetype }) });
         case MsgType.VIDEO:
-            return sock.sendMessage(id, { video: resultMedia.buffer, mimetype: resultMedia.mimetype })
-                .then(messageRetryHandler.addMessage);
+            return msgQueue.add(async () => { await sock.sendMessage(id, { video: resultMedia.buffer, mimetype: resultMedia.mimetype }) });
         case MsgType.AUDIO:
-            return sock.sendMessage(id, { audio: resultMedia.buffer, mimetype: resultMedia.mimetype })
-                .then(messageRetryHandler.addMessage);
+            return msgQueue.add(async () => { await sock.sendMessage(id, { audio: resultMedia.buffer, mimetype: resultMedia.mimetype }) });
         case MsgType.STICKER:
-            return sock.sendMessage(id, { sticker: resultMedia.buffer, mimetype: resultMedia.mimetype })
-                .then(messageRetryHandler.addMessage);
+            return msgQueue.add(async () => { await sock.sendMessage(id, { sticker: resultMedia.buffer, mimetype: resultMedia.mimetype }) });
         case MsgType.DOCUMENT:
-            return sock.sendMessage(id, { document: resultMedia.buffer, mimetype: resultMedia.mimetype, fileName: resultMedia.fileName })
-                .then(messageRetryHandler.addMessage);
+            return msgQueue.add(async () => { await sock.sendMessage(id, { document: resultMedia.buffer, mimetype: resultMedia.mimetype, fileName: resultMedia.fileName }) });
     }
 }
 
@@ -273,14 +272,14 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
 
     // ------------------ save the note ------------------
 
-     // TODO check all references to quoted message
+    // TODO check all references to quoted message
 
     // check if the msg is a reply
     let isQuoted = false;
     if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
         // get the quoted message
         try {
-            msg = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+            msg = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
             isQuoted = true;
         } catch (error) {
             console.log(error);
@@ -296,7 +295,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
     switch (type) {
         // ---- Text Note ----
         // (no quoted message or quoted message is text)
-        case MsgType.TEXT: 
+        case MsgType.TEXT:
             // get body note
             let a = isQuoted ? msg.message.conversation || msg.message.extendedTextMessage.text : msgText.split(" ").slice(2).join(" ") || "";
             if (!a) return sock.sendMessage(id, { text: "אופס... נראה ששכחת לכתוב את תוכן ההערה" }).then(messageRetryHandler.addMessage);

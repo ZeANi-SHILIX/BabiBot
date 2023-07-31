@@ -1,6 +1,7 @@
 import { makeInMemoryStore } from '@adiwajshing/baileys'
 import { pino } from "pino";
 import fs from "fs";
+import os from "os";
 
 /**
  * custom store for baileys
@@ -24,6 +25,12 @@ class MemoryStore {
         this.store.readFromFile(this.path);
 
         setInterval(() => {
+            // check server load
+            const { avg1min, memUsage } = getServerLoad();
+
+            console.log("CPU Average (1 min): " + avg1min);
+            console.log("Memory Usage: " + memUsage.toFixed(1) + "%");
+
             const { date, hour } = this.getTime();
             if (hour !== this.currentTime) {
                 this.store.writeToFile(this.path);
@@ -60,7 +67,7 @@ class MemoryStore {
         let { date, hour } = this.getTime();
 
         while (result.length < number) {
-            const tempStore = makeInMemoryStore({ logger: this.logger});
+            const tempStore = makeInMemoryStore({ logger: this.logger });
             const tempPath = this.basePath + date + "_" + hour + ".json";
 
             tempStore.readFromFile(tempPath);
@@ -82,7 +89,7 @@ class MemoryStore {
         let { date, hour } = this.getTime();
 
         while (true) {
-            const tempStore = makeInMemoryStore({ logger: this.logger});
+            const tempStore = makeInMemoryStore({ logger: this.logger });
             const tempPath = this.basePath + date + "_" + hour + ".json";
 
             tempStore.readFromFile(tempPath);
@@ -95,6 +102,18 @@ class MemoryStore {
         }
 
         return null;
+    }
+}
+
+function getServerLoad() {
+    const totalmem = os.totalmem();
+    const freemem = os.freemem()
+    const avg1min = os.loadavg()[0];
+    const memUsage = (totalmem - freemem) / totalmem * 100;
+
+    return {
+        avg1min,
+        memUsage
     }
 }
 

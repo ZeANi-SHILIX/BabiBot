@@ -9,8 +9,10 @@ const { UltimateTextToImage } = process.env.NODE_ENV === 'production' ? await im
 
 import messageRetryHandler from "../src/retryHandler.js";
 
-import { store } from '../src/storeMsg.js';
 import { MsgType, getMsgType } from './msgType.js';
+
+import MemoryStore from '../src/store.js';
+import { msgQueue, sendMsgQueue } from '../src/QueueObj.js';
 
 
 const sticker_types = {
@@ -40,34 +42,45 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
         const type = sticker_types[setType] || StickerTypes.FULL;
 
         const messageType = Object.keys(msg.message)[0]
-        if (messageType === 'imageMessage' || messageType === 'videoMessage') {
+        if (messageType === 'imageMessage' || messageType === 'videoMessage' || messageType === 'stickerMessage') {
 
             const buffer = await downloadMediaMessage(msg, 'buffer', {})
-            // not bigger than 2MB
-            const size  = buffer.byteLength / 1024 / 1024
-            if (size > 2) return sock.sendMessage(id, { text: "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר" })
+            // not bigger than 1.5MB
+            const size = buffer.byteLength / 1024 / 1024
+            if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
 
+            const quality = size > 0.8 ? 10 : 30;
+            console.log("making sticker...")
             const sticker = new Sticker(buffer, {
                 pack: '🎉',
                 author: 'BabiBot',
                 type: type,
                 categories: ['🤩', '🎉'],
-                quality: 18
+                quality: quality
             });
-            sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
-            console.log("sended sticker message", type)
+            const stickerMsg = await sticker.toMessage();
+
+            console.log("adding sticker message to queue, type:", type)
+            msgQueue.add(async () => await sock.sendMessage(id, stickerMsg).then(messageRetryHandler.addMessage))
         }
         return;
     }
 
     // quoted message with image or video
     try {
-        let quoted = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         let { type } = getMsgType(quoted);
         if (type === MsgType.IMAGE || type === MsgType.VIDEO) {
 
             let setType = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
             const type = sticker_types[setType] || StickerTypes.FULL;
+
+            // not bigger than 1.5MB
+            const size = buffer.byteLength / 1024 / 1024
+            if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
+
+            const quality = size > 0.8 ? 10 : 30;
+            console.log("making sticker...")
 
             const buffer = await downloadMediaMessage(quoted, 'buffer', {})
             const sticker = new Sticker(buffer, {
@@ -75,13 +88,17 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
                 author: 'BabiBot',
                 type: type,
                 categories: ['🤩', '🎉'],
-                quality: 30
+                quality: quality
             });
-            return sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
+            const stickerMsg = await sticker.toMessage();
+
+            console.log("adding sticker message to queue, type:", type)
+            msgQueue.add(async () => await sock.sendMessage(id, stickerMsg).then(messageRetryHandler.addMessage))
+            return;
         }
     } catch (error) {
         console.log(error);
-        return sock.sendMessage(id, { text: "אופס... נראה שההודעה שציטטת אינה תקינה" })
+        return sendMsgQueue(id, "אופס... נראה שההודעה שציטטת אינה תקינה")
     }
 
 
@@ -91,14 +108,14 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
 
         let isQuoted = false;
         // no content, check if quoted message
-        if (message == ""){
+        if (message == "") {
             isQuoted = true;
-            message = await store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
+            message = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
             message = message?.message?.conversation || message?.message?.extendedTextMessage?.text || "";
         }
 
         // no content and no quoted message
-        if (isQuoted && message == "") return sock.sendMessage(id, { text: "אופס... שלחת לי הודעה ריקה" });
+        if (isQuoted && message == "") return sendMsgQueue(id, "אופס... שלחת לי הודעה ריקה");
 
 
         const sticker = new Sticker(
@@ -110,7 +127,10 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
                 categories: ['🤩', '🎉'],
                 quality: 50
             });
-        sock.sendMessage(id, await sticker.toMessage()).then(messageRetryHandler.addMessage);
+            const stickerMsg = await sticker.toMessage();
+
+            console.log("adding sticker message to queue, type: text")
+            msgQueue.add(async () => await sock.sendMessage(id, stickerMsg).then(messageRetryHandler.addMessage))
     }
 }
 

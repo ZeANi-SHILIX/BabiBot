@@ -4,20 +4,21 @@ import noteHendler from './helpers/noteHandler.js';
 import BarkuniSticker from './helpers/berkuniHandler.js';
 import sendSticker from './helpers/stickerMaker.js';
 import Downloader from './helpers/downloader.js';
-import { store, GLOBAL } from './src/storeMsg.js';
+import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
 import messageRetryHandler from './src/retryHandler.js';
 import ChatGPT from './helpers/chatgpt.js';
-import UnofficalGPT from './helpers/unofficalGPT.js';
+//import UnofficalGPT from './helpers/unofficalGPT.js';
 import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
+import { msgQueue, sendMsgQueue } from './src/QueueObj.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
-const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
+//const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
 const ssid = process.env.MAILLIST ?? "";
@@ -121,12 +122,6 @@ export default async function handleMessage(sock, msg, mongo) {
     // send ACK
     sock.readMessages([msg.key])
 
-    if (textMsg.startsWith("!page") || textMsg.startsWith("!אינטרנט")) {
-        const page = "babibot.live"
-        sock.sendMessage(id, { text: page }).then(messageRetryHandler.addMessage);
-        return;
-    }
-
     // text message
     if (!PRODUCTION && textMsg.startsWith("test")) {
         const poll = await sock.sendMessage(id, {
@@ -149,16 +144,16 @@ export default async function handleMessage(sock, msg, mongo) {
         return;
         //console.log(msg.pollUpdates)
 
-        let key = msg.message.pollUpdateMessage.pollCreationMessageKey;
-        if (!key) return;
+        // let key = msg.message.pollUpdateMessage.pollCreationMessageKey;
+        // if (!key) return;
 
-        let pollCreation = await store.loadMessage(id, key.id);
-        if (!pollCreation) return;
+        // let pollCreation = await store.loadMessage(id, key.id);
+        // if (!pollCreation) return;
 
-        const pollMessage = await getAggregateVotesInPollMessage({
-            message: pollCreation,
-            pollUpdates: msg.pollUpdates,
-        }, sock.user.id)
+        // const pollMessage = await getAggregateVotesInPollMessage({
+        //     message: pollCreation,
+        //     pollUpdates: msg.pollUpdates,
+        // }, sock.user.id)
 
         //console.log(pollMessage)
 
@@ -181,15 +176,15 @@ export default async function handleMessage(sock, msg, mongo) {
 
 
     if (textMsg === "!ping" || textMsg === "!פינג")
-        return sock.sendMessage(id, { text: "פונג" }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, "פונג");
     if (textMsg === "!pong" || textMsg === "!פונג")
-        return sock.sendMessage(id, { text: "פינג" }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, "פינג");
 
 
-
+    // ## NEED FIX ##
     if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
         if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "הפקודה זמינה רק בקבוצות" }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
 
         //get group members
         let groupData = await sock.groupMetadata(id);
@@ -200,16 +195,17 @@ export default async function handleMessage(sock, msg, mongo) {
 
         const isAdmin = sender?.admin || msg.key.participant?.includes(superuser) || false;
         if (!isAdmin)
-            return sock.sendMessage(id, { text: "אין לך הרשאות לבצע פקודה זו" }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, "פקודה זו זמינה למנהלים בלבד");
 
         // dont include bot
         const botnum = sock.user.id.split("@")[0].split(":")[0];
         groupData.participants = groupData.participants.filter(p => !p.id.includes(botnum));
 
         let members = groupData.participants.map(p => p.id);
-        let quoteAll = members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
+        let quoteAll = "המשתמש " + msg.pushName + " קורא לכולם! \n" // fix to set tag to the sender
+            + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
 
-        let everybody_msg  = await sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage)
+        let everybody_msg = msgQueue.add(async () => await sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage));
         return //everybodyMSG(everybody_msg, sock);
     }
 
@@ -226,6 +222,7 @@ export default async function handleMessage(sock, msg, mongo) {
         return BarkuniSticker(msg, sock, superuser);
 
 
+    // ## NEED FIX ##
     /**#########
      * TRANSLATE
      * ##########*/
@@ -255,18 +252,20 @@ export default async function handleMessage(sock, msg, mongo) {
      ##########*/
     if (textMsg.startsWith("!google") || textMsg.startsWith("!גוגל")) {
         let textSearch = textMsg.replace("!google", "").replace("!גוגל", "").trim();
+        let textToSend;
 
         if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
             let quotedMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage;
             let quotedText = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
             let linkMsg = textSearch.length === 0 ? "https://www.google.com/search?q=" + encodeURIComponent(quotedText.trim()) : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
-            return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! למה שלא תנסה לשאול אותו?\n" + linkMsg }).then(messageRetryHandler.addMessage);
+            textToSend = "גוגל הוא חבר נהדר! למה שלא תנסה לשאול אותו?\n" + linkMsg;
 
         }
-
-        let linkMsg = textSearch.length === 0 ? "https://giybf.com/" : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
-        return sock.sendMessage(id, { text: "גוגל הוא חבר נהדר! בואו נשאל אותו?\n" + linkMsg }).then(messageRetryHandler.addMessage);
-
+        else {
+            let linkMsg = textSearch.length === 0 ? "https://giybf.com/" : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
+            textToSend = "גוגל הוא חבר נהדר! כדאי לשאול אותו?\n" + linkMsg;
+        }
+        return sendMsgQueue(id, textToSend);
     }
 
     /**##########
@@ -275,7 +274,7 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("!mute") || textMsg.startsWith("!השתק")) {
 
         if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+            return sendMsgQueue(id, "אתה צריך לשלוח את הפקודה בקבוצה");
 
         let groupData = await sock.groupMetadata(id);
         let participant = groupData.participants;
@@ -284,27 +283,25 @@ export default async function handleMessage(sock, msg, mongo) {
         let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
         console.log(bot);
         if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול" });
+            return sendMsgQueue(id, "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול");
 
         // get mute time
         let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
         if (muteTime.length === 0)
-            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
+            return sendMsgQueue(id, "אנא הכנס זמן השתקה בדקות");
 
         let muteTime_min = parseInt(muteTime);
         if (isNaN(muteTime_min))
-            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בדקות" });
+            return sendMsgQueue(id, "אנא הכנס זמן השתקה בדקות");
 
         if (muteTime_min < 1 || muteTime_min > 60)
-            return sock.sendMessage(id, { text: "אנא הכנס זמן השתקה בין 1 ל 60 דקות" });
+            return sendMsgQueue(id, "אנא הכנס זמן השתקה בין 1 ל 60 דקות");
 
         // check if the sender is admin
         // TODO: make poll to vote if to mute the group
         let sender = participant.find(p => p.id === msg.key.participant);
         console.log(sender);
         if (!sender.admin) {
-            //return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
-            //info.deleteReactionMsg(msg);
             let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
             // get the number from text
             let timeToMute = textMsg.replace(/[^0-9]/g, '').trim();
@@ -318,38 +315,43 @@ export default async function handleMessage(sock, msg, mongo) {
                     `אתם מסכימים?`,
                 mentions: [msg.key.participant]
             }).then(messageRetryHandler.addMessage);
+            // store the msg id
             return info.makeReactionMsg(botMsg, muteTime_min);
         }
 
-        // if admin, mute the group immediately
+        // else if admin, mute the group immediately
         info.deleteAllReactionMsg(id);
         return muteGroup(msg, muteTime_min);
     }
 
+    // UNMUTE GROUP
     if (textMsg.startsWith("!unmute") || textMsg.startsWith("!בטלהשתקה")) {
         if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצה");
 
         let groupData = await sock.groupMetadata(id);
         if (!groupData.announce)
-            return sock.sendMessage(id, { text: "הקבוצה כבר פתוחה" });
+            return sendMsgQueue(id, "הקבוצה כבר פתוחה");
 
-        // check if the bot is admin
+        // check if the bot is admin - (not needed)
         let participant = groupData.participants;
         let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
         console.log(bot);
         if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול" });
+            return sendMsgQueue(id, "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול");
 
-        sock.groupSettingUpdate(id, 'not_announcement');
-        sock.sendMessage(id, { text: "הקבוצה פתוחה" });
+        msgQueue.add(async () => await sock.groupSettingUpdate(id, 'not_announcement'));
+        sendMsgQueue(id, "הקבוצה פתוחה");
 
     }
 
-    // set group config
+    // ## NEED IMPROVE ##
+    /**#############
+     * GROUP CONFIG
+     * #############*/
     if (textMsg.startsWith("!set") || textMsg.startsWith("!הגדר")) {
         if (!msg.key.remoteJid.includes("@g.us"))
-            return sock.sendMessage(id, { text: "אתה צריך לשלוח את הפקודה בקבוצה" });
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצה");
 
         let groupData = await sock.groupMetadata(id);
         let participant = groupData.participants;
@@ -358,19 +360,19 @@ export default async function handleMessage(sock, msg, mongo) {
         let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
         console.log(bot);
         if (!bot?.admin)
-            return sock.sendMessage(id, { text: "אני צריך להיות מנהל בקבוצה" });
+            return sendMsgQueue(id, "אני צריך להיות מנהל בקבוצה");
 
         // check if the sender is admin
         let sender = participant.find(p => p.id === msg.key.participant);
         console.log(sender);
         if (!sender.admin)
-            return sock.sendMessage(id, { text: "אתה צריך להיות מנהל בקבוצה" });
+            return sendMsgQueue(id, "אתה צריך להיות מנהל בקבוצה");
 
         info.startDialog(msg);
-        sock.sendMessage(id, { text: "הגדרות הקבוצה נשלחו לפרטי" });
+        sendMsgQueue(id, "הגדרות הקבוצה נשלחו לפרטי");
 
         // send the group config to the sender
-        sock.sendMessage(msg.key.participant, { text: getGroupConfig(id) + "\nמתחיל בעריכה:\nהכנס את מספר המשתמשים להשתקה" });
+        sendMsgQueue(msg.key.participant, getGroupConfig(id) + "\nמתחיל בעריכה:\nהכנס את מספר המשתמשים להשתקה");
         return;
     }
 
@@ -382,14 +384,15 @@ export default async function handleMessage(sock, msg, mongo) {
     // save notes
     if (textMsg.startsWith('!save') || textMsg.startsWith('!שמור')) {
         if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return sendMsgQueue(id, "אין חיבור למסד נתונים");
+
         return noteHendler.saveNote(msg, sock);
     }
 
     // save global notes
     if (textMsg.startsWith('!Gsave') || textMsg.startsWith('!גשמור')) {
         if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return sendMsgQueue(id, "אין חיבור למסד נתונים");
 
         let issuperuser = false;
         if (msg.key.remoteJid?.includes(superuser) || msg.key.participant?.includes(superuser))
@@ -401,7 +404,7 @@ export default async function handleMessage(sock, msg, mongo) {
     // delete note
     if (textMsg.startsWith('!delete') || textMsg.startsWith('!מחק')) {
         if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return sendMsgQueue(id, "אין חיבור למסד נתונים");
 
         let issuperuser = false;
         if (msg.key.remoteJid?.includes(superuser) || msg.key.participant?.includes(superuser))
@@ -413,7 +416,7 @@ export default async function handleMessage(sock, msg, mongo) {
     // get note
     if (textMsg.startsWith('!get') || textMsg.startsWith('#')) {
         if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return sendMsgQueue(id, "אין חיבור למסד נתונים");
 
         return noteHendler.getNote(msg, sock);
     }
@@ -421,11 +424,14 @@ export default async function handleMessage(sock, msg, mongo) {
     // get all notes
     if (textMsg.startsWith('!notes') || textMsg.startsWith('!הערות')) {
         if (!mongo.isConnected)
-            return sock.sendMessage(id, { text: "אין חיבור למסד נתונים" });
+            return sendMsgQueue(id, "אין חיבור למסד נתונים");
+
         return noteHendler.getAllNotes(msg, sock);
     }
 
-    // get mails
+    /**##########
+     * MAIL LIST
+     * ##########*/
     if (textMsg.includes("מייל של ")) {
         let mails = await getMails();
 
@@ -443,7 +449,7 @@ export default async function handleMessage(sock, msg, mongo) {
         let arr_search = searchText.split(" ");
         console.log(arr_search)
 
-        let retunText = "";
+        let returnText = "";
         let countMails = 0;
         for (let mail of mails) {
             try {
@@ -454,30 +460,24 @@ export default async function handleMessage(sock, msg, mongo) {
                 if (arr_search.every(s => str.includes(s) || nickname.includes(s))) {
                     console.log(mail.c[0]);
                     countMails += 1;
-                    retunText += str + "\n";
+                    returnText += str + "\n";
                 }
             } catch (error) {
                 console.error(error);
             }
         }
-        retunText = retunText.trim();
+        returnText = returnText.trim();
 
         if (countMails > 0 && countMails < 8)
-            sock.sendMessage(id, { text: retunText }).then(messageRetryHandler.addMessage);
+            sendMsgQueue(id, returnText)
 
         else if (msg.key.remoteJid.includes("s.whatsapp.net")) {
             if (countMails === 0)
-                sock.sendMessage(id, {
-                    text: `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
-                        + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`
-                }).then(messageRetryHandler.addMessage)
-
+                sendMsgQueue(id, `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
+                    + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`)
             else
-                sock.sendMessage(id, {
-                    text: `מצאתי ${countMails} מיילים עבור ${searchText}\n`
-                        + `נסה לחפש באופן ממוקד יותר\n`
-                }).then(messageRetryHandler.addMessage)
-
+                sendMsgQueue(id, `מצאתי ${countMails} מיילים עבור ${searchText}\n`
+                    + `נסה לחפש באופן ממוקד יותר`)
         }
         return;
     }
@@ -490,12 +490,14 @@ export default async function handleMessage(sock, msg, mongo) {
         // and have @ in the quoted message
         if (msg.message.extendedTextMessage?.contextInfo?.participant.startsWith(numberSocket) &&
             msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation.includes("@")) {
-            sock.sendMessage(id, { text: "בשמחה! תמיד שמח לעזור😃" }).then(messageRetryHandler.addMessage);
-            return;
+            return sendMsgQueue(id, "בשמחה! תמיד שמח לעזור😃")
         }
     }
 
-    // ask GPT
+    // ## NEED IMPROVE ##
+    /**##########
+     *  ChatGPT
+     * ##########*/
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
@@ -503,41 +505,41 @@ export default async function handleMessage(sock, msg, mongo) {
             let res = await chatGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
             console.log(res?.choices?.[0] || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res?.error?.message || res;
-            await sock.sendMessage(id, { text: retText }).then(messageRetryHandler.addMessage);
+            sendMsgQueue(id, retText)
         } catch (error) {
             console.error(error);
-            await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+            sendMsgQueue(id, "אופס... חלה שגיאה\nנסה לשאול שוב")
         }
     }
 
     // get image from GPT
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
-        return sock.sendMessage(id, { text: "השירות כרגע לא זמין" }).then(messageRetryHandler.addMessage);
-        try {
-            let imgdesc = textMsg.replace("!image", "").replace("!תמונה", "").trim();
-            // get only english letters
-            let imgdesc_en = imgdesc.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+        return sendMsgQueue(id, "השירות כרגע לא זמין")
+        // try {
+        //     let imgdesc = textMsg.replace("!image", "").replace("!תמונה", "").trim();
+        //     // get only english letters
+        //     let imgdesc_en = imgdesc.replace(/[^a-zA-Z0-9 ]/g, '').trim();
 
-            if (imgdesc_en.length < 2) {
-                let translatedText = await translate(imgdesc, 'iw', 'en');
-                console.log(translatedText);
-                imgdesc_en = translatedText.translated || "";
-            }
+        //     if (imgdesc_en.length < 2) {
+        //         let translatedText = await translate(imgdesc, 'iw', 'en');
+        //         console.log(translatedText);
+        //         imgdesc_en = translatedText.translated || "";
+        //     }
 
-            console.log(imgdesc_en);
+        //     console.log(imgdesc_en);
 
-            let resImage = await unofficalGPT.image(imgdesc_en + '\n');
-            console.log(resImage?.data?.[0]?.url || resImage.error);
-            if (resImage?.data?.[0]?.url) {
-                for (const urlObj of resImage.data)
-                    await sock.sendMessage(id, { image: { url: urlObj.url } }).then(messageRetryHandler.addMessage);
-                return;
-            }
-            return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
-        } catch (error) {
-            console.error(error);
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
-        }
+        //     let resImage = await unofficalGPT.image(imgdesc_en + '\n');
+        //     console.log(resImage?.data?.[0]?.url || resImage.error);
+        //     if (resImage?.data?.[0]?.url) {
+        //         for (const urlObj of resImage.data)
+        //             await sock.sendMessage(id, { image: { url: urlObj.url } }).then(messageRetryHandler.addMessage);
+        //         return;
+        //     }
+        //     return sock.sendMessage(id, { text: resImage.error + "\n" + resImage.hint }).then(messageRetryHandler.addMessage);
+        // } catch (error) {
+        //     console.error(error);
+        //     return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" }).then(messageRetryHandler.addMessage);
+        // }
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
@@ -552,17 +554,43 @@ export default async function handleMessage(sock, msg, mongo) {
             console.log('history length loaded:', history.length);
 
             if (history.length < 1)
-                return sock.sendMessage(id, { text: "לא מצאתי היסטוריה עבור שיחה זו" })
+                return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
 
             let res = await chatGPT.tldr(history)
-            return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, res);
         } catch (error) {
             console.error(error);
-            return sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+            return sendMsgQueue(id, "אופס... חלה שגיאה\nנסה לשאול שוב")
         }
 
     }
 
+    // stt - speech to text
+    if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
+        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
+
+        // has quoted message?
+        if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
+            return sendMsgQueue(id, "יש לצטט הודעה")
+
+        // get from store
+        //let quotedMsg = await store.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        if (!quotedMsg)
+            return sendMsgQueue(id, "חלה שגיאה בטעינת ההודעה המצוטטת")
+
+        // get type
+        let { type } = getMsgType(quotedMsg);
+
+        if (type !== MsgType.AUDIO)
+            return sendMsgQueue(id, "ההודעה המצוטטת אינה קובץ שמע")
+
+        return whisper(quotedMsg, sock);
+    }
+
+    // ## NEED IMPROVE ## 
+    // check if download is in progress
+    // replace libary
     /**#######
      * YOUTUBE
      #########*/
@@ -577,7 +605,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
         // if no link found
         if (!link) {
-            return sock.sendMessage(id, { text: "לא מצאתי קישור ליוטיוב" }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, "לא מצאתי קישור ליוטיוב")
         }
 
         let vidID = link.replace("https://", "")
@@ -597,38 +625,12 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes('%')) {
         let progress = info.getYouTubeProgress(id);
         if (progress)
-            return sock.sendMessage(id, { text: `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...` }).then(messageRetryHandler.addMessage)
+            return sendMsgQueue(id, `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...`);
     }
 
-    // // Omer count
-    // if (textMsg.includes("!omer") || textMsg.includes("!עומר")) {
-    //     return sock.sendMessage(id, { text: `היום ${getOmerDay().render("he")}` }).then(messageRetryHandler.addMessage)
-    // }
-
-    // stt
-    if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
-        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
-
-        console.log(msg);
-        // has quoted message?
-        if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
-            return sock.sendMessage(id, { text: "יש לצטט הודעה" }).then(messageRetryHandler.addMessage)
-
-        // get from store
-        //let quotedMsg = await store.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-        let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-        if (!quotedMsg)
-            return sock.sendMessage(id, { text: "חלה שגיאה בטעינת ההודעה המצוטטת" }).then(messageRetryHandler.addMessage)
-
-        // get type
-        let { type } = getMsgType(quotedMsg);
-
-        if (type !== MsgType.AUDIO)
-            return sock.sendMessage(id, { text: "ההודעה המצוטטת אינה קובץ שמע" }).then(messageRetryHandler.addMessage)
-
-        return whisper(quotedMsg, sock);
-    }
-
+    /**######
+     *  MISC
+     * ######*/
     // if the bot got mentioned
     if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
         let mentionedJids = msg.message.extendedTextMessage.contextInfo.mentionedJid;
@@ -653,7 +655,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
             text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
             text += "\n\nלקריאת הפקודות בצורה נוחה: babibot.live "
-            return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+            return sendMsgQueue(id, text);
         }
     }
     // in private
@@ -668,7 +670,7 @@ export default async function handleMessage(sock, msg, mongo) {
         text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
 
         text += "\n\nלקריאת הפקודות בצורה נוחה: babibot.live "
-        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, text);
     }
 
 
@@ -683,7 +685,7 @@ export default async function handleMessage(sock, msg, mongo) {
             "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
             "בוט זה נוצר על ידי שילה בבילה";
 
-        return sock.sendMessage(id, { text }).then(messageRetryHandler.addMessage);
+        return sendMsgQueue(id, text);
     }
 
     return
@@ -724,29 +726,29 @@ export default async function handleMessage(sock, msg, mongo) {
     if (type !== MsgType.TEXT) return;
 
     // no command - answer with ChatGPT
-    try {
-        await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
-        let history = await store.loadMessages(id, 20);
-        let [res, finish_reason] = await chatGPT.chatDevinci(history)
-        if (res == "") {
-            [res, finish_reason] = await chatGPT.chatDevinci(history);
-        }
-        await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-        let returnMsg = await sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
-        if (finish_reason == "length") {
-            history.push({
-                key: { fromMe: true },
-                message: { conversation: res }
-            })
-            continueChat(history, res, id, sock, returnMsg.key);
-        }
-        return;
+    // try {
+    //     await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
+    //     let history = await store.loadMessages(id, 20);
+    //     let [res, finish_reason] = await chatGPT.chatDevinci(history)
+    //     if (res == "") {
+    //         [res, finish_reason] = await chatGPT.chatDevinci(history);
+    //     }
+    //     await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
+    //     let returnMsg = await sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
+    //     if (finish_reason == "length") {
+    //         history.push({
+    //             key: { fromMe: true },
+    //             message: { conversation: res }
+    //         })
+    //         continueChat(history, res, id, sock, returnMsg.key);
+    //     }
+    //     return;
 
-    } catch (error) {
-        console.error(error);
-        await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-    }
-    await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
+    // } catch (error) {
+    //     console.error(error);
+    //     await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
+    // }
+    // await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
 
 
 }
@@ -946,11 +948,11 @@ async function whisper(msg, sock) {
         fs.unlinkSync(filename);
 
         // send the result
-        return sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage)
+        return sendMsgQueue(id, res)
 
     } catch (error) {
         console.error(error);
-        return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
+        return sendMsgQueue(id, "אופס משהו לא עבד טוב")
     }
 }
 

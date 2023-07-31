@@ -1,4 +1,5 @@
-import { store } from '../src/storeMsg.js';
+
+import MemoryStore from '../src/store.js'
 import { downloadMediaMessage } from '@adiwajshing/baileys';
 import barkuniDB from '../src/barkuni.js';
 import { Sticker } from 'wa-sticker-formatter';
@@ -19,7 +20,7 @@ async function BarkuniSticker(msg, sock, superuser) {
         let msgID = msg.message.extendedTextMessage.contextInfo.stanzaId;
         if (!msgID) return;
 
-        let quotedMessage = await store.loadMessage(id, msgID);
+        let quotedMessage = await MemoryStore.loadMessage(id, msgID);
         // if no quoted message, continue to search for sticker
         if (!quotedMessage) return searchBarkuni(sock, id);
 
