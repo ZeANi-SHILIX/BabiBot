@@ -501,8 +501,10 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
         //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
+            const text = textMsg.replace("!gpt", "").replace("!בוט", "").trim();
+            if (!text) return;
             //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            let res = await chatGPT.ask(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
+            let res = await chatGPT.ask( text + '\n')
             console.log(res?.choices?.[0] || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res?.error?.message || res;
             sendMsgQueue(id, retText)
@@ -598,6 +600,8 @@ export default async function handleMessage(sock, msg, mongo) {
 
         let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
 
+        if (info.getYouTubeProgress(id))
+            return sendMsgQueue(id, "הורדה כבר בתהליך, נא להמתין");
         // get queted message
         if (!link) {
             link = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || "";

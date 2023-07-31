@@ -30,7 +30,7 @@ Information.prototype.updateYouTubeProgress = function (userID, progress) {
 /**
  * 
  * @param {String} userID 
- * @returns {import('youtube-mp3-downloader').IVideoTask}
+ * @returns {import('youtube-mp3-downloader').IVideoTask | undefined}
  */
 Information.prototype.getYouTubeProgress = function (userID) {
     /** @type {Map} */
