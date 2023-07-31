@@ -122,7 +122,7 @@ export default async function sendSticker(msg, sock, msgTypeSticker) {
 
         const sticker = new Sticker(
             //textToSticker(message),
-            textToSticker2(message + " "),
+            textToSticker2(message),
             {
                 pack: '🎉',
                 author: 'BabiBot',
@@ -140,7 +140,7 @@ function textToSticker2(text) {
     text = putEnterBetweenEmojis(text);
     text = doubleEnter(text);
     console.log(text);
-    return new UltimateTextToImage(text, {
+    return new UltimateTextToImage(text + "  ", {
         width: 350,
         maxWidth: 400,
         maxHeight: 400,
@@ -154,7 +154,7 @@ function textToSticker2(text) {
         autoWrapLineHeightMultiplier: 1.1,
         //autoWrapLineHeight: 2,
         margin: 10,
-        marginLeft: 80,
+        marginLeft: 90,
         align: "center",
         valign: "middle",
         strokeSize: 2,
