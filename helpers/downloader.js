@@ -138,7 +138,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
     // get video details
     let videoDetails = await ytdl.getInfo(videoId);
-    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString()}.mp3`;
+    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}.mp3`;
     let title = videoDetails.videoDetails.title;
 
     // get video stream
@@ -157,7 +157,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
     stream.on("error", (err) => {
         console.error("error: ", err);
-        sendMsgQueue(id, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
+        sendMsgQueue(jid, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
         errorMsgQueue(err)
     });
 }
