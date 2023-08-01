@@ -3,7 +3,7 @@ dotenv.config();
 import noteHendler from './helpers/noteHandler.js';
 import BarkuniSticker from './helpers/berkuniHandler.js';
 import sendSticker from './helpers/stickerMaker.js';
-import Downloader from './helpers/downloader.js';
+import { DownloadV2, downloadTYoutubeVideo } from './helpers/downloader.js';
 import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
 import messageRetryHandler from './src/retryHandler.js';
@@ -57,6 +57,12 @@ let commands = {
  */
 export default async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid;
+    let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+    caption = caption.trim();
+    textMsg = textMsg.trim();
+
+    console.log(`${msg.pushName} (${id}) - ${caption || textMsg || msg?.message?.reactionMessage?.text}`)
 
     // early check if action need to be done
     // reaction message
@@ -90,6 +96,19 @@ export default async function handleMessage(sock, msg, mongo) {
         }
         return;
     }
+    // choose number to download YT video
+    let YTinfo = info.YTgetSearch(id);
+    if (YTinfo) {
+        let num = parseInt(textMsg);
+        if (num === 0) { 
+            info.YTdeleteSearch(id);
+            return sendMsgQueue(id, "ההורדה בוטלה"); 
+        }
+        if (isNaN(num) || num < 1 || num > 3) return sendMsgQueue(id, "אנא בחר מספר בין 1 ל 3\nאו 0 כדי לבטל");
+        let video = YTinfo[num - 1];
+        info.YTdeleteSearch(id);
+        return downloadTYoutubeVideo(id, video.id);
+    }
     // set group config
     let stage = info.setSettingDialog(msg);
     if (stage !== undefined)
@@ -110,14 +129,6 @@ export default async function handleMessage(sock, msg, mongo) {
             case 4:
                 return sock.sendMessage(id, { text: "ההגדרות נשמרו בהצלחה!" }).then(messageRetryHandler.addMessage);
         }
-
-    let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
-    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
-    caption = caption.trim();
-    textMsg = textMsg.trim();
-
-    console.log(`${msg.pushName} (${id}) - ${caption || textMsg || msg?.message?.reactionMessage?.text}`)
-    //console.log(JSON.stringify(msg, null, 2));
 
     // send ACK
     sock.readMessages([msg.key])
@@ -622,33 +633,7 @@ export default async function handleMessage(sock, msg, mongo) {
      * YOUTUBE
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
-
-        let link = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
-
-        if (info.getYouTubeProgress(id))
-            return sendMsgQueue(id, "הורדה כבר בתהליך, נא להמתין");
-        // get queted message
-        if (!link) {
-            link = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || "";
-        }
-
-        // if no link found
-        if (!link) {
-            return sendMsgQueue(id, "לא מצאתי קישור ליוטיוב")
-        }
-
-        let vidID = link.replace("https://", "")
-            .replace("m.youtube.com/watch?v=", '')
-            .replace("www.youtube.com/watch?v=", '')
-            .replace("youtu.be/", "");
-
-        Downloader(vidID, id, sock)
-            .then(async data => {
-                await sock.sendMessage(id, { caption: data.videoTitle, audio: { url: data.file }, mimetype: 'audio/mp4' }).then(messageRetryHandler.addMessage)
-                await sock.sendMessage(id, { text: data.videoTitle }).then(messageRetryHandler.addMessage)
-                fs.unlinkSync(data.file);
-            });
-        return;
+        return DownloadV2(msg);
     }
     // get youtube progress
     if (textMsg.includes('%')) {

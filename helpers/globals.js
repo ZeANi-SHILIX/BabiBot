@@ -7,6 +7,43 @@ export const info = new Information()
 
 /**
  * 
+ * @param {string} userID 
+ * @param {Array<{id,type,thumbnail,title,channelTitle,shortBylineText,length,isLive}>} search 
+ */
+Information.prototype.YTsetSearch = function (userID, search) {
+    /** @type {Map} */
+    let userInfo = this.map.get(userID) || new Map();
+    userInfo.set("YTsearch", search);
+    this.map.set(userID, userInfo);
+}
+
+/**
+ * 
+ * @param {string} userID 
+ * @returns {Array<{id,type,thumbnail,title,channelTitle,shortBylineText,length,isLive}>}  
+ */
+Information.prototype.YTgetSearch = function (userID) {
+    if (!this.map.has(userID)) return;
+
+    /** @type {Map} */
+    let userInfo = this.map.get(userID) || new Map();
+    return userInfo.get("YTsearch");
+}
+
+/**
+ * @param {string} userID
+ */
+Information.prototype.YTdeleteSearch = function (userID) {
+    if (!this.map.has(userID)) return;
+    
+    /** @type {Map} */
+    let userInfo = this.map.get(userID) || new Map();
+    userInfo.delete("YTsearch");
+    this.map.set(userID, userInfo);
+}
+
+/**
+ * 
  * @param {String} userID 
  * @param {import('youtube-mp3-downloader').IVideoTask } progress 
  * @returns {boolean} True if this first time
