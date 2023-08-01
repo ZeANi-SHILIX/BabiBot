@@ -93,11 +93,11 @@ export const GLOBAL = {
             return true;
         }
 
-        // check if 2 minutes passed
-        if (time - this.groupConfig[id].lastUsedGPT > 120_000) {
+        // check if 5 minutes passed
+        if (time - this.groupConfig[id].lastUsedGPT > 300_000) {
             this.groupConfig[id].lastUsedGPT = time;    // reset timer
             this.groupConfig[id].countGPT = 1;          // reset count
-            console.log("canAskGPT: 2 minutes passed");
+            console.log("canAskGPT: 5 minutes passed");
             return true;
         }
         // check if 3 times passed
