@@ -60,16 +60,19 @@ export const GLOBAL = {
     },
     everybodyLastUse2min: function (id) {
         const time = new Date().getTime();
-        if (!this.groupConfig[id]) {
+        if (!this.groupConfig[id]?.lastUsedEveryBodyCommand) {
             this.groupConfig[id] = {};
             this.groupConfig[id].lastUsedEveryBodyCommand = time;
+            console.log("everybodyLastUse2min: groupConfig not found, created new one");
             return true;
         }
         // check if 2 minutes passed
-        if (time - this.groupConfig[id].lastUsedEveryBodyCommand > 2 * 60 * 1000) {
+        if (time - this.groupConfig[id].lastUsedEveryBodyCommand > 120_000) {
             this.groupConfig[id].lastUsedEveryBodyCommand = time;
+            console.log("everybodyLastUse2min: 2 minutes passed");
             return true;
         }
+        console.log("everybodyLastUse2min: 2 minutes not passed");
         return false;
     },
 };
