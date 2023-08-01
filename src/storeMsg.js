@@ -59,7 +59,7 @@ export const GLOBAL = {
         console.log("cleared the timeout", this.timeouts[id], " for", id)
     },
     everybodyLastUse2min: function (id) {
-        const time = Date.now();
+        const time = new Date().getTime();
         if (!this.groupConfig[id]) {
             this.groupConfig[id] = {};
             this.groupConfig[id].lastUsedEveryBodyCommand = time;
