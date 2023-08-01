@@ -197,15 +197,20 @@ export default async function handleMessage(sock, msg, mongo) {
         if (!isAdmin)
             return sendMsgQueue(id, "פקודה זו זמינה למנהלים בלבד");
 
+        if (!GLOBAL.everybodyLastUse2min(id)) return sendMsgQueue(id, "יש להמתין 2 דקות לפני שימוש בפקודה פעם נוספת");
+
         // dont include bot
         const botnum = sock.user.id.split("@")[0].split(":")[0];
         groupData.participants = groupData.participants.filter(p => !p.id.includes(botnum));
 
         let members = groupData.participants.map(p => p.id);
-        let quoteAll = "המשתמש " + msg.pushName + " קורא לכולם! \n" // fix to set tag to the sender
+        let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
+        let quoteAll = "*הופה באלאגן!!! @" + phoneOfSender + " קורא/ת לכולם!* \n\n" // fix to set tag to the sender
             + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
 
         let everybody_msg = msgQueue.add(async () => await sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage));
+        
+
         return //everybodyMSG(everybody_msg, sock);
     }
 
@@ -769,6 +774,14 @@ async function getMails() {
 
     let json = JSON.parse(data.substr(47).slice(0, -2));
     return json.table.rows;
+}
+
+/**
+ * @param {String} str
+ * @returns {Boolean} 
+ */
+function isIncludeLink(str){
+    return str.includes("http") || str.includes("https") || str.includes("www.");
 }
 
 /**

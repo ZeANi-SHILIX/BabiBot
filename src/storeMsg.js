@@ -24,6 +24,7 @@ import fs from "fs";
  *          },
  *         timeouts: { "groupID": NodeJS.Timeout },
  *         clearTimeout: function clearTimeout(id) {},
+ *         everybodyLastUse2min: function everybodyLastUse2min(id) : boolean{},
  *          quizLev: {
  *              groups : {
  *                  "groupID" : { 
@@ -56,6 +57,20 @@ export const GLOBAL = {
     clearTimeout: function (id) {
         clearTimeout(this.timeouts[id]);
         console.log("cleared the timeout", this.timeouts[id], " for", id)
+    },
+    everybodyLastUse2min: function (id) {
+        const time = Date.now();
+        if (!this.groupConfig[id]) {
+            this.groupConfig[id] = {};
+            this.groupConfig[id].lastUsedEveryBodyCommand = time;
+            return true;
+        }
+        // check if 2 minutes passed
+        if (time - this.groupConfig[id].lastUsedEveryBodyCommand > 2 * 60 * 1000) {
+            this.groupConfig[id].lastUsedEveryBodyCommand = time;
+            return true;
+        }
+        return false;
     },
 };
 
