@@ -19,13 +19,15 @@ import fs from "fs";
  *                  feder: string,
  *                  paidGroup: boolean,
  *                  lastUsedGPT: number,
+ *                  countGPT: number,
  *                  lastUsedEveryBodyCommand: number,
  *             }
  *          },
  *         timeouts: { "groupID": NodeJS.Timeout },
- *         clearTimeout: function clearTimeout(id) {},
+ *         clearTimeout: function clearTimeout(id):void {},
  *         everybodyLastUse2min: function everybodyLastUse2min(id) : boolean{},
- *          quizLev: {
+ *         canAskGPT: function (id): boolean {},
+ *         quizLev: {
  *              groups : {
  *                  "groupID" : { 
  *                      isActive: boolean, 
@@ -75,6 +77,39 @@ export const GLOBAL = {
         console.log("everybodyLastUse2min: 2 minutes not passed");
         return false;
     },
+    canAskGPT: function (id) {
+        const time = new Date().getTime();
+
+        if (!this.groupConfig[id]?.lastUsedGPT) {
+            this.groupConfig[id] = {};
+            this.groupConfig[id].lastUsedGPT = time;
+            this.groupConfig[id].countGPT = 1;
+            console.log("canAskGPT: groupConfig not found, created new one");
+            return true;
+        }
+        // if paid group
+        if (this.groupConfig[id].paidGroup) {
+            console.log("canAskGPT: paid group");
+            return true;
+        }
+
+        // check if 2 minutes passed
+        if (time - this.groupConfig[id].lastUsedGPT > 120_000) {
+            this.groupConfig[id].lastUsedGPT = time;    // reset timer
+            this.groupConfig[id].countGPT = 1;          // reset count
+            console.log("canAskGPT: 2 minutes passed");
+            return true;
+        }
+        // check if 3 times passed
+        if (this.groupConfig[id].countGPT < 3) {
+            this.groupConfig[id].countGPT++;
+            console.log("canAskGPT: 3 times not passed");
+            return true;
+        }
+        console.log("canAskGPT: NO! - 3 times passed");
+        return false;
+    }
+
 };
 
 export const temp = 5;

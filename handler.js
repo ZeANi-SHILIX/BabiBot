@@ -181,7 +181,6 @@ export default async function handleMessage(sock, msg, mongo) {
         return sendMsgQueue(id, "פינג");
 
 
-    // ## NEED FIX ##
     if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
         if (!msg.key.remoteJid.includes("@g.us"))
             return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
@@ -209,7 +208,7 @@ export default async function handleMessage(sock, msg, mongo) {
             + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
 
         let everybody_msg = msgQueue.add(async () => await sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage));
-        
+
 
         return //everybodyMSG(everybody_msg, sock);
     }
@@ -504,12 +503,19 @@ export default async function handleMessage(sock, msg, mongo) {
      *  ChatGPT
      * ##########*/
     if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
+        if (!GLOBAL.canAskGPT(id))
+            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
+                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
+                // + "https://www.buymeacoffee.com/BabiBot\n"
+                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
+            );
+
         //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
             const text = textMsg.replace("!gpt", "").replace("!בוט", "").trim();
             if (!text) return;
             //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            let res = await chatGPT.ask( text + '\n')
+            let res = await chatGPT.ask(text + '\n')
             console.log(res?.choices?.[0] || res.error);
             let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res?.error?.message || res;
             sendMsgQueue(id, retText)
@@ -550,6 +556,13 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+        if (!GLOBAL.canAskGPT(id))
+            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
+                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
+                // + "https://www.buymeacoffee.com/BabiBot\n"
+                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
+            );
+
         //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
         try {
             // get num from message
@@ -574,6 +587,13 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
+        if (!GLOBAL.canAskGPT(id))
+            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
+                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
+                // + "https://www.buymeacoffee.com/BabiBot\n"
+                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
+            );
+
         //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
 
         // has quoted message?
@@ -780,7 +800,7 @@ async function getMails() {
  * @param {String} str
  * @returns {Boolean} 
  */
-function isIncludeLink(str){
+function isIncludeLink(str) {
     return str.includes("http") || str.includes("https") || str.includes("www.");
 }
 

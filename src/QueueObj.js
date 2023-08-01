@@ -7,7 +7,8 @@ import messageRetryHandler from './retryHandler.js';
  * to use: `handlerQueue.add(() => { })`
  */
 export const handlerQueue = new PQueue({
-    concurrency: 2
+    concurrency: 2,
+    interval: 100 // 0.1s
 });
 //queue.add(() => { });
 
