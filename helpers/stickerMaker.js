@@ -64,12 +64,12 @@ export default async function sendSticker(msg) {
 
         // quoted message have text or the text is not empty
         if (msgToSticker)
-            return makeTextSticker(msgToSticker);
+            return makeTextSticker(id, msgToSticker);
     }
     sendMsgQueue(id, "אופס! לא מצאתי תוכן להפוך לסטיקר...\nיש לצטט הודעה או לכתוב טקסט לאחר הפקודה")
 }
 
-async function makeTextSticker(text) {
+async function makeTextSticker(id, text) {
     const sticker = new Sticker(textToSticker2(text), {
         pack: '🎉',
         author: 'BabiBot',
