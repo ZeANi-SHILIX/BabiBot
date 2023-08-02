@@ -123,15 +123,15 @@ async function connectToWhatsApp() {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type == 'notify') {
             for (const msg of messages) {
-                if (!msg.message) return; // if there is no text or media message
-                if (msg.key.fromMe) return;
-                if (msg.key.remoteJid === 'status@broadcast') return; // ignore status messages
-                if (msg.key.remoteJid.includes("call")) return; // ignore call messages
+                if (!msg.message) continue; // if there is no text or media message
+                if (msg.key.fromMe) continue;
+                if (msg.key.remoteJid === 'status@broadcast') continue; // ignore status messages
+                if (msg.key.remoteJid.includes("call")) continue; // ignore call messages
 
                 let proType = msg.message?.protocolMessage?.type;
                 if (proType == proto.Message.ProtocolMessage.Type.REVOKE ||
                     proType == proto.Message.ProtocolMessage.Type.MESSAGE_EDIT)
-                    return;
+                    continue;
 
                 //handleMessage(sock, msg, mongo);
                 handlerQueue.add(() => handleMessage(sock, msg, mongo));
@@ -316,5 +316,5 @@ app.listen(port, () => {
 process.on('uncaughtException', (err, origin) => {
     console.error("uncaughtException:", err);
     const myself = GLOBAL.sock.user.id;
-    GLOBAL.sock.sendMessage(myself, { text: `uncaughtException: ${err}` })  
+    GLOBAL.sock.sendMessage(myself, { text: `uncaughtException: ${err}` })
 });
