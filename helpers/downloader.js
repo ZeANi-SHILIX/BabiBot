@@ -85,9 +85,14 @@ fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
  */
 export async function DownloadV2(msg) {
     const id = msg.key.remoteJid;
-
-    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+    let textMsg = msg.message?.conversation || "";
+    // remove the command
     textMsg = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
+    // if there is no text - get from the quoted msg
+    textMsg = textMsg || msg.message?.extendedTextMessage?.text || "";
+
+    // if there is no text - return
+    if (!textMsg) return sendMsgQueue(id, "אופס... לא מצאתי קישור או טקסט לחיפוש")
 
     if (isIncludeLink(textMsg)) {
         let videoId = textMsg.split("v=")[1] || textMsg.split("youtu.be/")[1];
@@ -138,7 +143,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
     // get video details
     let videoDetails = await ytdl.getInfo(videoId);
-    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}.mp3`;
+    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}.ogg`;
     let title = videoDetails.videoDetails.title;
 
     // get video stream
@@ -149,7 +154,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
     stream.on("finish", () => {
         console.log("finished downloading");
         msgQueue.add(async () => {
-            await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename }, mimetype: 'audio/mpeg' }).then(messageRetryHandler.addMessage);
+            await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename }, mimetype: 'audio/mpeg', ptt: true }).then(messageRetryHandler.addMessage);
             await GLOBAL.sock.sendMessage(jid, { text: title }).then(messageRetryHandler.addMessage);
             fs.unlinkSync(filename);
         });
