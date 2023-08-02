@@ -64,6 +64,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
     console.log(`${msg.pushName} (${id}) - ${caption || textMsg || msg?.message?.reactionMessage?.text}`)
 
+    // send ACK
+    sock.readMessages([msg.key])
+
     // early check if action need to be done
     // reaction message
     if (msg.message?.reactionMessage) {
@@ -100,9 +103,9 @@ export default async function handleMessage(sock, msg, mongo) {
     let YTinfo = info.YTgetSearch(id);
     if (YTinfo) {
         let num = parseInt(textMsg);
-        if (num === 0) { 
+        if (num === 0) {
             info.YTdeleteSearch(id);
-            return sendMsgQueue(id, "ההורדה בוטלה"); 
+            return sendMsgQueue(id, "ההורדה בוטלה");
         }
         if (isNaN(num) || num < 1 || num > 5) return sendMsgQueue(id, "אנא בחר מספר בין 1 ל 5\nאו 0 כדי לבטל");
         let video = YTinfo[num - 1];
@@ -129,9 +132,6 @@ export default async function handleMessage(sock, msg, mongo) {
             case 4:
                 return sock.sendMessage(id, { text: "ההגדרות נשמרו בהצלחה!" }).then(messageRetryHandler.addMessage);
         }
-
-    // send ACK
-    sock.readMessages([msg.key])
 
     // text message
     if (!PRODUCTION && textMsg.startsWith("test")) {
@@ -224,11 +224,12 @@ export default async function handleMessage(sock, msg, mongo) {
         return //everybodyMSG(everybody_msg, sock);
     }
 
-    if (caption.startsWith('!sticker') || caption.startsWith('!סטיקר'))
-        return sendSticker(msg, sock, "media");
-
-    if (textMsg.startsWith('!sticker') || textMsg.startsWith('!סטיקר'))
-        return sendSticker(msg, sock, "text");
+    /**#########
+     * STICKER
+     ########## */
+    if (caption.startsWith('!sticker') || caption.startsWith('!סטיקר') ||
+        textMsg.startsWith('!sticker') || textMsg.startsWith('!סטיקר'))
+        return sendSticker(msg);
 
     /**#########
      * barkuni
@@ -634,12 +635,6 @@ export default async function handleMessage(sock, msg, mongo) {
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
         return DownloadV2(msg);
-    }
-    // get youtube progress
-    if (textMsg.includes('%')) {
-        let progress = info.getYouTubeProgress(id);
-        if (progress)
-            return sendMsgQueue(id, `התקדמתי ${progress.progress.percentage.toFixed(1)}% מההורדה.\nנשאר כ${progress.progress.eta} שניות לסיום...`);
     }
 
     /**######

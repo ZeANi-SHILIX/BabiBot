@@ -12,7 +12,7 @@ registerFont?.('./src/Gveret Levin Alef Alef Alef.ttf', { family: 'Alef' });
 import messageRetryHandler from "../src/retryHandler.js";
 import { MsgType, getMsgType } from './msgType.js';
 import MemoryStore from '../src/store.js';
-import { msgQueue, sendMsgQueue, errorMsgQueue } from '../src/QueueObj.js';
+import { msgQueue, sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 
 
 const sticker_types = {
@@ -26,114 +26,94 @@ const sticker_types = {
 
 /**
  * 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  */
-export default async function sendSticker(msg, sock, msgTypeSticker) {
+export default async function sendSticker(msg) {
     let id = msg.key.remoteJid;
-    let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
-    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
 
+    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text
+        || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+    // remove the command
+    textMsg = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
+    // get the sticker type
+    const type = sticker_types[textMsg] || StickerTypes.FULL;
 
-    // video or image message
-    if (msgTypeSticker === "media") {
-        let setType = caption.replace('!sticker', '').replace('!סטיקר', '').trim();
-
-        const type = sticker_types[setType] || StickerTypes.FULL;
-
-        const messageType = Object.keys(msg.message)[0]
-        if (messageType === 'imageMessage' || messageType === 'videoMessage' || messageType === 'stickerMessage') {
-
-            const buffer = await downloadMediaMessage(msg, 'buffer', {})
-            // not bigger than 1.5MB
-            const size = buffer.byteLength / 1024 / 1024
-            if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
-
-            const quality = size > 0.8 ? 10 : 30;
-            console.log("making sticker...")
-            const sticker = new Sticker(buffer, {
-                pack: '🎉',
-                author: 'BabiBot',
-                type: type,
-                categories: ['🤩', '🎉'],
-                quality: quality
-            });
-            const stickerMsg = await sticker.toMessage();
-
-            console.log("adding sticker message to queue, type:", type)
-            msgQueue.add(async () => await sock.sendMessage(id, stickerMsg).then(messageRetryHandler.addMessage))
+    // quoted message
+    let hasQuoted = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+    if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+        let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        if (!quoted) {
+            console.log("retrying to get quoted message in 1 sec...")
+            await sleep(1000)
+            quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         }
-        return;
+        msg = quoted || msg;
     }
 
-    // quoted message with image or video
+    // get the message type
+    const messageType = getMsgType(msg).type;
+
+    // media message
+    if (messageType === MsgType.IMAGE || messageType === MsgType.VIDEO || messageType === MsgType.STICKER) {
+        return makeMediaSticker(msg, type);
+    }
+
+    // text message
+    else if (messageType === MsgType.TEXT) {
+        let msgToSticker = hasQuoted ? msg.message?.conversation || msg.message?.extendedTextMessage?.text : textMsg;
+
+        // quoted message have text or the text is not empty
+        if (msgToSticker)
+            return makeTextSticker(msgToSticker);
+    }
+    sendMsgQueue(id, "אופס! לא מצאתי תוכן להפוך לסטיקר...\nיש לצטט הודעה או לכתוב טקסט לאחר הפקודה")
+}
+
+async function makeTextSticker(text) {
+    const sticker = new Sticker(textToSticker2(text), {
+        pack: '🎉',
+        author: 'BabiBot',
+        categories: ['🤩', '🎉'],
+        quality: 35
+    });
+    const stickerMsg = await sticker.toMessage();
+
+    console.log("adding sticker message to queue, type: text")
+    sendCustomMsgQueue(id, stickerMsg)
+}
+
+/**
+ * 
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ *  @param {StickerTypes} type 
+ */
+async function makeMediaSticker(msg, type) {
+    const id = msg.key.remoteJid;
+    let buffer;
     try {
-        let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
-        let { type } = getMsgType(quoted);
-
-        if (type === MsgType.IMAGE || type === MsgType.VIDEO || type === MsgType.STICKER) {
-            const buffer = await downloadMediaMessage(quoted, 'buffer', {})
-            
-            let setType = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
-            const type = sticker_types[setType] || StickerTypes.FULL;
-            
-            // not bigger than 1.5MB
-            const size = buffer.byteLength / 1024 / 1024
-            if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
-
-            const quality = size > 0.8 ? 10 : 30;
-            console.log("making sticker...")
-
-            const sticker = new Sticker(buffer, {
-                pack: '🎉',
-                author: 'BabiBot',
-                type: type,
-                categories: ['🤩', '🎉'],
-                quality: quality
-            });
-            const stickerMsg = await sticker.toMessage();
-
-            console.log("adding sticker message to queue, type:", type)
-            msgQueue.add(async () => await sock.sendMessage(id, stickerMsg).then(messageRetryHandler.addMessage))
-            return;
-        }
+        buffer = await downloadMediaMessage(msg, 'buffer')
     } catch (error) {
-        console.log(error);
         errorMsgQueue(error)
         return sendMsgQueue(id, "אופס... נראה שההודעה שציטטת אינה תקינה")
     }
 
+    // not bigger than 1.5MB
+    const size = buffer.byteLength / 1024 / 1024
+    if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
 
-    // text message
-    if (msgTypeSticker === "text") {
-        let message = textMsg.replace('!sticker', "").replace('!סטיקר', '').trim();
+    const quality = size > 0.4 ? 10 : 30;
+    console.log("making sticker...")
+    const sticker = new Sticker(buffer, {
+        pack: '🎉',
+        author: 'BabiBot',
+        type: type,
+        categories: ['🤩', '🎉'],
+        quality: quality
+    });
+    const stickerMsg = await sticker.toMessage();
 
-        let isQuoted = false;
-        // no content, check if quoted message
-        if (message == "") {
-            isQuoted = true;
-            message = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
-            message = message?.message?.conversation || message?.message?.extendedTextMessage?.text || "";
-        }
-
-        // no content and no quoted message
-        if (isQuoted && message == "") return sendMsgQueue(id, "אופס! לא מצאתי תוכן להפוך לסטיקר...\nיש לכתוב טקסט לאחר הפקודה או לצטט הודעה אחרת")
-
-
-        const sticker = new Sticker(
-            //textToSticker(message),
-            textToSticker2(message),
-            {
-                pack: '🎉',
-                author: 'BabiBot',
-                categories: ['🤩', '🎉'],
-                quality: 50
-            });
-            const stickerMsg = await sticker.toMessage();
-
-            console.log("adding sticker message to queue, type: text")
-            msgQueue.add(async () => await sock.sendMessage(id, stickerMsg).then(messageRetryHandler.addMessage))
-    }
+    console.log("adding sticker message to queue, type:", type)
+    sendCustomMsgQueue(id, stickerMsg)
 }
 
 function textToSticker2(text) {
@@ -196,4 +176,8 @@ function putEnterBetweenEmojis(text) {
 function doubleEnter(text) {
     if (!text) return text;
     return text.replace(/\n/g, '\n\n');
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
