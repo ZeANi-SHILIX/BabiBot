@@ -1,85 +1,12 @@
-// import YoutubeMp3Downloader from "youtube-mp3-downloader";
-// import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 import { info } from "./globals.js";
 import fs from "fs";
 import { GetListByKeyword } from "youtube-search-api"
 import ytdl from 'ytdl-core'
-
-import { sendMsgQueue, errorMsgQueue, msgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
-import { GLOBAL } from "../src/storeMsg.js";
-import messageRetryHandler from "../src/retryHandler.js";
-import { json } from "express";
+import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 
 const youtubeBaseUrl = "https://www.youtube.com/watch?v="
 fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
-// /**
-//  * 
-//  * @param {String} track 
-//  * @param {String} userID
-//  * @param {import('@adiwajshing/baileys').WASocket} sock 
-//  * @returns 
-//     {Promise<{
-//         videoId:String,
-//         stats:{
-//             transferredBytes: number,
-//             runtime: number,
-//             averageSpeed: number
-//         },
-//         file: String,
-//         youtubeUrl: String,
-//         videoTitle: String,
-//         artist: String,
-//         title: String,
-//         thumbnail: String
-//     }>}
-//  */
-// export function Downloader(track, userID, sock) {
-
-//     const filename = `${track}-${userID}-${new Date().toLocaleDateString("en-GB")}`;
-
-//     var YD = new YoutubeMp3Downloader({
-//         ffmpegPath: ffmpegInstaller.path,
-//         outputPath: "./youtubeDL/",    // Output file location (default: the home directory)
-//         youtubeVideoQuality: 'lowest'
-//     });
-
-//     //Download video and save as MP3 file
-//     try {
-
-//         YD.download(track, filename);
-//     } catch (error) {
-//         console.error("link didnt work: ", error);
-//     }
-
-
-//     YD.on("progress", function (progress) {
-//         console.log(JSON.stringify(progress));
-
-//         // save progress
-//         if (info.updateYouTubeProgress(userID, progress)) {
-//             sock.sendMessage(userID, { text: "מתחיל בהורדה...\nניתן לראות את התקדמות ההורדה על ידי שליחת '%'" });
-//         }
-//     });
-
-//     return new Promise(function (resolve, reject) {
-
-//         YD.on("finished", function (err, data) {
-//             console.log(JSON.stringify(data));
-//             info.deleteYouTubeProgress(userID);
-//             resolve(data)
-//         });
-
-//         YD.on("error", function (error) {
-//             //console.error("Error", error);
-//             info.deleteYouTubeProgress(userID);
-//             sock.sendMessage(userID, { text: "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?" })
-//             reject(error);
-//         });
-//     });
-
-
-// };
 
 /**
  * 
@@ -87,11 +14,14 @@ fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
  */
 export async function DownloadV2(msg) {
     const id = msg.key.remoteJid;
-    let textMsg = msg.message?.conversation || "";
+    let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";;
     // remove the command
     textMsg = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
+    console.log("textMsg: ", textMsg)
+    
     // if there is no text - get from the quoted msg
-    textMsg = textMsg || msg.message?.extendedTextMessage?.text || "";
+    textMsg = textMsg || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text;
+    console.log("textMsg: ", textMsg)
 
     // if there is no text - return
     if (!textMsg) return sendMsgQueue(id, "אופס... לא מצאתי קישור או טקסט לחיפוש")
@@ -127,15 +57,6 @@ export async function DownloadV2(msg) {
     }
 }
 
-export async function searchText(text) {
-    let res = await GetListByKeyword(text);
-
-    /** @type {Array<{id,type,thumbnail,title,channelTitle,shortBylineText,length,isLive}>} */
-    let videos = res.items;
-
-    return videos;
-}
-
 /**
  * 
  * @param {string} jid 
@@ -148,7 +69,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
     let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
     let title = videoDetails.videoDetails.title;
 
-    let audioQualityLow = videoDetails.formats.find((format) => format.codecs === "opus" && format.audioQuality === "AUDIO_QUALITY_LOW");
+    let audioQualityLow = videoDetails.formats.find((format) => format.codecs === "opus" && format.audioQuality === "AUDIO_QUALITY_MEDIUM");
     let downloadOptions = audioQualityLow ? { format: audioQualityLow } : { filter: "audioonly" };
 
     console.log(audioQualityLow.container)
@@ -167,10 +88,8 @@ export async function downloadTYoutubeVideo(jid, videoId) {
         console.log("converting from ", audioQualityLow.container, " to ogg...")
         // convert to ogg
         ffmpeg()
-            //.audioCodec('opus')
             .audioCodec('libopus')
             .toFormat('ogg')
-            .audioChannels(1)
             .addOutputOptions('-avoid_negative_ts make_zero')
             .input(filename + "." + audioQualityLow.container)
             .save(`${filename}.ogg`)
@@ -186,7 +105,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
                 let percentage = (seconds / videoDetails.videoDetails.lengthSeconds * 100).toFixed(1);
 
                 console.log('Processing... ', percentage + "% done");
-                sendCustomMsgQueue(jid, { text: "מעבד..." + percentage + "%", edit: progressMsg.key })
+                sendCustomMsgQueue(jid, { text: "מעבד... " + percentage + "%", edit: progressMsg.key })
             })
             .on('end', () => {
                 console.log('Processing finished!');
