@@ -28,9 +28,17 @@ export const msgQueue = new PQueue({
  * @param {string} text
  */
 export function sendMsgQueue(jid, text) {
-    msgQueue.add(async () => {
-        await GLOBAL.sock.sendMessage(jid, { text }).then(messageRetryHandler.addMessage);
-    });
+    return msgQueue.add(async () => await GLOBAL.sock.sendMessage(jid, { text }).then(messageRetryHandler.addMessage));
+}
+
+/**
+ * 
+ * @param {string} jid
+ * @param {import("@adiwajshing/baileys/lib/Types").AnyMessageContent} content
+ * @param {import("@adiwajshing/baileys/lib/Types").MiscMessageGenerationOptions} options
+ */
+export function sendCustomMsgQueue(jid, content, options = {}) {
+    return msgQueue.add(async () => await GLOBAL.sock.sendMessage(jid, content, options).then(messageRetryHandler.addMessage));
 }
 
 /**
@@ -40,7 +48,5 @@ export function sendMsgQueue(jid, text) {
  */
 export function errorMsgQueue(text) {
     const botNum = GLOBAL.sock.user.id.split("@")[0].split(":")[0] + "@s.whatsapp.net";
-    msgQueue.add(async () => {
-        await GLOBAL.sock.sendMessage(botNum, { text }).then(messageRetryHandler.addMessage);
-    });
+    return msgQueue.add(async () => await GLOBAL.sock.sendMessage(botNum, { text }).then(messageRetryHandler.addMessage));
 }
