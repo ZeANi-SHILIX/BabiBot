@@ -165,8 +165,8 @@ export async function downloadTYoutubeVideo(jid, videoId) {
         console.log("converting from opus to ogg...")
         // convert to ogg
         ffmpeg(filename + ".opus")
-            .audioCodec('opus')
-            //.audioCodec('libopus')
+            //.audioCodec('opus')
+            .audioCodec('libopus')
             .toFormat('ogg')
             .addOutputOptions('-avoid_negative_ts make_zero')
             .on('error', (err) => {
