@@ -143,11 +143,15 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
     // get video details
     let videoDetails = await ytdl.getInfo(videoId);
-    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}.ogg`;
+    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}.opus`;
     let title = videoDetails.videoDetails.title;
 
+    let opusFormats = videoDetails.formats.filter((format) => format.codecs === "opus");
+    let audioQualityLow = opusFormats.find((format) => format.audioQuality === "AUDIO_QUALITY_LOW");
+    let downloadOptions = audioQualityLow ? { format: audioQualityLow } : { filter: "audioonly" };
+
     // get video stream
-    let stream = ytdl.downloadFromInfo(videoDetails, { filter: "audioonly" })
+    let stream = ytdl.downloadFromInfo(videoDetails, downloadOptions)
         .pipe(fs.createWriteStream(filename));
 
     // download video
