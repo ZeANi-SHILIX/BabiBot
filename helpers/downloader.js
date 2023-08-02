@@ -165,20 +165,27 @@ export async function downloadTYoutubeVideo(jid, videoId) {
         console.log("converting from opus to ogg...")
         // convert to ogg
         ffmpeg(filename + ".opus")
+            .audioCodec('opus')
+            //.audioCodec('libopus')
             .toFormat('ogg')
+            .addOutputOptions('-avoid_negative_ts make_zero')
             .on('error', (err) => {
                 console.log('An error occurred: ' + err.message);
                 errorMsgQueue(err)
                 sendMsgQueue(jid, "אופס! התרחשה שגיאה, אנא נסה שנית")
             })
             .on('progress', (progress) => {
-                console.log(JSON.stringify(progress));
+                // "timemark":"00:00:27.86" to seconds
+                let time = progress.timemark.split(":");
+                let seconds = (+time[0]) * 60 * 60 + (+time[1]) * 60 + (+time[2]);
+
+                console.log('Processing... ', (seconds/videoDetails.videoDetails.lengthSeconds * 100).toFixed(1) + "% done"); 
             })
             .on('end', () => {
                 console.log('Processing finished !');
                 console.log("sending message...")
                 msgQueue.add(async () => {
-                    await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg"}).then(messageRetryHandler.addMessage);
+                    await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(messageRetryHandler.addMessage);
                     await GLOBAL.sock.sendMessage(jid, { text: title }).then(messageRetryHandler.addMessage);
                     fs.unlinkSync(filename + ".opus");
                     fs.unlinkSync(filename + ".ogg");
