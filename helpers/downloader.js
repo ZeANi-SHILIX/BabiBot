@@ -6,7 +6,7 @@ import fs from "fs";
 import { GetListByKeyword } from "youtube-search-api"
 import ytdl from 'ytdl-core'
 
-import { sendMsgQueue, errorMsgQueue, msgQueue } from '../src/QueueObj.js';
+import { sendMsgQueue, errorMsgQueue, msgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 import { GLOBAL } from "../src/storeMsg.js";
 import messageRetryHandler from "../src/retryHandler.js";
 import { json } from "express";
@@ -148,23 +148,26 @@ export async function downloadTYoutubeVideo(jid, videoId) {
     let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
     let title = videoDetails.videoDetails.title;
 
-    let opusFormats = videoDetails.formats.filter((format) => format.codecs === "opus");
-    let audioQualityLow = opusFormats.find((format) => format.audioQuality === "AUDIO_QUALITY_LOW");
+    let audioQualityLow = videoDetails.formats.find((format) => format.codecs === "opus" && format.audioQuality === "AUDIO_QUALITY_LOW");
     let downloadOptions = audioQualityLow ? { format: audioQualityLow } : { filter: "audioonly" };
 
-    console.log("downloadOptions: ", JSON.stringify(downloadOptions, null, 2));
+    console.log(audioQualityLow.container)
+
+    let progressMsg = await sendMsgQueue(jid, "מתחיל בהורדה...");
 
     // get video stream
     let stream = ytdl.downloadFromInfo(videoDetails, downloadOptions)
-        .pipe(fs.createWriteStream(filename + ".opus"));
+        .pipe(fs.createWriteStream(filename + "." + audioQualityLow.container));
 
     // download video
     stream.on("finish", () => {
         console.log("finished downloading");
+        sendCustomMsgQueue(jid, { text: "מעבד...", edit: progressMsg.key })
 
-        console.log("converting from opus to ogg...")
+        console.log("converting from ", audioQualityLow.container, " to ogg...")
         // convert to ogg
-        ffmpeg(filename + ".opus")
+        ffmpeg(filename + "." + audioQualityLow.container)
+            .save(`${filename}.ogg`)
             //.audioCodec('opus')
             .audioCodec('libopus')
             .toFormat('ogg')
@@ -178,20 +181,21 @@ export async function downloadTYoutubeVideo(jid, videoId) {
                 // "timemark":"00:00:27.86" to seconds
                 let time = progress.timemark.split(":");
                 let seconds = (+time[0]) * 60 * 60 + (+time[1]) * 60 + (+time[2]);
+                let percentage = (seconds / videoDetails.videoDetails.lengthSeconds * 100).toFixed(1);
 
-                console.log('Processing... ', (seconds/videoDetails.videoDetails.lengthSeconds * 100).toFixed(1) + "% done"); 
+                console.log('Processing... ', percentage + "% done");
+                sendCustomMsgQueue(jid, { text: "מעבד..." + percentage + "%", edit: progressMsg.key })
             })
             .on('end', () => {
-                console.log('Processing finished !');
+                console.log('Processing finished!');
                 console.log("sending message...")
-                msgQueue.add(async () => {
-                    await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(messageRetryHandler.addMessage);
-                    await GLOBAL.sock.sendMessage(jid, { text: title }).then(messageRetryHandler.addMessage);
-                    fs.unlinkSync(filename + ".opus");
+                sendCustomMsgQueue(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(() => {
+                    fs.unlinkSync(filename + "." + audioQualityLow.container);
                     fs.unlinkSync(filename + ".ogg");
-                });
+                })
+                sendCustomMsgQueue(jid, { text: title, edit: progressMsg.key })
             })
-            .save(`${filename}.ogg`);
+
 
     });
 
