@@ -178,7 +178,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
                 console.log('Processing finished !');
                 console.log("sending message...")
                 msgQueue.add(async () => {
-                    await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(messageRetryHandler.addMessage);
+                    await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg"}).then(messageRetryHandler.addMessage);
                     await GLOBAL.sock.sendMessage(jid, { text: title }).then(messageRetryHandler.addMessage);
                     fs.unlinkSync(filename + ".opus");
                     fs.unlinkSync(filename + ".ogg");
