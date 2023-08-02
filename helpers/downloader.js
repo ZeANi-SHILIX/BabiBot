@@ -1,5 +1,6 @@
 // import YoutubeMp3Downloader from "youtube-mp3-downloader";
 // import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import { info } from "./globals.js";
 import fs from "fs";
 import { GetListByKeyword } from "youtube-search-api"
@@ -8,6 +9,7 @@ import ytdl from 'ytdl-core'
 import { sendMsgQueue, errorMsgQueue, msgQueue } from '../src/QueueObj.js';
 import { GLOBAL } from "../src/storeMsg.js";
 import messageRetryHandler from "../src/retryHandler.js";
+import { json } from "express";
 
 const youtubeBaseUrl = "https://www.youtube.com/watch?v="
 fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
@@ -143,25 +145,47 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
     // get video details
     let videoDetails = await ytdl.getInfo(videoId);
-    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}.opus`;
+    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
     let title = videoDetails.videoDetails.title;
 
     let opusFormats = videoDetails.formats.filter((format) => format.codecs === "opus");
     let audioQualityLow = opusFormats.find((format) => format.audioQuality === "AUDIO_QUALITY_LOW");
     let downloadOptions = audioQualityLow ? { format: audioQualityLow } : { filter: "audioonly" };
 
+    console.log("downloadOptions: ", JSON.stringify(downloadOptions, null, 2));
+
     // get video stream
     let stream = ytdl.downloadFromInfo(videoDetails, downloadOptions)
-        .pipe(fs.createWriteStream(filename));
+        .pipe(fs.createWriteStream(filename + ".opus"));
 
     // download video
     stream.on("finish", () => {
         console.log("finished downloading");
-        msgQueue.add(async () => {
-            await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename }, mimetype: 'audio/mpeg', ptt: true }).then(messageRetryHandler.addMessage);
-            await GLOBAL.sock.sendMessage(jid, { text: title }).then(messageRetryHandler.addMessage);
-            fs.unlinkSync(filename);
-        });
+
+        console.log("converting from opus to ogg...")
+        // convert to ogg
+        ffmpeg(filename + ".opus")
+            .toFormat('ogg')
+            .on('error', (err) => {
+                console.log('An error occurred: ' + err.message);
+                errorMsgQueue(err)
+                sendMsgQueue(jid, "אופס! התרחשה שגיאה, אנא נסה שנית")
+            })
+            .on('progress', (progress) => {
+                console.log(JSON.stringify(progress));
+            })
+            .on('end', () => {
+                console.log('Processing finished !');
+                console.log("sending message...")
+                msgQueue.add(async () => {
+                    await GLOBAL.sock.sendMessage(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(messageRetryHandler.addMessage);
+                    await GLOBAL.sock.sendMessage(jid, { text: title }).then(messageRetryHandler.addMessage);
+                    fs.unlinkSync(filename + ".opus");
+                    fs.unlinkSync(filename + ".ogg");
+                });
+            })
+            .save(`${filename}.ogg`);
+
     });
 
     stream.on("error", (err) => {
