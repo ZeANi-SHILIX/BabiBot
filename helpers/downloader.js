@@ -90,6 +90,7 @@ export async function downloadTYoutubeVideo(jid, videoId) {
         ffmpeg()
             .audioCodec('libopus')
             .toFormat('ogg')
+            .audioChannels(1)
             .addOutputOptions('-avoid_negative_ts make_zero')
             .input(filename + "." + audioQualityLow.container)
             .save(`${filename}.ogg`)
