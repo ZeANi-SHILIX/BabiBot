@@ -104,7 +104,7 @@ export default async function handleMessage(sock, msg, mongo) {
             info.YTdeleteSearch(id);
             return sendMsgQueue(id, "ההורדה בוטלה"); 
         }
-        if (isNaN(num) || num < 1 || num > 3) return sendMsgQueue(id, "אנא בחר מספר בין 1 ל 3\nאו 0 כדי לבטל");
+        if (isNaN(num) || num < 1 || num > 5) return sendMsgQueue(id, "אנא בחר מספר בין 1 ל 5\nאו 0 כדי לבטל");
         let video = YTinfo[num - 1];
         info.YTdeleteSearch(id);
         return downloadTYoutubeVideo(id, video.id);

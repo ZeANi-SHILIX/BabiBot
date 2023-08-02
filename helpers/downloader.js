@@ -115,7 +115,7 @@ export async function DownloadV2(msg) {
         let videos = listVid.items;
 
         let returnMsg = "אנא בחר מהרשימה:\n\n"
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) {
             let searchObj = videos[i]
             returnMsg += `${i + 1}. ${searchObj.title}\n${youtubeBaseUrl + searchObj.id}\n\n`
         }
@@ -166,12 +166,14 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
         console.log("converting from ", audioQualityLow.container, " to ogg...")
         // convert to ogg
-        ffmpeg(filename + "." + audioQualityLow.container)
-            .save(`${filename}.ogg`)
+        ffmpeg()
             //.audioCodec('opus')
             .audioCodec('libopus')
             .toFormat('ogg')
+            .audioChannels(1)
             .addOutputOptions('-avoid_negative_ts make_zero')
+            .input(filename + "." + audioQualityLow.container)
+            .save(`${filename}.ogg`)
             .on('error', (err) => {
                 console.log('An error occurred: ' + err.message);
                 errorMsgQueue(err)
