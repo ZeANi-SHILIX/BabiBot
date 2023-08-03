@@ -74,7 +74,7 @@ async function makeTextSticker(id, text) {
         pack: '🎉',
         author: 'BabiBot',
         categories: ['🤩', '🎉'],
-        quality: 35
+        quality: 30
     });
     const stickerMsg = await sticker.toMessage();
 
@@ -101,7 +101,7 @@ async function makeMediaSticker(msg, type) {
     const size = buffer.byteLength / 1024 / 1024
     if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
 
-    const quality = size > 0.4 ? 10 : 30;
+    const quality = 20 - Math.floor(size * 10);
     console.log("making sticker...")
     const sticker = new Sticker(buffer, {
         pack: '🎉',
