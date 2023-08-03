@@ -300,7 +300,7 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("!mute") || textMsg.startsWith("!השתק")) {
 
         if (!msg.key.remoteJid.includes("@g.us"))
-            return sendMsgQueue(id, "אתה צריך לשלוח את הפקודה בקבוצה");
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצה");
 
         let groupData = await sock.groupMetadata(id);
         let participant = groupData.participants;
@@ -313,12 +313,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
         // get mute time
         let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
-        if (muteTime.length === 0)
-            return sendMsgQueue(id, "אנא הכנס זמן השתקה בדקות");
-
         let muteTime_min = parseInt(muteTime);
-        if (isNaN(muteTime_min))
-            return sendMsgQueue(id, "אנא הכנס זמן השתקה בדקות");
+        if (muteTime.length === 0 || isNaN(muteTime_min))
+            return sendMsgQueue(id, "אנא הכנס זמן השתקה בדקות לאחר שליחת הפקודה");
 
         if (muteTime_min < 1 || muteTime_min > 60)
             return sendMsgQueue(id, "אנא הכנס זמן השתקה בין 1 ל 60 דקות");
@@ -335,7 +332,7 @@ export default async function handleMessage(sock, msg, mongo) {
             console.log(GLOBAL.groupConfig?.[id]);
 
             let botMsg = await sock.sendMessage(id, {
-                text: `*מזה יש כאן באלגן?*\n` +
+                text: `*מזה יש כאן בלאגן?*\n` +
                     `@${phoneOfSender} רוצה להשתיק את הקבוצה למשך ${timeToMute} דקות...\n` +
                     `ברגע ש${GLOBAL.groupConfig?.[id]?.countUser ?? DEFAULT_COUNT_USER_TO_MUTE} אנשים יסכימו איתו ויגיבו על ההודעה הזאת בלייק, הקבוצה תושתק.\n` +
                     `אתם מסכימים?`,
