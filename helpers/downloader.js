@@ -18,7 +18,7 @@ export async function DownloadV2(msg) {
     // remove the command
     textMsg = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
     console.log("textMsg: ", textMsg)
-    
+
     // if there is no text - get from the quoted msg
     textMsg = textMsg || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text;
     console.log("textMsg: ", textMsg)
@@ -68,6 +68,11 @@ export async function downloadTYoutubeVideo(jid, videoId) {
     let videoDetails = await ytdl.getInfo(videoId);
     let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
     let title = videoDetails.videoDetails.title;
+
+    // if the video is too long - more than 10 minutes
+    if (+videoDetails.videoDetails.lengthSeconds > 60 * 10)
+        return sendMsgQueue(jid, "אופס! הסרטון ארוך מדי, נסה סרטון קצר יותר")
+
 
     let audioQualityLow = videoDetails.formats.find((format) => format.codecs === "opus" && format.audioQuality === "AUDIO_QUALITY_MEDIUM");
     let downloadOptions = audioQualityLow ? { format: audioQualityLow } : { filter: "audioonly" };
