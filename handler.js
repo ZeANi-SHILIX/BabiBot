@@ -14,7 +14,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
-import { msgQueue, sendMsgQueue } from './src/QueueObj.js';
+import { msgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -107,10 +107,13 @@ export default async function handleMessage(sock, msg, mongo) {
             info.YTdeleteSearch(id);
             return sendMsgQueue(id, "ההורדה בוטלה");
         }
-        if (isNaN(num) || num < 1 || num > 5) return sendMsgQueue(id, "אנא בחר מספר בין 1 ל 5\nאו 0 כדי לבטל");
+        if (isNaN(num) || num < 1 || num > 5 || num > YTinfo.length)
+            return sendMsgQueue(id, `אנא בחר מספר בין 1 ל ${YTinfo.length > 4 ? 5 : YTinfo.length}\nאו 0 כדי לבטל`);
         let video = YTinfo[num - 1];
         info.YTdeleteSearch(id);
-        return downloadTYoutubeVideo(id, video.id);
+
+        TYQueue.size > 0 ? sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...") : null;
+        return TYQueue.add(async () => await downloadTYoutubeVideo(id, video.id));
     }
     // set group config
     let stage = info.setSettingDialog(msg);

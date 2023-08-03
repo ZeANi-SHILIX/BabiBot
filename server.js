@@ -123,6 +123,9 @@ async function connectToWhatsApp() {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type == 'notify') {
             for (const msg of messages) {
+                if (!PRODUCTION && !msg.key.remoteJid.includes(superuser)) return;
+                    
+
                 if (!msg.message) continue; // if there is no text or media message
                 if (msg.key.fromMe) continue;
                 if (msg.key.remoteJid === 'status@broadcast') continue; // ignore status messages

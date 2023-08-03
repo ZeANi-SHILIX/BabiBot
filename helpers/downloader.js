@@ -3,7 +3,7 @@ import { info } from "./globals.js";
 import fs from "fs";
 import { GetListByKeyword } from "youtube-search-api"
 import ytdl from 'ytdl-core'
-import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
+import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue, TYQueue } from '../src/QueueObj.js';
 
 const youtubeBaseUrl = "https://www.youtube.com/watch?v="
 fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
@@ -28,13 +28,14 @@ export async function DownloadV2(msg) {
 
     if (isIncludeLink(textMsg)) {
         let videoId = textMsg.split("v=")[1] || textMsg.split("youtu.be/")[1];
+        videoId = videoId.split(/[& ]/)[0];
 
         // if the link is not valid
         if (!videoId) {
             return sendMsgQueue(id, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
         }
-
-        return downloadTYoutubeVideo(id, videoId)
+        TYQueue.size > 0 ? sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...") : null;
+        return TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId))
     }
 
     // search for the video
@@ -44,8 +45,23 @@ export async function DownloadV2(msg) {
         /** @type {Array<{id,type,thumbnail,title,channelTitle,shortBylineText,length,isLive}>} */
         let videos = listVid.items;
 
+        // filter where the length is more than 10 minutes
+        videos = videos.filter((video) => {
+            if (!video.length) return false;
+
+            // simpleText: "3:10:05" or "10:05"
+            let lengthSec = video.length.simpleText.split(":")
+            lengthSec = lengthSec.length === 3
+                ? (+lengthSec[0]) * 60 * 60 + (+lengthSec[1]) * 60 + (+lengthSec[2])
+                : (+lengthSec[0]) * 60 + (+lengthSec[1]);
+
+            return lengthSec < 60 * 10 && video.isLive === false
+        });
+
+        if (videos.length === 0) return sendMsgQueue(id, "אופס! לא מצאתי סרטון תואם לחיפוש שלך")
+
         let returnMsg = "אנא בחר מהרשימה:\n\n"
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 5 && i < videos.length; i++) {
             let searchObj = videos[i]
             returnMsg += `${i + 1}. ${searchObj.title}\n${youtubeBaseUrl + searchObj.id}\n\n`
         }
@@ -81,56 +97,61 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 
     let progressMsg = await sendMsgQueue(jid, "מתחיל בהורדה...");
 
-    // get video stream
-    let stream = ytdl.downloadFromInfo(videoDetails, downloadOptions)
-        .pipe(fs.createWriteStream(filename + "." + audioQualityLow.container));
+    return new Promise((resolve, reject) => {
+        // get video stream
+        let stream = ytdl.downloadFromInfo(videoDetails, downloadOptions)
+            .pipe(fs.createWriteStream(filename + "." + audioQualityLow.container));
 
-    // download video
-    stream.on("finish", () => {
-        console.log("finished downloading");
-        sendCustomMsgQueue(jid, { text: "מעבד...", edit: progressMsg.key })
+        // download video
+        stream.on("finish", () => {
+            console.log("finished downloading");
+            sendCustomMsgQueue(jid, { text: "מעבד...", edit: progressMsg.key })
 
-        console.log("converting from ", audioQualityLow.container, " to ogg...")
-        // convert to ogg
-        ffmpeg()
-            .audioCodec('libopus')
-            .toFormat('ogg')
-            .audioChannels(1)
-            .addOutputOptions('-avoid_negative_ts make_zero')
-            .input(filename + "." + audioQualityLow.container)
-            .save(`${filename}.ogg`)
-            .on('error', (err) => {
-                console.log('An error occurred: ' + err.message);
-                errorMsgQueue(err)
-                sendMsgQueue(jid, "אופס! התרחשה שגיאה, אנא נסה שנית")
-            })
-            .on('progress', (progress) => {
-                // "timemark":"00:00:27.86" to seconds
-                let time = progress.timemark.split(":");
-                let seconds = (+time[0]) * 60 * 60 + (+time[1]) * 60 + (+time[2]);
-                let percentage = (seconds / videoDetails.videoDetails.lengthSeconds * 100).toFixed(1);
-
-                console.log('Processing... ', percentage + "% done");
-                sendCustomMsgQueue(jid, { text: "מעבד... " + percentage + "%", edit: progressMsg.key })
-            })
-            .on('end', () => {
-                console.log('Processing finished!');
-                console.log("sending message...")
-                sendCustomMsgQueue(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(() => {
-                    fs.unlinkSync(filename + "." + audioQualityLow.container);
-                    fs.unlinkSync(filename + ".ogg");
+            console.log("converting from ", audioQualityLow.container, " to ogg...")
+            // convert to ogg
+            ffmpeg()
+                .audioCodec('libopus')
+                .toFormat('ogg')
+                .audioChannels(1)
+                .addOutputOptions('-avoid_negative_ts make_zero')
+                .input(filename + "." + audioQualityLow.container)
+                .save(`${filename}.ogg`)
+                .on('error', (err) => {
+                    console.log('An error occurred: ' + err.message);
+                    errorMsgQueue(err)
+                    sendMsgQueue(jid, "אופס! התרחשה שגיאה, אנא נסה שנית")
+                    reject(err)
                 })
-                sendCustomMsgQueue(jid, { text: title, edit: progressMsg.key })
-            })
+                .on('progress', (progress) => {
+                    // "timemark":"00:00:27.86" to seconds
+                    let time = progress.timemark.split(":");
+                    let seconds = (+time[0]) * 60 * 60 + (+time[1]) * 60 + (+time[2]);
+                    let percentage = (seconds / videoDetails.videoDetails.lengthSeconds * 100).toFixed(1);
+
+                    console.log('Processing... ', percentage + "% done");
+                    sendCustomMsgQueue(jid, { text: "מעבד... " + percentage + "%", edit: progressMsg.key })
+                })
+                .on('end', () => {
+                    console.log('Processing finished!');
+                    console.log("sending message...")
+                    sendCustomMsgQueue(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(() => {
+                        fs.unlinkSync(filename + "." + audioQualityLow.container);
+                        fs.unlinkSync(filename + ".ogg");
+                    })
+                    sendCustomMsgQueue(jid, { text: title, edit: progressMsg.key })
+                    resolve()
+                })
 
 
-    });
+        });
 
-    stream.on("error", (err) => {
-        console.error("error: ", err);
-        sendMsgQueue(jid, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
-        errorMsgQueue(err)
-    });
+        stream.on("error", (err) => {
+            console.error("error: ", err);
+            sendMsgQueue(jid, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
+            errorMsgQueue(err)
+            reject(err)
+        });
+    })
 }
 
 /**

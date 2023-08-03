@@ -22,6 +22,15 @@ export const msgQueue = new PQueue({
     timeout: 10000, // 10s
 });
 
+/** queue of YouTube Download promises.
+ * 
+ * to use: `TYQueue.add(() => { })`
+ */
+export const TYQueue = new PQueue({
+    concurrency: 1,
+    timeout: 60000, // 1m
+});
+
 /**
  * 
  * @param {string} jid
