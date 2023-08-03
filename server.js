@@ -18,7 +18,7 @@ const msgRetryCounterMap = {};
 
 const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
-const superuser = process.env.SUPERUSER ?? "";
+const SUPERUSER = process.env.SUPERUSER ?? "";
 
 console.log("PRODUCTION:", PRODUCTION);
 PRODUCTION ? null : process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
@@ -91,9 +91,9 @@ async function connectToWhatsApp() {
         for (const ev of event) {
             console.log(event);
 
-            const superUser_inGroup = ev.participants.some(p => p.admin && p.id.includes(superuser))
+            const superUser_inGroup = ev.participants.some(p => p.admin && p.id.includes(SUPERUSER))
             // superuser isn't falsy, and he admin at the group - do nothing
-            if (superuser && superUser_inGroup) return;
+            if (SUPERUSER && superUser_inGroup) return;
 
             await sock.sendMessage(ev.id, {
                 text: "היי! אני באבי בוט 😃\n"
@@ -123,11 +123,10 @@ async function connectToWhatsApp() {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type == 'notify') {
             for (const msg of messages) {
-                if (!PRODUCTION && !msg.key.remoteJid.includes(superuser)) return;
-                    
+                if (!canHandleMsg(msg.key)) return;
 
                 if (!msg.message) continue; // if there is no text or media message
-                if (msg.key.fromMe) continue;
+                // if (msg.key.fromMe) continue;
                 if (msg.key.remoteJid === 'status@broadcast') continue; // ignore status messages
                 if (msg.key.remoteJid.includes("call")) continue; // ignore call messages
 
@@ -136,7 +135,6 @@ async function connectToWhatsApp() {
                     proType == proto.Message.ProtocolMessage.Type.MESSAGE_EDIT)
                     continue;
 
-                //handleMessage(sock, msg, mongo);
                 handlerQueue.add(() => handleMessage(sock, msg, mongo));
             }
         }
@@ -164,6 +162,20 @@ async function connectToWhatsApp() {
 }
 // run in main file
 connectToWhatsApp();
+
+/**
+ * 
+ * @param {{remoteJid:string,participant:string}} key 
+ * @returns 
+ */
+function canHandleMsg(key) {
+    if (PRODUCTION) return true;
+    // in private chat
+    if (key.remoteJid.includes(SUPERUSER)) return true;
+    // in group
+    if (key.participant && key.participant.includes(SUPERUSER)) return true;
+    return false;
+}
 
 // const console_info = console.info
 // console.info = function() {
