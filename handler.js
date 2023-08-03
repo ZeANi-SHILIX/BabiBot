@@ -62,7 +62,14 @@ export default async function handleMessage(sock, msg, mongo) {
     caption = caption.trim();
     textMsg = textMsg.trim();
 
-    console.log(`${msg.pushName} (${id}) - ${caption || textMsg || msg?.message?.reactionMessage?.text}`)
+    // print to console
+    const metadata = id.endsWith("@g.us") ? await sock.groupMetadata(id) : null;
+    let bodymsg = caption || textMsg || msg.message?.reactionMessage?.text;
+    metadata
+        ? console.log(`${msg.pushName} in (${metadata.subject}) - ${bodymsg}`)
+        : console.log(`${msg.pushName} (private) - ${bodymsg}`)
+
+
 
     // send ACK
     sock.readMessages([msg.key])
