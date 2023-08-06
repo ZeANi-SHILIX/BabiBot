@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import noteHendler from './helpers/noteHandler.js';
 import BarkuniSticker from './helpers/berkuniHandler.js';
+import KupaRashitSticker from './helpers/kupaRashitHandler.js';
 import sendSticker from './helpers/stickerMaker.js';
 import { DownloadV2, downloadTYoutubeVideo } from './helpers/downloader.js';
 import { GLOBAL } from './src/storeMsg.js';
@@ -260,7 +261,13 @@ export default async function handleMessage(sock, msg, mongo) {
      * barkuni
      ########## */
     if (textMsg.startsWith("!barkuni") || textMsg.startsWith("!ברקוני"))
-        return BarkuniSticker(msg, sock, superuser);
+        return BarkuniSticker(msg, superuser);
+
+    /**#########
+     * Kupa Rashit
+     ########## */
+    if (textMsg.startsWith("!קופה ראשית") || textMsg.startsWith("!קופהראשית"))
+        return KupaRashitSticker(msg, superuser);
 
 
     // ## NEED FIX ##

@@ -5,6 +5,7 @@ mongoose.set('strictQuery', false);
 import apiKeys from './src/apikeys.js';
 import savedNotes from './src/notes.js';
 import barkuni from './src/barkuni.js';
+import kupaRashit from "./src/kupaRashit.js";
 import mediaNote from './src/mediaNote.js';
 
 
@@ -15,6 +16,7 @@ export default class Mongo {
     this.apiKeys = apiKeys;
     this.savedNotes = savedNotes;
     this.barkuni = barkuni;
+    this.kupaRashit = kupaRashit;
     this.mediaNote = mediaNote;
     this.connectionString = process.env.MONGOOSE + '/API_KEYS'//?retryWrites=true&w=majority'
     this.connection = mongoose.connection;
