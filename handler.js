@@ -23,7 +23,7 @@ const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
 const superuser = process.env.SUPERUSER ?? "";
 const ssid = process.env.MAILLIST ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
-const DEFAULT_COUNT_USER_TO_MUTE = 10;
+const DEFAULT_COUNT_USER_TO_MUTE = 7;
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 
@@ -56,17 +56,31 @@ let commands = {
  * @param {import('./mongo')} mongo 
  */
 export default async function handleMessage(sock, msg, mongo) {
-    let id = msg.key.remoteJid;
+    let id = msg.key.remoteJid || "";
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
     caption = caption.trim();
     textMsg = textMsg.trim();
 
     // print to console
-    const metadata = id.endsWith("@g.us") ? await sock.groupMetadata(id) : null;
+    let groupName;
+    if (id.endsWith("@g.us")) {
+        groupName = GLOBAL.groupConfig?.[id]?.name;
+        if (!groupName) {
+            let groupMetadata = await GLOBAL.sock.groupMetadata(id)
+            groupName = groupMetadata.subject;
+            GLOBAL.groupConfig[id] = {
+                name: groupMetadata.subject,
+                countUsersToMute: DEFAULT_COUNT_USER_TO_MUTE > groupMetadata.participants.length
+                    ? groupMetadata.participants.length - 1 // -1 for the bot
+                    : DEFAULT_COUNT_USER_TO_MUTE
+            };
+        }
+    }
+
     let bodymsg = caption || textMsg || msg.message?.reactionMessage?.text;
-    metadata
-        ? console.log(`${msg.pushName} in (${metadata.subject}) - ${bodymsg}`)
+    groupName
+        ? console.log(`${msg.pushName} in (${groupName}) - ${bodymsg}`)
         : console.log(`${msg.pushName} (private) - ${bodymsg}`)
 
 
@@ -77,7 +91,7 @@ export default async function handleMessage(sock, msg, mongo) {
     // early check if action need to be done
     // reaction message
     if (msg.message?.reactionMessage) {
-        console.log(msg.message.reactionMessage)
+        //console.log(msg.message.reactionMessage)
 
         // count reactions on saved msg
         let result = info.reactionsOnSavedMsg(msg);
@@ -94,7 +108,7 @@ export default async function handleMessage(sock, msg, mongo) {
         }
 
         // when count of reactions is enough, mute group
-        if (reactionsCount >= GLOBAL.groupConfig?.[id]?.countUser ?? DEFAULT_COUNT_USER_TO_MUTE) {
+        if (reactionsCount >= GLOBAL.groupConfig?.[id]?.countUsersToMute ?? DEFAULT_COUNT_USER_TO_MUTE) {
             console.log("Mute Group:", id, " to:", minToMute)
             muteGroup(msg, minToMute);
 
@@ -334,7 +348,7 @@ export default async function handleMessage(sock, msg, mongo) {
             let botMsg = await sock.sendMessage(id, {
                 text: `*מזה יש כאן בלאגן?*\n` +
                     `@${phoneOfSender} רוצה להשתיק את הקבוצה למשך ${timeToMute} דקות...\n` +
-                    `ברגע ש${GLOBAL.groupConfig?.[id]?.countUser ?? DEFAULT_COUNT_USER_TO_MUTE} אנשים יסכימו איתו ויגיבו על ההודעה הזאת בלייק, הקבוצה תושתק.\n` +
+                    `ברגע ש${GLOBAL.groupConfig?.[id]?.countUsersToMute ?? DEFAULT_COUNT_USER_TO_MUTE} אנשים יסכימו איתו ויגיבו על ההודעה הזאת בלייק, הקבוצה תושתק.\n` +
                     `אתם מסכימים?`,
                 mentions: [msg.key.participant]
             }).then(messageRetryHandler.addMessage);
@@ -811,8 +825,8 @@ async function muteGroup(msg, muteTime_min) {
  */
 function getGroupConfig(id) {
     let msgToSend = `*הגדרות הקבוצה:*\n`;
-    if (GLOBAL.groupConfig?.[id]?.countUser)
-        msgToSend += `*מספר משתתפים להשתקה:* ${GLOBAL.groupConfig?.[id]?.countUser}\n`;
+    if (GLOBAL.groupConfig?.[id]?.countUsersToMute)
+        msgToSend += `*מספר משתתפים להשתקה:* ${GLOBAL.groupConfig?.[id]?.countUsersToMute}\n`;
     if (GLOBAL.groupConfig?.[id]?.spam)
         msgToSend += `*ההודעה שתשלח בקבוצה בעת ההשתקה:* ${GLOBAL.groupConfig?.[id]?.spam}\n`;
     if (GLOBAL.groupConfig?.[id]?.feder)
