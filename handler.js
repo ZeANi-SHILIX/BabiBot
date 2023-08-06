@@ -14,7 +14,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
-import { msgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
+import { errorMsgQueue, msgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -521,7 +521,7 @@ export default async function handleMessage(sock, msg, mongo) {
     /**##########
      *  ChatGPT
      * ##########*/
-    if (textMsg.includes("!בוט") || textMsg.includes("!gpt")) {
+    if (textMsg.includes("!גבטה") || textMsg.includes("!gpt")) {
         if (!GLOBAL.canAskGPT(id))
             return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
                 // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
@@ -529,24 +529,26 @@ export default async function handleMessage(sock, msg, mongo) {
                 // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
             );
 
-        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
-        try {
-            const text = textMsg.replace("!gpt", "").replace("!בוט", "").trim();
-            if (!text) return;
-            //let res = await unofficalGPT.ask2(textMsg.replace("!gpt", "").replace("!בוט", "").trim() + '\n')
-            let res = await chatGPT.ask(text + '\n')
-            console.log(res?.choices?.[0] || res.error);
-            let retText = res.choices?.[0]?.text?.trim() || res?.choices?.[0]?.message?.content || res?.error?.message || res;
-            sendMsgQueue(id, retText)
-        } catch (error) {
-            console.error(error);
-            sendMsgQueue(id, "אופס... חלה שגיאה\nנסה לשאול שוב")
-        }
+
+        const text = textMsg.replace("!gpt", "").replace("!גבטה", "").trim();
+        if (!text) return;
+
+        return chatGPT.ask3_5(text + '\n')
+            .then(res => {
+                console.log(res?.choices?.[0] || res.error);
+                let returnText = res.choices[0].message.content.trim(); // should throw error if not exist
+                sendMsgQueue(id, returnText)
+            })
+            .catch(err => {
+                console.error(err);
+                errorMsgQueue(err)
+                sendMsgQueue(id, "אופס... חלה שגיאה\nנסה לשאול שוב")
+            });
     }
 
     // get image from GPT
     if (textMsg.includes("!image") || textMsg.includes("!תמונה")) {
-        return sendMsgQueue(id, "השירות כרגע לא זמין")
+        return sendMsgQueue(id, "שירות יצירת תמונה לא זמין כרגע\nהאם התכוונת ל'!סטיקר'?")
         // try {
         //     let imgdesc = textMsg.replace("!image", "").replace("!תמונה", "").trim();
         //     // get only english letters
@@ -582,25 +584,28 @@ export default async function handleMessage(sock, msg, mongo) {
                 // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
             );
 
-        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
-        try {
-            // get num from message
-            let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
 
-            //let history = await store.loadMessages(id, numMsgToLoad);
-            let history = await MemoryStore.loadMessages(id, numMsgToLoad);
-            history.pop(); // we don't want the last message (the one we got now)
-            console.log('history length loaded:', history.length);
+        // get num from message
+        let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
 
-            if (history.length < 1)
-                return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
+        //let history = await store.loadMessages(id, numMsgToLoad);
+        return MemoryStore.loadMessages(id, numMsgToLoad)
+            .then(async (history) => {
+                history.pop(); // we don't want the last message (the one we got now)
+                console.log('history length loaded:', history.length);
 
-            let res = await chatGPT.tldr(history)
-            return sendMsgQueue(id, res);
-        } catch (error) {
-            console.error(error);
-            return sendMsgQueue(id, "אופס... חלה שגיאה\nנסה לשאול שוב")
-        }
+                if (history.length < 1)
+                    return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
+
+                let res = await chatGPT.tldr(history)
+                return sendMsgQueue(id, res);
+            })
+
+            .catch(error => {
+                console.error(error);
+                errorMsgQueue(error);
+                return sendMsgQueue(id, "אופס... חלה שגיאה\nנסה לשאול שוב")
+            })
 
     }
 
@@ -613,30 +618,9 @@ export default async function handleMessage(sock, msg, mongo) {
                 // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
             );
 
-        //return sock.sendMessage(id, { text: "השירות לא זמין\nמוזמנים לתרום לבוט ותעזרו לבאבי בוט להיות משוכלל יותר\n\nhttps://www.buymeacoffee.com/BabiBot" }).then(messageRetryHandler.addMessage);
-
-        // has quoted message?
-        if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
-            return sendMsgQueue(id, "יש לצטט הודעה")
-
-        // get from store
-        //let quotedMsg = await store.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-        let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-        if (!quotedMsg)
-            return sendMsgQueue(id, "חלה שגיאה בטעינת ההודעה המצוטטת")
-
-        // get type
-        let { type } = getMsgType(quotedMsg);
-
-        if (type !== MsgType.AUDIO)
-            return sendMsgQueue(id, "ההודעה המצוטטת אינה קובץ שמע")
-
-        return whisper(quotedMsg, sock);
+        return chatGPT.stt(quotedMsg)
     }
 
-    // ## NEED IMPROVE ## 
-    // check if download is in progress
-    // replace libary
     /**#######
      * YOUTUBE
      #########*/
@@ -719,7 +703,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     const { type } = getMsgType(msg);
     if (type === MsgType.AUDIO) {
-        return whisper(msg, sock);
+        return chatGPT.stt(msg);
         // // get file
         // let file = await downloadMediaMessage(msg, "buffer");
         // // convert to text
@@ -886,8 +870,6 @@ async function continueChat(history, oldRes, id, sock, editMsgkey) {
     }, {})
 }
 
-
-
 /**
  * 
  * @param {string} text 
@@ -950,56 +932,6 @@ async function resendToSTT(file, id, sock, msgkey) {
             }
         }
     }, {})
-}
-
-/**
- * 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
- */
-async function whisper(msg, sock) {
-    const id = msg.key.remoteJid;
-    try {
-        const filename = `./${id}_whisper.ogg`;
-
-        // download file
-        /** @type {Buffer} */
-        let buffer = await downloadMediaMessage(msg, "buffer");
-        // save temp file
-        fs.writeFileSync(filename, buffer);
-        // send to stt
-        let res = await chatGPT.stt(filename);
-        // delete file
-        fs.unlinkSync(filename);
-
-        // send the result
-        return sendMsgQueue(id, res)
-
-    } catch (error) {
-        console.error(error);
-        return sendMsgQueue(id, "אופס משהו לא עבד טוב")
-    }
-}
-
-/**
- * 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
- * @returns 
- */
-async function everybodyMSG(msg, sock) {
-    const id = msg.key.remoteJid;
-    await sleep(1000);
-    await sock.relayMessage(id, {
-        protocolMessage: {
-            key: msg.key,
-            type: 14,
-            editedMessage: {
-                conversation: "כל משתמשי הקבוצה תוייגו בהצלחה!",
-            }
-        }
-    }, {})
-    return;
 }
 
 async function sleep(ms) {

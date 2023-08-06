@@ -1,7 +1,10 @@
 import { Configuration, OpenAIApi } from "openai";
 import fs from "fs";
 import { convertOGGToMp3, isOGGFile } from "./convertor.js";
-
+import { sendMsgQueue, errorMsgQueue } from "../src/QueueObj.js";
+//import { downloadMediaMessage } from "@adiwajshing/baileys";
+import { getMsgType } from "./msgType.js";
+import MemoryStore from "../src/store.js";
 
 export default function ChatGPT(apiKey, useOfficial = true) {
   const configuration = new Configuration({
@@ -44,9 +47,9 @@ ChatGPT.prototype.ask = async function (prompt) {
   return res.data?.choices?.[0].text.trim() || res.data;
 };
 
-ChatGPT.prototype.ask2 = async function (prompt) {
+ChatGPT.prototype.ask3_5 = async function (prompt) {
   let data = {
-    "max_tokens": 480,
+    "max_tokens": 256,
     "model": "gpt-3.5-turbo",
     "messages": [
       systemMessage,
@@ -196,9 +199,53 @@ ChatGPT.prototype.tldr = async function (msgs) {
 };
 
 /**
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+ */
+ChatGPT.prototype.stt = async function (msg) {
+  const id = msg.key.remoteJid;
+  // has quoted message?
+  if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
+    return sendMsgQueue(id, "יש לצטט הודעה")
+
+  // get from store
+  let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+  if (!quotedMsg)
+    return sendMsgQueue(id, "חלה שגיאה בטעינת ההודעה המצוטטת")
+
+  // get type
+  let { type } = getMsgType(quotedMsg);
+
+  if (type !== MsgType.AUDIO)
+    return sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
+
+
+  try {
+    const filename = `./${id}_whisper.ogg`;
+
+    // download file
+    /** @type {Buffer} */
+    let buffer = await downloadMediaMessage(msg, "buffer");
+    // save temp file
+    fs.writeFileSync(filename, buffer);
+    // send to stt
+    let res = await this.whisper(filename);
+    // delete file
+    fs.unlinkSync(filename);
+
+    // send the result
+    return sendMsgQueue(id, res)
+
+  }
+  catch (error) {
+    errorMsgQueue("stt" + error)
+    return sendMsgQueue(id, "אופס משהו לא עבד טוב")
+  }
+}
+
+/**
  * @param {string} filename
  */
-ChatGPT.prototype.stt = async function (filename) {
+ChatGPT.prototype.whisper = async function (filename) {
   try {
     if (!isOGGFile(filename)) return "Not ogg";
 
@@ -217,7 +264,8 @@ ChatGPT.prototype.stt = async function (filename) {
   return "Error";
 }
 
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
+// import { downloadMediaMessage } from "@adiwajshing/baileys";
 
 async function test() {
   let gpt = new ChatGPT(process.env.OPENAI_API_KEY);
