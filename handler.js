@@ -70,6 +70,7 @@ export default async function handleMessage(sock, msg, mongo) {
             let groupMetadata = await GLOBAL.sock.groupMetadata(id)
             groupName = groupMetadata.subject;
             GLOBAL.groupConfig[id] = {
+                ...GLOBAL.groupConfig[id], // if exists
                 name: groupMetadata.subject,
                 countUsersToMute: DEFAULT_COUNT_USER_TO_MUTE > groupMetadata.participants.length
                     ? groupMetadata.participants.length - 1 // -1 for the bot
