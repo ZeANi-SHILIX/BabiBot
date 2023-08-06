@@ -1,61 +1,43 @@
 import fs from "fs";
 
-/**
- * this sock is updating while getting messages
- * @type {{ sock: import('@adiwajshing/baileys').WASocket
- *          muteGroup: {
- *              "idGroup": {
- *                  "messageID": {
- *                      reactionsCount: number,
- *                      minToMute: number,
- *                      startTime: number
- *                  }
- *              }
- *          },
- *          groupConfig: {
- *              "idGroup": {
- *                  countUsers: number,
- *                  spam: string,
- *                  feder: string,
- *                  paidGroup: boolean,
- *                  lastUsedGPT: number,
- *                  countGPT: number,
- *                  lastUsedEveryBodyCommand: number,
- *             }
- *          },
- *         timeouts: { "groupID": NodeJS.Timeout },
- *         clearTimeout: function clearTimeout(id):void {},
- *         everybodyLastUse2min: function everybodyLastUse2min(id) : boolean{},
- *         canAskGPT: function (id): boolean {},
- *         quizLev: {
+/** @type {import('@adiwajshing/baileys').WASocket} */
+let tempSock;
+
+/** @type {{[jid:string]: {"messageID": {reactionsCount: number,minToMute: number, startTime: number}}}}*/
+let tempMuteGroup = {};
+
+/** @type {{[jid:string]: {name: string, approvalTermsOfService: boolean, countUsersToMute: number, spam: string, feder: string, paidGroup: boolean, lastUsedGPT: number, countGPT: number, lastUsedEveryBodyCommand: number}}} */
+let tempGroupConfig = {};
+
+/** @type {{[jid:string]: NodeJS.Timeout }} */
+let tempTimeouts = {};
+
+/**  
+ * @type {{quizLev: {
  *              groups : {
- *                  "groupID" : { 
- *                      isActive: boolean, 
- *                      hourOfQuiz: number,
- *                      progress: {
-*                           ProgrammingQuiz: number, MathQuiz: number, BibleQuiz: number
-*                       },
- *                       tempParticipates: {
- *                          "userID": {timestamp: Number, group: string}
- *                      },
- *                      tempAnswer: {
- *                         type: string, answer: any    
+ *                      "groupID" : {
+ *                                  isActive: boolean,
+ *                                  hourOfQuiz: number,
+ *                                  progress: { ProgrammingQuiz: number, MathQuiz: number, BibleQuiz: number},
+ *                                  tempParticipates: { "userID": {timestamp: Number, group: string}},
+ *                                  tempAnswer: { type: string, answer: any }
+ *                      }, 
+ *                      participates : {
+ *                                  "userID": { group: string, name: string, score: number } 
  *                      }
- *              },
- *              participates : {
- *                  "userID": {
- *                      group: string, name: string, score: number
- *                  }
- *              }, 
- *                      
- *          }
- *      }}
+ *              }
+ *      }}}
+ * */
+let tempQuizLev = {};
+
+/**
+ * this sock is updating when reconnecting
 */
 export const GLOBAL = {
-    sock: null,
-    muteGroup: {},
-    groupConfig: {},
-    timeouts: {},
+    sock: tempSock,
+    muteGroup: tempMuteGroup,
+    groupConfig: tempGroupConfig,
+    timeouts: tempTimeouts,
     clearTimeout: function (id) {
         clearTimeout(this.timeouts[id]);
         console.log("cleared the timeout", this.timeouts[id], " for", id)
@@ -112,14 +94,12 @@ export const GLOBAL = {
 
 };
 
-export const temp = 5;
-
 
 readConfig();
 
 setInterval(() => {
     saveConfig();
-}, 100_000);
+}, 20_000);
 
 function readConfig() {
     if (!fs.existsSync("./groupConfig.json")) {
