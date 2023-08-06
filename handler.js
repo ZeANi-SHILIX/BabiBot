@@ -15,7 +15,8 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
-import { errorMsgQueue, msgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
+import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
+import translate from './custom_modules/Translate.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -31,13 +32,14 @@ const url_end = '/gviz/tq?&tqx=out:json';
 
 let commands = {
     "!פינג": "בדוק אם אני חי",
-    "!סטיקר": "שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר",
-    "!יוטיוב": "שלח לי קישור לשיר ביוטיוב ואני אשלח לך אותו לכאן",
-    "!ברקוני": "קבל סטיקר רנדומלי מברקוני",
+    "!סטיקר": "שלח לי את הפקודה בצירוף מדיה או טקסט (או בציטוט הודעה אחרת) ואני אכין לך סטיקר",
+    "!יוטיוב": "שלח לי קישור לסרטון או טקסט לחיפוש ביוטיוב ואני אשלח לך אותו כקובץ אודיו לשמיעה",
+    "!ברקוני": "קבל סטיקר רנדומלי של ברקוני",
+    "!קופהראשית": "קבל סטיקר רנדומלי של קופה ראשית",
     "!השתק": "השתק את הקבוצה לפי זמן מסוים",
     "!בטלהשתקה": "בטל השתקה",
     "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
-    //"!תרגם": "תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
+    "!תרגם": "תרגם את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
     "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
     //"!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
     //"!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
@@ -275,21 +277,26 @@ export default async function handleMessage(sock, msg, mongo) {
      * TRANSLATE
      * ##########*/
     if (textMsg.startsWith("!translate") || textMsg.startsWith("!תרגם")) {
-        let textToTranslate = textMsg.replace("!translate", "").replace("!תרגם", "").trim();
+        textMsg = textMsg.replace("!translate", "").replace("!תרגם", "").trim();
+
+        // get target language
+        let {lang, text} = getTargetlanguage(textMsg);
 
         // check if has quoted message
         if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
             let quotedMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage;
-            textToTranslate = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
+            text = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
         }
-        if (!textToTranslate) return sock.sendMessage(id, { text: "לא נמצא טקסט לתרגום" }).then(messageRetryHandler.addMessage);
+        if (!text) return sendCustomMsgQueue(id, { text: "לא נמצא טקסט לתרגום" });
 
-        let translateResult = await translate(textToTranslate);
-
-        if (translateResult.status && translateResult.translated)
-            return sock.sendMessage(id, { text: translateResult.translated }).then(messageRetryHandler.addMessage);
-
-        return sock.sendMessage(id, { text: "משהו לא עבד טוב... נסה שנית" }).then(messageRetryHandler.addMessage);
+        translate(text, lang)
+            .then(res => {
+                sendCustomMsgQueue(id, { text: res.text });
+            })
+            .catch(err => {
+                sendCustomMsgQueue(id, { text: "שגיאה בתרגום" });
+                errorMsgQueue(err)
+            });
     }
 
 
@@ -337,7 +344,7 @@ export default async function handleMessage(sock, msg, mongo) {
         let muteTime = textMsg.replace("!mute", "").replace("!השתק", "").trim();
         let muteTime_min = parseInt(muteTime);
         if (muteTime.length === 0 || isNaN(muteTime_min))
-            return sendMsgQueue(id, "אנא הכנס זמן השתקה בדקות לאחר שליחת הפקודה");
+            return sendMsgQueue(id, "יש להכניס מספר (בדקות) לאחר שליחת הפקודה");
 
         if (muteTime_min < 1 || muteTime_min > 60)
             return sendMsgQueue(id, "אנא הכנס זמן השתקה בין 1 ל 60 דקות");
@@ -370,7 +377,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     // UNMUTE GROUP
-    if (textMsg.startsWith("!unmute") || textMsg.startsWith("!בטלהשתקה")) {
+    if (textMsg.startsWith("!unmute") || textMsg.startsWith("!בטלהשתק")) {
         if (!msg.key.remoteJid.includes("@g.us"))
             return sendMsgQueue(id, "הפקודה זמינה רק בקבוצה");
 
@@ -892,19 +899,6 @@ async function continueChat(history, oldRes, id, sock, editMsgkey) {
     }, {})
 }
 
-/**
- * 
- * @param {string} text 
- * @param {"iw" | "en"} source 
- * @param {"iw" | "en"} target 
- * @returns {Promise<{status:boolean, translated?: string, time: number}>}
- */
-async function translate(text, source = "en", target = "iw") {
-    let translateUrl = `https://api.pawan.krd/mtranslate?from=${source}&to=${target}&text=` + encodeURIComponent(text);
-
-    return await fetch(translateUrl).then(res => res.json());
-}
-
 async function resendToSTT(file, id, sock, msgkey) {
     for (let i = 0; i < 10; i++) {
         console.log("try", i);
@@ -958,4 +952,31 @@ async function resendToSTT(file, id, sock, msgkey) {
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 
+ * @param {string} text 
+ */
+function getTargetlanguage(text) {
+    text = text.toLowerCase();
+
+    let words = text.split(" ");
+    let [w1, w2, ...rest] = words;
+
+    // first word is the target language
+    if (w1.includes("en")) return { lang: "en", text: w2 ? w2 + " " + rest.join(" ") : "" };
+    if (w1.includes("he")) return { lang: "he", text: w2 ? w2 + " " + rest.join(" ") : "" };
+    
+    if (w1.includes("אנגלית")) return { lang: "en", text: text.replace(/.*אנגלית/, "").trim() };
+    if (w1.includes("עברית")) return { lang: "he", text: text.replace(/.*עברית/, "").trim() };
+
+    // first word is "to"
+    if (w1 == "to") {
+        if (w2.includes("en")) return { lang: "en", text: rest.join(" ") };
+        if (w2.includes("he")) return { lang: "he", text: rest.join(" ") };
+    }
+
+    // default
+    return { lang: "iw", text: text };
 }
