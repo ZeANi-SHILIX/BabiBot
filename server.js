@@ -119,6 +119,8 @@ async function connectToWhatsApp() {
         // }
     });
 
+    const allowCommands = ['!סטיקר', "!גוגל", "!תמלל", "!פקודות"];
+
     // handle messages
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type == 'notify') {
@@ -126,9 +128,13 @@ async function connectToWhatsApp() {
                 if (!canHandleMsg(msg.key)) return;
 
                 if (!msg.message) continue; // if there is no text or media message
-                // if (msg.key.fromMe) continue;
                 if (msg.key.remoteJid === 'status@broadcast') continue; // ignore status messages
                 if (msg.key.remoteJid.includes("call")) continue; // ignore call messages
+
+                let msgText = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption
+                    || msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+                // avoid handling commands from myself
+                if (msg.key.fromMe && !allowCommands.some(cmd => msgText.startsWith(cmd))) continue;
 
                 let proType = msg.message?.protocolMessage?.type;
                 if (proType == proto.Message.ProtocolMessage.Type.REVOKE ||
