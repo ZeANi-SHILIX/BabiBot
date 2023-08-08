@@ -36,11 +36,13 @@ let commands = {
     "!יוטיוב": "שלח לי קישור לסרטון או טקסט לחיפוש ביוטיוב ואני אשלח לך אותו כקובץ אודיו לשמיעה",
     "!ברקוני": "קבל סטיקר רנדומלי של ברקוני",
     "!קופהראשית": "קבל סטיקר רנדומלי של קופה ראשית",
-    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
-    "!בטלהשתקה": "בטל השתקה",
-    "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
     "!תרגם": "תרגם את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
     "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
+    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
+    "!בטלהשתקה": "בטל השתקה (מנהלים בלבד)",
+    "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
+    "!חסוםקישורים": "חסום קישורים בקבוצה (מנהלים בלבד)",
+    "!בטלחסימתקישורים": "בטל חסימת קישורים בקבוצה (מנהלים בלבד)",
     //"!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
     //"!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
     //"!תמונה": "תאר לי תמונה ואני אכין לך אותה",
@@ -92,8 +94,12 @@ export default async function handleMessage(sock, msg, mongo) {
                 let groupData = await sock.groupMetadata(id);
                 let participant = groupData.participants;
                 let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
-                
+
                 if (bot.admin) {
+                    // check if sender is admin
+                    let sender = participant.find(p => msg.key.remoteJid === p.id);
+                    if (sender.admin) return;
+
                     // delete msg
                     sendCustomMsgQueue(id, { delete: msg.key });
                     // send warning (maybe will kick the user in the future)
@@ -321,8 +327,6 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
 
-
-
     /**########
      * GOOGLE
      ##########*/
@@ -414,8 +418,7 @@ export default async function handleMessage(sock, msg, mongo) {
             return sendMsgQueue(id, "אני צריך להיות מנהל בקבוצה כדי שהפקודה תוכל לפעול");
 
         msgQueue.add(async () => await sock.groupSettingUpdate(id, 'not_announcement'));
-        sendMsgQueue(id, "הקבוצה פתוחה");
-
+        return sendMsgQueue(id, "הקבוצה פתוחה");
     }
 
     // ## NEED IMPROVE ##
@@ -445,8 +448,7 @@ export default async function handleMessage(sock, msg, mongo) {
         sendMsgQueue(id, "הגדרות הקבוצה נשלחו לפרטי");
 
         // send the group config to the sender
-        sendMsgQueue(msg.key.participant, getGroupConfig(id) + "\nמתחיל בעריכה:\nהכנס את מספר המשתמשים להשתקה");
-        return;
+        return sendMsgQueue(msg.key.participant, getGroupConfig(id) + "\nמתחיל בעריכה:\nהכנס את מספר המשתמשים להשתקה");
     }
 
     // BLOCK LINKS
