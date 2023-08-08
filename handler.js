@@ -97,8 +97,8 @@ export default async function handleMessage(sock, msg, mongo) {
 
                 if (bot.admin) {
                     // check if sender is admin
-                    let sender = participant.find(p => msg.key.remoteJid === p.id);
-                    if (sender.admin) return;
+                    let sender = participant.find(p => msg.key.participant === p.id);
+                    if (sender?.admin) return;
 
                     // delete msg
                     sendCustomMsgQueue(id, { delete: msg.key });
