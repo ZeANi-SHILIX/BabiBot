@@ -65,6 +65,9 @@ export default async function handleMessage(sock, msg, mongo) {
     caption = caption.trim();
     textMsg = textMsg.trim();
 
+    // send ACK
+    sock.readMessages([msg.key])
+
     // print to console
     let groupName;
     if (id.endsWith("@g.us")) {
@@ -80,6 +83,28 @@ export default async function handleMessage(sock, msg, mongo) {
                     : DEFAULT_COUNT_USER_TO_MUTE
             };
         }
+
+        // block links
+        if (isIncludeLink(caption) || isIncludeLink(textMsg)) {
+            if (GLOBAL.groupConfig[id]?.blockLinks) {
+                console.log("blocking link:", caption || textMsg);
+                // check if bot is admin
+                let groupData = await sock.groupMetadata(id);
+                let participant = groupData.participants;
+                let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+                
+                if (bot.admin) {
+                    // delete msg
+                    sendCustomMsgQueue(id, { delete: msg.key });
+                    // send warning (maybe will kick the user in the future)
+                    return sendCustomMsgQueue(id, { text: "הקישורים אסורים כאן" });
+                }
+                else {
+                    // if bot is not admin, unblock links
+                    GLOBAL.groupConfig[id].blockLinks = false;
+                }
+            }
+        }
     }
 
     let bodymsg = caption || textMsg || msg.message?.reactionMessage?.text;
@@ -87,10 +112,6 @@ export default async function handleMessage(sock, msg, mongo) {
         ? console.log(`${msg.pushName} in (${groupName}) - ${bodymsg}`)
         : console.log(`${msg.pushName} (private) - ${bodymsg}`)
 
-
-
-    // send ACK
-    sock.readMessages([msg.key])
 
     // early check if action need to be done
     // reaction message
@@ -280,7 +301,7 @@ export default async function handleMessage(sock, msg, mongo) {
         textMsg = textMsg.replace("!translate", "").replace("!תרגם", "").trim();
 
         // get target language
-        let {lang, text} = getTargetlanguage(textMsg);
+        let { lang, text } = getTargetlanguage(textMsg);
 
         // check if has quoted message
         if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
@@ -428,6 +449,67 @@ export default async function handleMessage(sock, msg, mongo) {
         return;
     }
 
+    // BLOCK LINKS
+    if (textMsg.startsWith("!blocklinks") || textMsg.startsWith("!חסוםקישורים")) {
+        if (!msg.key.remoteJid.includes("@g.us"))
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+        let groupData = await sock.groupMetadata(id);
+        let participant = groupData.participants;
+
+        // check if the bot is admin
+        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+        console.log(bot);
+        if (!bot?.admin)
+            return sendMsgQueue(id, "אני צריך להיות מנהל בקבוצה");
+
+        // check if the sender is admin
+        let sender = participant.find(p => p.id === msg.key.participant);
+        console.log(sender);
+        if (!sender.admin)
+            return sendMsgQueue(id, "הפקודה זמינה רק למנהלים");
+
+        // check if the group is already blocked
+        if (GLOBAL.groupConfig?.[id]?.blockLinks)
+            return sendMsgQueue(id, "הקבוצה כבר חסומה משליחת קישורים");
+
+        // block links
+        if (!GLOBAL.groupConfig[id]) GLOBAL.groupConfig[id] = {};
+
+        GLOBAL.groupConfig[id].blockLinks = true;
+        return sendMsgQueue(id, "הקבוצה חסומה משליחת קישורים");
+    }
+
+    // UNBLOCK LINKS
+    if (textMsg.startsWith("!unblocklinks") || textMsg.startsWith("!בטלחסימתקישורים")) {
+        if (!msg.key.remoteJid.includes("@g.us"))
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+        let groupData = await sock.groupMetadata(id);
+        let participant = groupData.participants;
+
+        // check if the bot is admin
+        let bot = participant.find(p => sock.user.id.includes(p.id.slice(0, p.id.indexOf("@"))));
+        console.log(bot);
+        if (!bot?.admin)
+            return sendMsgQueue(id, "אני צריך להיות מנהל בקבוצה על מנת שהפקודה תוכל לפעול");
+
+        // check if the sender is admin
+        let sender = participant.find(p => p.id === msg.key.participant);
+        console.log(sender);
+        if (!sender.admin)
+            return sendMsgQueue(id, "הפקודה זמינה רק למנהלים");
+
+        // check if the group is already unblocked
+        if (!GLOBAL.groupConfig?.[id]?.blockLinks)
+            return sendMsgQueue(id, "הקבוצה כבר מותרת לשלוח קישורים");
+
+        // unblock links
+        if (!GLOBAL.groupConfig[id]) GLOBAL.groupConfig[id] = {};
+
+        GLOBAL.groupConfig[id].blockLinks = false;
+        return sendMsgQueue(id, "הקבוצה מותרת לשלוח קישורים");
+    }
 
 
     /**######
@@ -801,6 +883,7 @@ async function getMails() {
  * @returns {Boolean} 
  */
 function isIncludeLink(str) {
+    str = str.toLowerCase();
     return str.includes("http") || str.includes("https") || str.includes("www.");
 }
 
@@ -967,7 +1050,7 @@ function getTargetlanguage(text) {
     // first word is the target language
     if (w1.includes("en")) return { lang: "en", text: w2 ? w2 + " " + rest.join(" ") : "" };
     if (w1.includes("he")) return { lang: "he", text: w2 ? w2 + " " + rest.join(" ") : "" };
-    
+
     if (w1.includes("אנגלית")) return { lang: "en", text: text.replace(/.*אנגלית/, "").trim() };
     if (w1.includes("עברית")) return { lang: "he", text: text.replace(/.*עברית/, "").trim() };
 
