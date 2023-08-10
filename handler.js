@@ -338,13 +338,17 @@ export default async function handleMessage(sock, msg, mongo) {
         if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
             let quotedMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage;
             let quotedText = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "";
-            let linkMsg = textSearch.length === 0 ? "https://www.google.com/search?q=" + encodeURIComponent(quotedText.trim()) : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
-            textToSend = "גוגל הוא חבר נהדר! למה שלא תנסה לשאול אותו?\n" + linkMsg;
+            let linkMsg = textSearch.length === 0
+                ? "https://www.google.com/search?q=" + encodeURIComponent(quotedText.trim())
+                : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
+            textToSend = "גוגל הוא חבר נהדר! למה שלא ננסה לשאול אותו?\n" + linkMsg;
 
         }
         else {
-            let linkMsg = textSearch.length === 0 ? "https://giybf.com/" : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
-            textToSend = "גוגל הוא חבר נהדר! כדאי לשאול אותו?\n" + linkMsg;
+            let linkMsg = textSearch.length === 0
+                ? "https://giybf.com/"
+                : "https://www.google.com/search?q=" + encodeURIComponent(textSearch);
+            textToSend = "גוגל הוא חבר נהדר! כדאי לנו לשאול אותו!\n" + linkMsg;
         }
         return sendMsgQueue(id, textToSend);
     }
@@ -732,7 +736,7 @@ export default async function handleMessage(sock, msg, mongo) {
                 // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
             );
 
-        return chatGPT.stt(quotedMsg)
+        return chatGPT.stt(msg)
     }
 
     /**#######
@@ -1051,16 +1055,16 @@ function getTargetlanguage(text) {
     let [w1, w2, ...rest] = words;
 
     // first word is the target language
-    if (w1.includes("en")) return { lang: "en", text: w2 ? w2 + " " + rest.join(" ") : "" };
-    if (w1.includes("he")) return { lang: "he", text: w2 ? w2 + " " + rest.join(" ") : "" };
+    if (w1.startsWith("en")) return { lang: "en", text: w2 ? w2 + " " + rest.join(" ") : "" };
+    if (w1.startsWith("he")) return { lang: "he", text: w2 ? w2 + " " + rest.join(" ") : "" };
 
     if (w1.includes("אנגלית")) return { lang: "en", text: text.replace(/.*אנגלית/, "").trim() };
     if (w1.includes("עברית")) return { lang: "he", text: text.replace(/.*עברית/, "").trim() };
 
     // first word is "to"
     if (w1 == "to") {
-        if (w2.includes("en")) return { lang: "en", text: rest.join(" ") };
-        if (w2.includes("he")) return { lang: "he", text: rest.join(" ") };
+        if (w2.startsWith("en")) return { lang: "en", text: rest.join(" ") };
+        if (w2.startsWith("he")) return { lang: "he", text: rest.join(" ") };
     }
 
     // default
