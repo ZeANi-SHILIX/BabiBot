@@ -7,7 +7,7 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import QRCode from 'qrcode';
 import Mongo from './mongo.js';
-import { handlerQueue } from './src/QueueObj.js';
+import { errorMsgQueue, handlerQueue } from './src/QueueObj.js';
 import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
 //import jwt from 'jsonwebtoken';
@@ -51,9 +51,12 @@ async function connectToWhatsApp() {
         getMessage: messageRetryHandler.messageRetryHandler
     })
 
-    //store.bind(sock.ev)
-    MemoryStore.store.bind(sock.ev)
-
+    try {
+        MemoryStore.store.bind(sock.ev)
+    } catch (error) {
+        console.log(error);
+        errorMsgQueue(error);
+    }
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update
         if (connection === 'close') {
@@ -183,12 +186,13 @@ function canHandleMsg(key) {
     return false;
 }
 
-// const console_info = console.info
-// console.info = function() {
-//     if(!require("util").format(...arguments).includes("SessionEntry")){
-//         return console_info(...arguments)
-//     }
-// }
+const console_info = console.info
+console.info = function() {
+    if(!require("util").format(...arguments).includes("SessionEntry")){
+        return console_info(...arguments)
+    }
+    return "Updating SessionEntry"
+}
 
 
 
@@ -336,6 +340,5 @@ app.listen(port, () => {
 
 process.on('uncaughtException', (err, origin) => {
     console.error("uncaughtException:", err);
-    const myself = GLOBAL.sock.user.id;
-    GLOBAL.sock.sendMessage(myself, { text: `uncaughtException: ${err}` })
+    errorMsgQueue(err);
 });
