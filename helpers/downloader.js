@@ -26,6 +26,9 @@ export async function DownloadV2(msg) {
     // if there is no text - return
     if (!textMsg) return sendMsgQueue(id, "אופס... לא מצאתי קישור או טקסט לחיפוש")
 
+    // check if short link
+    if (textMsg.includes("/shorts/")) return downloadShortVideo(id, textMsg);
+
     if (isIncludeLink(textMsg)) {
         let videoId = textMsg.split("v=")[1] || textMsg.split("youtu.be/")[1];
         videoId = videoId.split(/[& ]/)[0];
@@ -160,4 +163,34 @@ export async function downloadTYoutubeVideo(jid, videoId) {
  */
 function isIncludeLink(str) {
     return str.includes("http") || str.includes("https") || str.includes("www.");
+}
+
+/**
+ * 
+ * @param {string} jid 
+ * @param {string} text 
+ */
+async function downloadShortVideo(jid, text) {
+
+    // https://youtube.com/shorts/xxxxxxxx?feature=share
+    let videoId = text.split("shorts/")[1].split("?")[0];
+
+    let videoDetails = await ytdl.getInfo(videoId);
+    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
+
+    let vidFormat = videoDetails.formats.find((format) => format.container === "mp4"
+        && (format.qualityLabel === "360p" || format.qualityLabel === "240p"));
+
+    let stream = ytdl.downloadFromInfo(videoDetails, { format: vidFormat })
+        .pipe(fs.createWriteStream(filename + "." + vidFormat.container));
+
+    stream.on("finish", () => {
+        sendCustomMsgQueue(jid, { video: { url: filename + "." + vidFormat.container }, mimetype: "video/mp4" })
+            .then(() => fs.unlinkSync(filename + "." + vidFormat.container))
+    })
+
+    stream.on("error", (err) => {
+        sendMsgQueue(jid, "אופס משהו לא עבד טוב עם הסרטון הזה...")
+        errorMsgQueue(err)
+    })
 }
