@@ -6,13 +6,15 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-const { UltimateTextToImage, registerFont } = process.env.NODE_ENV === 'production' ? await import("ultimate-text-to-image") : { UltimateTextToImage: null, registerFont: null };
+const { UltimateTextToImage, registerFont } = process.env.NODE_ENV === 'production'
+    ? await import("ultimate-text-to-image")
+    : { UltimateTextToImage: null, registerFont: null };
+
 registerFont?.('./src/Gveret Levin Alef Alef Alef.ttf', { family: 'Alef' });
 
-import messageRetryHandler from "../src/retryHandler.js";
 import { MsgType, getMsgType } from './msgType.js';
 import MemoryStore from '../src/store.js';
-import { msgQueue, sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
+import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 
 
 const sticker_types = {
@@ -30,6 +32,7 @@ const sticker_types = {
  */
 export default async function sendSticker(msg) {
     let id = msg.key.remoteJid;
+    const originalMsg = msg;
 
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text
         || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
@@ -55,7 +58,9 @@ export default async function sendSticker(msg) {
 
     // media message
     if (messageType === MsgType.IMAGE || messageType === MsgType.VIDEO || messageType === MsgType.STICKER) {
-        return makeMediaSticker(msg, type);
+        sendCustomMsgQueue(id, { react: { text: '⏳', key: originalMsg.key } });
+        return makeMediaSticker(msg, type)
+            .then(() => sendCustomMsgQueue(id, { react: { text: '✅', key: originalMsg.key } }))
     }
 
     // text message
@@ -74,7 +79,7 @@ async function makeTextSticker(id, text) {
         pack: '🎉',
         author: 'BabiBot',
         categories: ['🤩', '🎉'],
-        quality: 30
+        quality: 20
     });
     const stickerMsg = await sticker.toMessage();
 
