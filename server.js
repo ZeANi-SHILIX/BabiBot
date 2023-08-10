@@ -191,7 +191,7 @@ console.info = function() {
     if(!require("util").format(...arguments).includes("SessionEntry")){
         return console_info(...arguments)
     }
-    return "Updating SessionEntry"
+    return console_info("Updating SessionEntry")
 }
 
 
