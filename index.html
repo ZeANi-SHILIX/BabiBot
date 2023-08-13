@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html lang="he">
 
 <head>
   <title>מידע על פקודות בוט WhatsApp</title>
+  <script src="./commands.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -35,6 +36,16 @@
 
     li {
       margin-bottom: 10px;
+    }
+
+    .notes {
+      color: #555;
+      font-size: 14px;
+    }
+
+    .parameters {
+      color: #555;
+      font-size: 14px;
     }
 
     .command {
@@ -112,30 +123,16 @@
 <body>
   <div class="index">
     <h2>פקודות:</h2>
-    <ul>
-      <li><a href="#ping-command">!פינג</a></li>
-      <li><a href="#command-sticker">!סטיקר</a></li>
-      <li><a href="#command-barkoni">!ברקוני</a></li>
-      <li><a href="#command-mute">!השתק</a></li>
-      <li><a href="#command-unmute">!בטלהשתקה</a></li>
-      <li><a href="#command-tag">!כולם</a></li>
-      <li><a href="#command-google">!גוגל</a></li>
-      <!--li><a href="#command-youtube">!יוטיוב</a></li>
-      <li><a href="#command-translate"></a></li>
-      <li><a href="#command-gpt"></a></li>
-      <li><a href="#command-summary"></a></li>
-      <li><a href="#command-image"></a></li>
-      <li><a href="#command-transcribe"></a></li>
-      <li><a href="#command-translate"></a></li>
-      <li><a href="#command-translate"></a></li>
-      <li><a href="#command-translate"></a></li>
-      <li><a href="#command-translate"></a></li>
-      <li><a href="#command-translate"></a></li-->
-      <!-- Add more command links as needed -->
+    <ul id="commandsHerfs">
     </ul>
   </div>
 
   <div class="content">
+    <select id="lang" onchange="changeLang()">
+      <option value="iw" selected>עברית</option>
+      <option value="en">English</option>
+    </select>
+
     <h1>BabiBot - פקודות</h1>
 
     <div class="privacy">
@@ -144,266 +141,171 @@
       </p>
     </div>
 
-    <div class="command" id="ping-command">
+    <div id="commands"></div>
+
+    <!--div class="command" id="ping-command">
       <h2>!פינג</h2>
       <p>בדוק אם הבוט עובד</p>
       <h3>שימוש:</h3>
       <pre>!פינג</pre>
       <h3>תגובה:</h3>
       <p>הבוט ישיב עם הודעת "פונג".</p>
-    </div>
-
-    <div class="command" id="command-sticker">
-      <h2>!סטיקר</h2>
-      <p>שלח לי תמונה/סרטון בתוספת הפקודה, או ללא מדיה ואני אהפוך את המילים שלך לסטיקר</p>
-      <h3>שימוש:</h3>
-      <pre>!סטיקר [פרמטר | מילים]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> מלא \ חתוך \ עגול \ מעוגל</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>!סטיקר עגול</pre>
-      <pre>!סטיקר אין על באבי בוט</pre>
-      <h3>תגובה:</h3>
-      <p>אם קיימת מדיה בהודעה הנוכחית או המצוטטת - ישלח סטיקר מהמדיה לפי הפרמטר, <br>אחרת הבוט ייצור סטיקר מהמילים לאחר הפקודה.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>אם לא צויין פרמטר בעת שליחת מדיה - יוכנס "מלא" כברירת מחדל</li>
-      </ul>
-    </div>
-
-    <!--div class="command" id="command-youtube">
-      <h2>!יוטיוב</h2>
-      <p>שלח לי קישור לשיר ביוטיוב ואני אשלח לך אותו לכאן</p>
-      <h3>שימוש:</h3>
-      <pre>!יוטיוב [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> קישור לסרטון ביוטיוב</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>!יוטיוב http</pre>
-      <h3>תגובה:</h3>
-      <p>לאחר עיבוד, הבוט ישלח את קובץ השמע של הסרטון.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>פקודה זו נועדה להורדת שירים בלבד! נא לא לשלוח סרטונים ארוכים</li>
-        <li>לא ניתן להוריד שמע מסרטוני SHORTS</li>
-      </ul>
     </div-->
 
-    <div class="command" id="command-barkoni">
-      <h2>!ברקוני</h2>
-      <p>קבל סטיקר רנדומלי מברקוני</p>
-      <h3>שימוש:</h3>
-      <pre>!ברקוני</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם סטיקר רנדומלי של ברקוני.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>יש לכם סטיקרים של ברקוני שלא נמצאים בבוט? מוזמנים לשלוח</li>
-      </ul>
-    </div>
-
-    <div class="command" id="command-mute">
-      <h2>!השתק</h2>
-      <p>השתק את הקבוצה לפי זמן מסוים</p>
-      <h3>שימוש:</h3>
-      <pre>!השתק [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> מספר הדקות להשתקה</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>!השתק 5</pre>
-      <pre>!השתק 60</pre>
-      <h3>תגובה:</h3>
-      <p>כאשר מנהל שולח את הפקודה - הקבוצה תושתק מיד, אחרת - תישלח הצבעה שלאחר כמות ההצבעות מסויימת תבוצע ההשתקה</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>המספר חייב להיות בין 1 ל60.</li>
-        <li>ניתן להגדיר את כמות ההצבעות על ידי פקודת "!הגדר".</li>
-      </ul>
-    </div>
-
-    <div class="command" id="command-unmute">
-      <h2>!בטלהשתקה</h2>
-      <p>בטל השתקה של הקבוצה</p>
-      <h3>שימוש:</h3>
-      <pre>!בטלהשתקה</pre>
-      <h3>תגובה:</h3>
-      <p>פתיחת הקבוצה לדיבורים.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>הפקודה זמינה למנהלים בלבד.</li>
-      </ul>
-    </div>
-
-    <div class="command" id="command-tag">
-      <h2>!כולם</h2>
-      <p>תייג את כל המשתמשים בקבוצה</p>
-      <h3>שימוש:</h3>
-      <pre>!כולם</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט יתייג את כל המשתמשים בקבוצה.</p>
-      <h3>הערות:</h3>
-      <ul>        
-        <li>הפקודה זמינה למנהלים בלבד.</li>
-      </ul>
-    </div>
-
-    <!--div class="command" id="command-translate">
-      <h2>!תרגם</h2>
-      <p>תרגם לעברית את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה</p>
-      <h3>שימוש:</h3>
-      <pre>/פקודה_נוספת [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>/פקודה_נוספת "שלום"</pre>
-      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
-        <li>הפקודה תלויה ברישיון.</li>
-      </ul>
-    </div-->
-
-    <div class="command" id="command-google">
-      <h2>!גוגל</h2>
-      <p>קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה</p>
-      <h3>שימוש:</h3>
-      <pre>!גוגל [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> טקסט חיפוש בגוגל</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>!גוגל </pre>
-      <pre>!גוגל מתכון לעוגה ב5 דקות</pre>
-      <h3>תגובה:</h3>
-      <p>כאשר מצטטים הודעה - טקסט החיפוש יהיה של ההודעה המצוטטת, אחרת טקסט החיפוש יהיה הטקסט לאחר הפקודה.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>כאשר לא נשלח אף טקסט לחיפוש - יישלח קישור כללי.</li>
-      </ul>
-    </div>
-
-    <!--div class="command" id="command-gpt">
-      <h2>!בוט</h2>
-      <p>שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)</p>
-      <h3>שימוש:</h3>
-      <pre>/פקודה_נוספת [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>/פקודה_נוספת "שלום"</pre>
-      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
-        <li>הפקודה תלויה ברישיון.</li>
-      </ul>
-    </div>
-
-    <div class="command" id="command-summary">
-      <h2>!אמלק</h2>
-      <p>קבל סיכום קצרצר של ההודעות האחרונות בשיחה</p>
-      <h3>שימוש:</h3>
-      <pre>/פקודה_נוספת [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>/פקודה_נוספת "שלום"</pre>
-      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
-        <li>הפקודה תלויה ברישיון.</li>
-      </ul>
-    </div>
-
-    <div class="command" id="command-image">
-      <h2>!תמונה</h2>
-      <p>תאר לי תמונה ואני אכין לך אותה</p>
-      <h3>שימוש:</h3>
-      <pre>/פקודה_נוספת [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>/פקודה_נוספת "שלום"</pre>
-      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
-        <li>הפקודה תלויה ברישיון.</li>
-      </ul>
-    </div>
-
-    <div class="command" id="command-transcribe">
-      <h2>!תמלל</h2>
-      <p>שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה</p>
-      <h3>שימוש:</h3>
-      <pre>/פקודה_נוספת [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>/פקודה_נוספת "שלום"</pre>
-      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
-        <li>הפקודה תלויה ברישיון.</li>
-      </ul>
-    </div>
-
-
-    <div class="command" id="command-another">
-      <h2>/פקודה_נוספת</h2>
-      <p>פקודה זו מאפשרת למשתמשים לבצע פעולה נוספת באמצעות בוט WhatsApp.</p>
-      <h3>שימוש:</h3>
-      <pre>/פקודה_נוספת [פרמטר]</pre>
-      <h3>פרמטרים:</h3>
-      <ul>
-        <li><strong>פרמטר:</strong> זהו הפרמטר לפקודה וצריך להיות מסוג מחרוזת.</li>
-      </ul>
-      <h3>דוגמאות:</h3>
-      <pre>/פקודה_נוספת "שלום"</pre>
-      <pre>/פקודה_נוספת "בוט OpenAI"</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת תוצאה לאחר ביצוע הפעולה עם הפרמטר שסופק.</p>
-      <h3>הערות:</h3>
-      <ul>
-        <li>ודא כי אתה מקיף את ערך הפרמטר בגרשיים אם הוא מכיל רווחים או תווים מיוחדים.</li>
-        <li>הפקודה תלויה ברישיון.</li>
-      </ul>
-    </div-->
-    <!-- Add more command sections as needed -->
   </div>
-
-
-
 </body>
+
+<script>
+
+  /**
+   * 
+   * @param {AllCommands[lang][index]} command
+   * @param {string} lang
+   * @returns {HTMLDivElement}
+   */
+  function generateCommandDiv(command, lang) {
+
+    let div = document.createElement("div");
+    div.classList.add("command");
+    div.id = "command-" + command.name.replace("!", "");
+    let h2 = document.createElement("h2");
+    h2.innerText = command.name;
+    div.appendChild(h2);
+    let p = document.createElement("p");
+    p.innerText = command.description;
+    div.appendChild(p);
+    let h3 = document.createElement("h3");
+    h3.innerText = keyNotes[lang].usage;
+    div.appendChild(h3);
+    let pre = document.createElement("pre");
+    pre.innerText = command.usage;
+    div.appendChild(pre);
+    if (command.parameters) {
+      h3 = document.createElement("h3");
+      h3.innerText = keyNotes[lang].parameters;
+      div.appendChild(h3);
+      let ul = document.createElement("ul");
+      ul.classList.add("parameters");
+      command.parameters.forEach(parameter => {
+        let li = document.createElement("li");
+        li.innerHTML = "<strong>" + parameter.name + ":</strong> " + parameter.description;
+        ul.appendChild(li);
+      });
+      div.appendChild(ul);
+    }
+    h3 = document.createElement("h3");
+    h3.innerText = keyNotes[lang].examples;
+    div.appendChild(h3);
+    command.examples.forEach(example => {
+      pre = document.createElement("pre");
+      pre.innerText = example;
+      div.appendChild(pre);
+    }
+    );
+    h3 = document.createElement("h3");
+    h3.innerText = keyNotes[lang].response;
+    div.appendChild(h3);
+    p = document.createElement("p");
+    p.innerText = command.response;
+    div.appendChild(p);
+    if (command.notes) {
+      h3 = document.createElement("h3");
+      h3.innerText = keyNotes[lang].notes;
+      div.appendChild(h3);
+      let ul = document.createElement("ul");
+      ul.classList.add("notes");
+      command.notes.forEach(note => {
+        let li = document.createElement("li");
+        li.innerText = " ● " + note;
+        ul.appendChild(li);
+      });
+      div.appendChild(ul);
+    }
+    return div;
+  }
+
+  /**
+   * only for testing
+   * @param {HTMLDivElement} div
+   */
+  function fromDivTolist(div) {
+    let list = [];
+    let commands = div.querySelectorAll(".command");
+    console.log(commands);
+    commands.forEach(command => {
+      let name = command.querySelector("h2").innerText;
+      let description = command.querySelector("p").innerText;
+
+      let usage = command.querySelector("pre").innerText;
+      let parameters = [];
+      let parametersList = command.querySelectorAll("ul li");
+      parametersList.forEach(parameter => {
+        let name = parameter.querySelector("strong")?.innerText;
+        let description = parameter.innerText.replace(name + ": ", "");
+        parameters.push({
+          "name": name,
+          "description": description
+        });
+      });
+      let examples = [];
+      let examplesList = command.querySelectorAll("h3 + pre");
+      examplesList.forEach(example => {
+        examples.push(example.innerText);
+      });
+      let response = command.querySelector("h3 + p").innerText;
+      let notes = [];
+      let notesList = command.querySelectorAll("h3 + ul li");
+      notesList.forEach(note => {
+        notes.push(note.innerText);
+      });
+      list.push({
+        "name": name,
+        "description": description,
+        "usage": usage,
+        "parameters": parameters,
+        "examples": examples,
+        "response": response,
+        "notes": notes
+      });
+    });
+    return list;
+  }
+  function generateCommands() {
+    let div = document.getElementById("commands");
+    console.log(div);
+    let list = fromDivTolist(div);
+    div.innerHTML = "";
+    console.log(JSON.stringify(list, null, 2));
+    for (let i = 0; i < list.length; i++) {
+      let newDiv = generateCommandDiv(list[i], "iw");
+      console.log(newDiv);
+      document.getElementById("commands").appendChild(newDiv);
+    }
+  }
+  // generateCommands();
+
+  function reloadPageWithLang(lang) {
+    document.getElementById("commands").innerHTML = "";
+    document.getElementById("commandsHerfs").innerHTML = "";
+    for (let i = 0; i < AllCommands[lang].length; i++) {
+      let newDiv = generateCommandDiv(AllCommands[lang][i], lang);
+      document.getElementById("commands").appendChild(newDiv);
+      document.getElementById("commandsHerfs").innerHTML += "<li><a href='#command-" + AllCommands[lang][i].name.replace("!", "") + "'>" + AllCommands[lang][i].name + "</a></li>";
+    }
+  }
+
+  function changeLang() {
+    // get selected lang
+    let lang = document.getElementById("lang").value;
+    console.log(lang);
+    // reload page with the selected lang
+    reloadPageWithLang(lang);
+    // change the layout direction
+    window.document.dir = lang == "iw" ? "rtl" : "ltr";
+  }
+
+  changeLang();
+
+</script>
 
 </html>
