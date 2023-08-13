@@ -122,7 +122,7 @@
 
 <body>
   <div class="index">
-    <h2>פקודות: Commands</h2>
+    <h2 id="commandMenuTitle">פקודות:</h2>
     <ul id="commandsHerfs">
     </ul>
   </div>
@@ -133,25 +133,14 @@
       <option value="en">English</option>
     </select>
 
-    <h1>BabiBot - פקודות Commands</h1>
+    <h1 id="pageTitle">BabiBot - פקודות</h1>
 
-    <div class="privacy">
-      <h2>פרטיות Privacy</h2>
-      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.
-      </p>
-      <p>Attention! The developer of BabiBot has access to the messages you send to the bot. The messages are periodically reviewed in order to improve and correct the bot.</p>
+    <div class="privacy" id="privacyNote">
+      <h2>פרטיות</h2>
+      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.</p>
     </div>
 
     <div id="commands"></div>
-
-    <!--div class="command" id="ping-command">
-      <h2>!פינג</h2>
-      <p>בדוק אם הבוט עובד</p>
-      <h3>שימוש:</h3>
-      <pre>!פינג</pre>
-      <h3>תגובה:</h3>
-      <p>הבוט ישיב עם הודעת "פונג".</p>
-    </div-->
 
   </div>
 </body>
@@ -301,8 +290,24 @@
     console.log(lang);
     // reload page with the selected lang
     reloadPageWithLang(lang);
+
     // change the layout direction
-    window.document.dir = lang == "iw" ? "rtl" : "ltr";
+    if (lang == "iw"){
+      window.document.dir = "rtl";
+      document.getElementById("commandMenuTitle").innerHTML = "פקודות:";
+      document.getElementById("pageTitle").innerHTML = "BabiBot - פקודות"
+      document.getElementById("privacyNote").innerHTML = `<h2>פרטיות</h2>
+      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.</p>`
+    }
+    else {
+      window.document.dir = "ltr";
+      document.getElementById("commandMenuTitle").innerHTML = "Commands:";
+      document.getElementById("pageTitle").innerHTML = "BabiBot - Commands"
+      document.getElementById("privacyNote").innerHTML = `<h2>Privacy</h2>
+      <p>Attention! The developer of BabiBot has access to the messages you send to the bot. The messages are periodically reviewed in order to improve and correct the bot.</p>`
+    }
+    
+
   }
 
   changeLang();
