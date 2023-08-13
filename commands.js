@@ -168,8 +168,122 @@ const AllCommands = {
             "examples": [
                 "!ping"
             ],
-            "response": "The bot will respond with \"pong\".",
+            "response": "The bot will respond with a \"pong\" message.",
         },
+        {
+            "name": "!sticker",
+            "description": "Send me an image/video with the command, or without media, and I will turn your words into a sticker",
+            "usage": "!sticker [parameter | words]",
+            "parameters": [
+                {
+                    "name": "parameter",
+                    "description": "full \\ cut \\ round \\ circular"
+                }
+            ],
+            "examples": [
+                "!sticker [parameter | words]",
+                "!sticker round"
+            ],
+            "response": "If there is media in the current or quoted message, a sticker will be sent based on the parameter.\nOtherwise, the bot will create a sticker from the words after the command.",
+            "notes": [
+                "If no parameter is specified when sending media, \"full\" will be the default."
+            ]
+        },
+        {
+            "name": "!youtube",
+            "description": "Send me a link to a YouTube song and I will send it back to you here",
+            "usage": "!youtube [parameter]",
+            "parameters": [
+                {
+                    "name": "parameter",
+                    "description": "Link to a YouTube video or text for search"
+                }
+            ],
+            "examples": [
+                "!youtube [parameter]",
+                "!youtube http"
+            ],
+            "response": "After processing, the bot will send the audio file of the video.",
+            "notes": [
+                "This command is intended for downloading songs only! Please do not send long videos.",
+                "There is a 10-minute limit for the video."
+            ]
+        },
+        {
+            "name": "!barkuni",
+            "description": "Get a random sticker from barkuni",
+            "usage": "!barkuni",
+            "examples": [
+                "!barkuni"
+            ],
+            "response": "The bot will reply with a random barkuni sticker.",
+            "notes": [
+                "Do you have barkuni stickers not found in the bot? Feel free to send them."
+            ]
+        },
+        {
+            "name": "!mute",
+            "description": "Mute the group for a certain amount of time",
+            "usage": "!mute [parameter]",
+            "parameters": [
+                {
+                    "name": "parameter",
+                    "description": "Number of minutes for muting"
+                }
+            ],
+            "examples": [
+                "!mute [parameter]",
+                "!mute 5"
+            ],
+            "response": "When an admin sends the command, the group will be muted immediately; otherwise, a vote will be sent, and after a certain number of votes, muting will be applied.",
+            "notes": [
+                "The number must be between 1 and 60.",
+                "The number of votes can be set using the \"!set\" command."
+            ]
+        },
+        {
+            "name": "!unmute",
+            "description": "Unmute the group",
+            "usage": "!unmute",
+            "examples": [
+                "!unmute"
+            ],
+            "response": "Opening the group for conversations.",
+            "notes": [
+                "This command is available for administrators only."
+            ]
+        },
+        {
+            "name": "!everyone",
+            "description": "Tag all group participants",
+            "usage": "!everyone",
+            "examples": [
+                "!everyone"
+            ],
+            "response": "The bot will tag all group participants",
+            "notes": [
+                "Command is available to group administrators only."
+            ]
+        },
+        {
+            "name": "!google",
+            "description": "Get a link for a Google search for the quoted message or text after the command",
+            "usage": "!google [parameter]",
+            "parameters": [
+                {
+                    "name": "parameter",
+                    "description": "Text to search on Google"
+                }
+            ],
+            "examples": [
+                "!google [parameter]",
+                "!google "
+            ],
+            "response": "When quoting a message, the search text will be from the quoted message; otherwise, the search text will be the text after the command.",
+            "notes": [
+                "When no search text is sent - a general link will be sent."
+            ]
+        }
     ]
 }
 
