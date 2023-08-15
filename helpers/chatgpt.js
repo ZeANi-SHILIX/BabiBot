@@ -3,7 +3,7 @@ import fs from "fs";
 import { convertOGGToMp3, isOGGFile } from "./convertor.js";
 import { sendMsgQueue, errorMsgQueue } from "../src/QueueObj.js";
 //import { downloadMediaMessage } from "@adiwajshing/baileys";
-import { getMsgType } from "./msgType.js";
+import { getMsgType, MsgType } from "./msgType.js";
 import MemoryStore from "../src/store.js";
 
 export default function ChatGPT(apiKey, useOfficial = true) {
@@ -209,6 +209,10 @@ ChatGPT.prototype.stt = async function (msg) {
 
   // get from store
   let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+  if (!quotedMsg){
+    sleep(1500);
+    quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+  }
   if (!quotedMsg)
     return sendMsgQueue(id, "חלה שגיאה בטעינת ההודעה המצוטטת")
 
@@ -313,3 +317,8 @@ async function test() {
 
 }
 //test();
+
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
