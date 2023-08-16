@@ -209,7 +209,7 @@ ChatGPT.prototype.stt = async function (msg) {
 
   // get from store
   let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-  if (!quotedMsg){
+  if (!quotedMsg) {
     sleep(1500);
     quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   }
@@ -228,7 +228,7 @@ ChatGPT.prototype.stt = async function (msg) {
 
     // download file
     /** @type {Buffer} */
-    let buffer = await downloadMediaMessage(msg, "buffer");
+    let buffer = await downloadMediaMessage(quotedMsg, "buffer");
     // save temp file
     fs.writeFileSync(filename, buffer);
     // send to stt
@@ -250,22 +250,19 @@ ChatGPT.prototype.stt = async function (msg) {
  * @param {string} filename
  */
 ChatGPT.prototype.whisper = async function (filename) {
-  try {
-    if (!isOGGFile(filename)) return "Not ogg";
 
-    let newFilename = await convertOGGToMp3(filename);
+  if (!isOGGFile(filename)) return "Not ogg";
 
-    const res = await this.openai.createTranscription(
-      fs.createReadStream(newFilename),
-      "whisper-1")
+  let newFilename = await convertOGGToMp3(filename);
 
-    fs.unlinkSync(newFilename);
+  const res = await this.openai.createTranscription(
+    fs.createReadStream(newFilename),
+    "whisper-1")
 
-    return res?.data?.text;
-  } catch (error) {
-    console.error(error)
-  }
-  return "Error";
+  fs.unlinkSync(newFilename);
+
+  return res?.data?.text;
+
 }
 
 // import dotenv from "dotenv";
