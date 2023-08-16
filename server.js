@@ -45,8 +45,8 @@ async function connectToWhatsApp() {
         logger: MemoryStore.logger,
         version,
         msgRetryCounterMap,
-        retryRequestDelayMs: 10,
-        defaultQueryTimeoutMs: undefined,
+        retryRequestDelayMs: 300,
+        //defaultQueryTimeoutMs: undefined,
         //syncFullHistory: true,
         getMessage: messageRetryHandler.messageRetryHandler
     })
@@ -68,7 +68,7 @@ async function connectToWhatsApp() {
                 setTimeout(() => {
                     connectToWhatsApp()
                 }, 5000)
-                console.log('reconnecting after 5 second')
+                console.log('reconnecting in 5 second...')
             }
             else if (shouldReconnect) {
                 connectToWhatsApp()
