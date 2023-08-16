@@ -210,7 +210,7 @@ ChatGPT.prototype.stt = async function (msg) {
   // get from store
   let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   if (!quotedMsg) {
-    sleep(1500);
+    sleep(3000);
     quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   }
   if (!quotedMsg)

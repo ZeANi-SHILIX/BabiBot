@@ -46,8 +46,8 @@ export default async function sendSticker(msg) {
     if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!quoted) {
-            console.log("retrying to get quoted message in 1 sec...")
-            await sleep(1000)
+            console.log("retrying to get quoted message in 2 sec...")
+            await sleep(2000)
             quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         }
         msg = quoted || msg;
