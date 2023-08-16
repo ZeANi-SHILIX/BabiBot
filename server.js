@@ -186,13 +186,9 @@ function canHandleMsg(key) {
     return false;
 }
 
-const console_info = console.info
-console.info = function() {
-    if(!require("util").format(...arguments).includes("SessionEntry")){
-        return console_info(...arguments)
-    }
-    return console_info("Updating SessionEntry")
-}
+const console_info = console.info;
+console.info = (...args) => args.join(" ").includes("SessionEntry") ? console_info("Updating SessionEntry",[]) : console_info(...args);
+
 
 
 
