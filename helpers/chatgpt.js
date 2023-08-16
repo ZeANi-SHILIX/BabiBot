@@ -2,7 +2,7 @@ import { Configuration, OpenAIApi } from "openai";
 import fs from "fs";
 import { convertOGGToMp3, isOGGFile } from "./convertor.js";
 import { sendMsgQueue, errorMsgQueue } from "../src/QueueObj.js";
-//import { downloadMediaMessage } from "@adiwajshing/baileys";
+import { downloadMediaMessage } from "@adiwajshing/baileys";
 import { getMsgType, MsgType } from "./msgType.js";
 import MemoryStore from "../src/store.js";
 
@@ -214,7 +214,7 @@ ChatGPT.prototype.stt = async function (msg) {
     quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   }
   if (!quotedMsg)
-    return sendMsgQueue(id, "חלה שגיאה בטעינת ההודעה המצוטטת")
+    return sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את ההודעה שוב")
 
   // get type
   let { type } = getMsgType(quotedMsg);
@@ -241,7 +241,7 @@ ChatGPT.prototype.stt = async function (msg) {
 
   }
   catch (error) {
-    errorMsgQueue("stt" + error)
+    errorMsgQueue("stt: " + error)
     return sendMsgQueue(id, "אופס משהו לא עבד טוב")
   }
 }
