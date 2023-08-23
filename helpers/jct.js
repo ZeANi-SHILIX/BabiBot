@@ -71,7 +71,7 @@ export async function getPhoneNumberOf(jid, textMsg) {
     let contactsToSend = [];
 
     for (let contact of contacts) {
-        if (!contact.phone) continue;
+        if (!(contact.phone || contact.whatsapp)) continue;
 
         if (arr_search.every(s => contact.name.includes(s) || contact.nickname.includes(s) || contact.mailName.includes(s))) {
             contactsToSend.push({ vcard: makeVcard(contact) })
