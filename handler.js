@@ -17,18 +17,15 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate from './custom_modules/Translate.js';
+import { getPhoneNumberOf, getMailOf } from './helpers/jct.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
 //const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
-const ssid = process.env.MAILLIST ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
-const url_begin = 'https://docs.google.com/spreadsheets/d/';
-const url_end = '/gviz/tq?&tqx=out:json';
-
 
 let commands = {
     "!פינג": "בדוק אם אני חי",
@@ -574,54 +571,17 @@ export default async function handleMessage(sock, msg, mongo) {
      * MAIL LIST
      * ##########*/
     if (textMsg.includes("מייל של ")) {
-        let mails = await getMails();
-
-        let searchText = textMsg.slice(textMsg.indexOf("מייל של") + 7)
-            .replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
-            .replace(/[?]/g, "")
-            .replace("בבקשהה", "").replace("בבקשה", "")
-            .replace("המרצה ", "").replace("מרצה ", "")
-            .replace("המתרגל ", "").replace("מתרגל ", "")
-            .trim();
-
-        if ((" " + searchText).includes(" דר "))
-            searchText = searchText.replace("דר ", "")
-
-        let arr_search = searchText.split(" ");
-        console.log(arr_search)
-
-        let returnText = "";
-        let countMails = 0;
-        for (let mail of mails) {
-            try {
-                let str = mail.c[0].v;
-                let nickname = mail.c[1]?.v || "";
-                //console.log(str, arr_search);
-
-                if (arr_search.every(s => str.includes(s) || nickname.includes(s))) {
-                    console.log(mail.c[0]);
-                    countMails += 1;
-                    returnText += str + "\n";
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        }
-        returnText = returnText.trim();
-
-        if (countMails > 0 && countMails < 8)
-            sendMsgQueue(id, returnText)
-
-        else if (msg.key.remoteJid.includes("s.whatsapp.net")) {
-            if (countMails === 0)
-                sendMsgQueue(id, `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
-                    + `(אם המייל חסר גם כאן ${url_begin}${ssid}\n - נשמח שתוסיף)`)
-            else
-                sendMsgQueue(id, `מצאתי ${countMails} מיילים עבור ${searchText}\n`
-                    + `נסה לחפש באופן ממוקד יותר`)
-        }
-        return;
+        return getMailOf(id, textMsg.slice(textMsg.indexOf("מייל של") + 7).trim())
     }
+
+    if (textMsg.includes("מספר של ")) {
+        return getPhoneNumberOf(id, textMsg.slice(textMsg.indexOf("מספר של") + 8).trim())
+    }
+
+    if (textMsg.includes("טלפון של ")) {
+        return getPhoneNumberOf(id, textMsg.slice(textMsg.indexOf("טלפון של") + 9).trim())
+    }
+
 
     // reply with plesure to "תודה"
     if (textMsg.includes("תודה")) {
@@ -869,20 +829,6 @@ export default async function handleMessage(sock, msg, mongo) {
     // await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
 
 
-}
-
-/**
- * 
- * @returns {Promise<[{"c":[{"v":"name: mail@gmail.com"},{"v":"nickname"} | undefined]}]>}
- */
-async function getMails() {
-    let url = `${url_begin}${ssid}${url_end}`;
-
-    let res = await fetch(url);
-    let data = await res.text();
-
-    let json = JSON.parse(data.substr(47).slice(0, -2));
-    return json.table.rows;
 }
 
 /**
