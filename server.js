@@ -336,5 +336,9 @@ app.listen(port, () => {
 
 process.on('uncaughtException', (err, origin) => {
     console.error("uncaughtException:", err);
-    errorMsgQueue(err);
+    try {
+        errorMsgQueue(err);
+    } catch (error) {
+        console.error("can't send error message to myself", error);
+    }
 });
