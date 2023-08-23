@@ -147,14 +147,12 @@ function makeVcard(contact = {}) {
 
     let phones = contact.phone.split(",").map(p => p.trim());
     for (let phone of phones) {
-        VCARD += `TEL;type=WORK;type=VOICE: ${phone || ""}\n`
+        if (phone) VCARD += `TEL;type=WORK;type=VOICE: ${phone}\n`
     }
 
-    if (contact.location) {
-        VCARD += `ADR;type=WORK:;;${contact.location};\n`
-    }
-    if (contact.mail)
-        VCARD += `EMAIL:${contact.mail || ""}\n`
+    if (contact.location) VCARD += `ADR;type=WORK:;;${contact.location};\n`
+
+    if (contact.mail) VCARD += `EMAIL:${contact.mail}\n`
 
     VCARD += `END:VCARD`
 
