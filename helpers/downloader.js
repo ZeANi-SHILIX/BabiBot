@@ -31,13 +31,13 @@ export async function DownloadV2(msg) {
 
     if (isIncludeLink(textMsg)) {
         let videoId = textMsg.split("v=")[1] || textMsg.split("youtu.be/")[1];
-        videoId = videoId.split(/[& ]/)[0];
+        videoId = videoId?.split(/[& ]/)[0];
 
         // if the link is not valid
         if (!videoId) {
             return sendMsgQueue(id, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
         }
-        TYQueue.size > 0 ? sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...") : null;
+        if (TYQueue.size > 0) sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...");
         return TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId))
     }
 
