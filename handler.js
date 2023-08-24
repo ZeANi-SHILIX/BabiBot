@@ -97,15 +97,35 @@ export default async function handleMessage(sock, msg, mongo) {
                     let sender = participant.find(p => msg.key.participant === p.id);
                     console.log("sender:", sender);
                     if (!sender?.admin) {
-                        // delete msg
-                        sendCustomMsgQueue(id, { delete: msg.key });
-                        // send warning (maybe will kick the user in the future)
-                        return sendCustomMsgQueue(id, { text: "הקישורים אסורים כאן" });
+                        // check if warned before
+                        if (GLOBAL.groupConfig[id]?.blockLinksUser?.includes(msg.key.participant)) {
+                            // delete msg
+                            sendCustomMsgQueue(id, { delete: msg.key });
+
+                            // remove user from warned list
+                            GLOBAL.groupConfig[id].blockLinksUser = GLOBAL.groupConfig[id].blockLinksUser.filter(u => u !== msg.key.participant);
+
+                            // kick user
+                            return sendCustomMsgQueue(id, { text: "זו כבר פעם שנייה שאתה שולח קישורים כאן!\nביי ביי" })
+                                // kick user
+                                .then(() => GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove"));
+                        }
+                        else {
+                            // create warned list if not exists
+                            GLOBAL.groupConfig[id].blockLinksUser ??= [];
+                            // add user to warned list
+                            GLOBAL.groupConfig[id].blockLinksUser.push(msg.key.participant);
+                            // delete msg
+                            sendCustomMsgQueue(id, { delete: msg.key });
+                            // send warning
+                            return sendCustomMsgQueue(id, { text: "*הקישורים אסורים כאן!*\nבפעם הבאה תהיה ענישה ותועף מהקבוצה" });
+                        }
                     }
                 }
                 else {
                     // if bot is not admin, unblock links
                     GLOBAL.groupConfig[id].blockLinks = false;
+                    GLOBAL.groupConfig[id].blockLinksUser = [];
                 }
             }
         }
@@ -162,12 +182,12 @@ export default async function handleMessage(sock, msg, mongo) {
         let video = YTinfo[num - 1];
         info.YTdeleteSearch(id);
 
-        TYQueue.size > 0 ? sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...") : null;
+        if (TYQueue.size > 0) sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...");
         return TYQueue.add(async () => await downloadTYoutubeVideo(id, video.id));
     }
     // set group config
     let stage = info.setSettingDialog(msg);
-    if (stage !== undefined)
+    if (stage !== undefined && !id.endsWith("@g.us"))
         switch (stage) {
             case -1:
                 return sock.sendMessage(id, { text: "חלה שגיאה, אנא נסה שנית" }).then(messageRetryHandler.addMessage);
@@ -297,7 +317,6 @@ export default async function handleMessage(sock, msg, mongo) {
         return KupaRashitSticker(msg, superuser);
 
 
-    // ## NEED FIX ##
     /**#########
      * TRANSLATE
      * ##########*/
