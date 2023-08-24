@@ -138,11 +138,12 @@ function makeVcard(contact = {}) {
     let VCARD = 'BEGIN:VCARD\n' // metadata of the contact card
         + `VERSION:3.0\n`
         + `FN:${contact.name || ""}\n`
+        + `N:${contact.name || ""}\n`
         + `ORG:JCT;\n`
 
-    if (contact.whatsapp) {
-        contact.whatsapp = contact.whatsapp.replace("0", "972").replace("-", "")
-        VCARD += `TEL;type=CELL;type=VOICE;waid=${contact.whatsapp}:+${contact.whatsapp}\n`
+    let whatsapps = contact.whatsapp.split(",").map(p => p.replace("0", "972").replace("-", "").trim());
+    for (let whatsapp of whatsapps) {
+        if (whatsapp) VCARD += `TEL;type=CELL;type=VOICE;waid=${whatsapp}:+${whatsapp}\n`
     }
 
     let phones = contact.phone.split(",").map(p => p.trim());
@@ -150,9 +151,9 @@ function makeVcard(contact = {}) {
         if (phone) VCARD += `TEL;type=WORK;type=VOICE: ${phone}\n`
     }
 
-    if (contact.location) VCARD += `ADR;type=WORK:;;${contact.location};\n`
-
     if (contact.mail) VCARD += `EMAIL:${contact.mail}\n`
+
+    if (contact.location) VCARD += `ADR;type=WORK:;;${contact.location};\n`
 
     VCARD += `END:VCARD`
 
