@@ -158,13 +158,17 @@ function makeVcard(contact = {}) {
         VCARD += `ADR;type=WORK:;;${address[0]}${address[1] ? ";" + address[1] : ""}${address[2] ? ";" + address[2] : ""};\n`
     }
 
-    if (contact.officeReceptionHours)
-        // "Reception" property is not exist, show as "other"
-        VCARD += `Reception:שעות קבלה במשרד: ${contact.officeReceptionHours}\n`
+    if (contact.officeReceptionHours || contact.phoneReceptionHours) {
 
-    if (contact.phoneReceptionHours)
-        // "Reception" property is not exist, show as "other"
-        VCARD += `Reception:שעות קבלה בטלפון: ${contact.phoneReceptionHours}\n`
+        VCARD += `TITLE:שעות קבלה: `
+        VCARD += contact.officeReceptionHours ? `במשרד: ${contact.officeReceptionHours} ` : ""
+        VCARD += contact.phoneReceptionHours ? `בטלפון: ${contact.phoneReceptionHours} ` : ""
+        VCARD += `\n`
+
+        // "Reception" property is not exist, show as "other" in android
+        VCARD += contact.officeReceptionHours ? `Reception:שעות קבלה במשרד: ${contact.officeReceptionHours} \n` : ""
+        VCARD += contact.phoneReceptionHours ? `Reception:שעות קבלה בטלפון: ${contact.phoneReceptionHours} \n` : ""
+    }
 
     VCARD += `END:VCARD`
 
