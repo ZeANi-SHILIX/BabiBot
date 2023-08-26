@@ -114,11 +114,11 @@ async function getMails() {
             mailName: mail.c[0]?.v.split(":")[0]?.trim() || "",
             nickname: mail.c[1]?.v || "",
             phone: mail.c[2]?.v || "",
-            name: mail.c[3]?.v || "",
-            officeReceptionHours: mail.c[4]?.v || "",
-            phoneReceptionHours: mail.c[5]?.v || "",
-            location: mail.c[6]?.v || "",
-            whatsapp: mail.c[7]?.v || "",
+            whatsapp: mail.c[3]?.v || "",
+            name: mail.c[4]?.v || "",
+            officeReceptionHours: mail.c[5]?.v || "",
+            phoneReceptionHours: mail.c[6]?.v || "",
+            location: mail.c[7]?.v || "",
         }
         contacts.push(contact);
     }
@@ -153,7 +153,18 @@ function makeVcard(contact = {}) {
 
     if (contact.mail) VCARD += `EMAIL:${contact.mail}\n`
 
-    if (contact.location) VCARD += `ADR;type=WORK:;;${contact.location};\n`
+    if (contact.location) {
+        let address = contact.location.split(",").map(p => p.trim());
+        VCARD += `ADR;type=WORK:;;${address[0]}${address[1] ? ";" + address[1] : ""}${address[2] ? ";" + address[2] : ""};\n`
+    }
+
+    if (contact.officeReceptionHours)
+        // "Reception" property is not exist, show as "other"
+        VCARD += `Reception:שעות קבלה במשרד: ${contact.officeReceptionHours}\n`
+
+    if (contact.phoneReceptionHours)
+        // "Reception" property is not exist, show as "other"
+        VCARD += `Reception:שעות קבלה בטלפון: ${contact.phoneReceptionHours}\n`
 
     VCARD += `END:VCARD`
 
