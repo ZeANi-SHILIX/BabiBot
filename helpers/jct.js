@@ -74,7 +74,7 @@ export async function getPhoneNumberOf(jid, textMsg) {
         if (!(contact.phone || contact.whatsapp)) continue;
 
         if (arr_search.every(s => contact.name.includes(s) || contact.nickname.includes(s) || contact.mailName.includes(s))) {
-            contactsToSend.push({ vcard: makeVcard(contact) })
+            contactsToSend.push({ vcard: await makeVcard(contact) })
         }
     }
 
@@ -133,7 +133,7 @@ async function getMails() {
  *          phoneReceptionHours: string, location: string, whatsapp: string}} contact 
  * @returns 
  */
-function makeVcard(contact = {}) {
+async function makeVcard(contact = {}) {
 
     let VCARD = 'BEGIN:VCARD\n' // metadata of the contact card
         + `VERSION:3.0\n`
@@ -141,14 +141,23 @@ function makeVcard(contact = {}) {
         + `N:${contact.name || ""}\n`
         + `ORG:JCT;\n`
 
-    let whatsapps = contact.whatsapp.split(",").map(p => p.replace("0", "972").replace("-", "").trim());
+    let whatsapps = contact.whatsapp.split(",").map(p => p.replace("0", "972").replace(/-/g, "").trim());
     for (let whatsapp of whatsapps) {
         if (whatsapp) VCARD += `TEL;type=CELL;type=VOICE;waid=${whatsapp}:+${whatsapp}\n`
     }
 
-    let phones = contact.phone.split(",").map(p => p.trim());
+    let phones = contact.phone.split(",").map(p => p.replace("0", "972").replace(/-/g, "").trim());
+
+    // Not Working...
+    // Info at: https://whiskeysockets.github.io/Baileys/#md:misc
+    // for (let phone of phones) {
+    //     let [result] = await GLOBAL.sock.onWhatsApp(phone)
+    //     if (result.exists) VCARD += `TEL;type=CELL;type=VOICE;waid=${phone}:+${phone}\n`
+    //     else VCARD += `TEL;type=CELL;type=VOICE:+${phone}\n`
+    // }
+
     for (let phone of phones) {
-        if (phone) VCARD += `TEL;type=WORK;type=VOICE: ${phone}\n`
+        if (phone) VCARD += `TEL;type=WORK;type=VOICE:+${phone}\n`
     }
 
     if (contact.mail) VCARD += `EMAIL:${contact.mail}\n`
