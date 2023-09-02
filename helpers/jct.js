@@ -40,8 +40,8 @@ export async function getMailOf(jid, textMsg) {
 
     else if (jid.includes("s.whatsapp.net")) {
         if (contactsToSend.length === 0)
-            sendMsgQueue(jid, `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות\n`
-                //+ `(אם המייל חסר גם כאן ${url_begin}${ssid}\nנשמח אם תשלח לנו ונוסיף אותו)`
+            sendMsgQueue(jid, `לא מצאתי את המייל המבוקש... נסה לחפש שוב במילים אחרות`
+                //+ `\n(אם המייל חסר גם כאן ${url_begin}${ssid}\nנשמח אם תשלח לנו ונוסיף אותו)`
             )
         else
             sendMsgQueue(jid, `מצאתי ${contactsToSend.length} מיילים עבור ${searchText}\n`
