@@ -102,13 +102,13 @@ export default async function handleMessage(sock, msg, mongo) {
                             // delete msg
                             sendCustomMsgQueue(id, { delete: msg.key });
 
-                            // remove user from warned list
-                            GLOBAL.groupConfig[id].blockLinksUser = GLOBAL.groupConfig[id].blockLinksUser.filter(u => u !== msg.key.participant);
+                            // // remove user from warned list
+                            // GLOBAL.groupConfig[id].blockLinksUser = GLOBAL.groupConfig[id].blockLinksUser.filter(u => u !== msg.key.participant);
 
                             // kick user
-                            return sendCustomMsgQueue(id, { text: "זו כבר פעם שנייה שאתה שולח קישורים כאן!\nביי ביי" })
+                            return sendCustomMsgQueue(id, { text: "זו לא פעם ראשונה שאתה שולח קישורים כאן!\nביי ביי" })
                                 // kick user
-                                .then(() => GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove"));
+                                .then(msgQueue.add(async () => await GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove")));
                         }
                         else {
                             // create warned list if not exists
