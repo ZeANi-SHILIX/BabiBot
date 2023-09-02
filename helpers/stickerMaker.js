@@ -46,10 +46,17 @@ export default async function sendSticker(msg) {
     if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!quoted) {
-            console.log("retrying to get quoted message in 2 sec...")
-            await sleep(2000)
+            console.log("retrying to get quoted message in 1.5 sec...")
+            await sleep(1500)
             quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         }
+        if (!quoted){
+            console.log("trying to get quoted message for more 1 sec...")
+            await sleep(1000)
+            quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        }
+        if (!quoted) return sendMsgQueue(id, "אופס... לא מצאתי את ההודעה שציטטת\nנסה לצטט שוב בעוד כמה שניות")
+
         msg = quoted || msg;
     }
 
@@ -61,6 +68,12 @@ export default async function sendSticker(msg) {
         sendCustomMsgQueue(id, { react: { text: '⏳', key: originalMsg.key } });
         return makeMediaSticker(msg, type)
             .then(() => sendCustomMsgQueue(id, { react: { text: '✅', key: originalMsg.key } }))
+            .catch((err) => {
+                console.log(err)
+                errorMsgQueue(err)
+                sendCustomMsgQueue(id, { react: { text: '❌', key: originalMsg.key } })
+                sendMsgQueue(id, "אופס! משהו השתבש בעת יצירת הסטיקר")
+            })
     }
 
     // text message
