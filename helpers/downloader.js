@@ -31,14 +31,14 @@ export async function DownloadV2(msg) {
 
     if (isIncludeLink(textMsg)) {
         let videoId = textMsg.split("v=")[1] || textMsg.split("youtu.be/")[1];
-        videoId = videoId?.split(/[& ]/)[0];
+        videoId = videoId?.split(/[& ]/)[0].split("?")[0];
 
         // if the link is not valid
         if (!videoId) {
             return sendMsgQueue(id, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
         }
         if (TYQueue.size > 0) sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...");
-        return TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId))
+        return TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId));
     }
 
     // search for the video
@@ -84,7 +84,14 @@ export async function DownloadV2(msg) {
 export async function downloadTYoutubeVideo(jid, videoId) {
 
     // get video details
-    let videoDetails = await ytdl.getInfo(videoId);
+    let videoDetails = await ytdl.getInfo(videoId)
+        .catch((err) => {
+            console.error("error: ", err);
+            sendMsgQueue(jid, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
+            errorMsgQueue(err)
+        });
+    if (!videoDetails) return;
+
     let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
     let title = videoDetails.videoDetails.title;
 
