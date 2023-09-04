@@ -26,6 +26,95 @@ const sticker_types = {
     "מעוגל": StickerTypes.ROUNDED
 }
 
+const parameters = {
+    colors: [
+        {
+            nameEN: 'white',
+            nameHE: 'לבן',
+            hex: '#ffffff'
+        },
+        {
+            nameEN: 'black',
+            nameHE: 'שחור',
+            hex: '#000000'
+        },
+        {
+            nameEN: 'red',
+            nameHE: 'אדום',
+            hex: '#ff0000'
+        },
+        {
+            nameEN: 'green',
+            nameHE: 'ירוק',
+            hex: '#00ff00'
+        },
+        {
+            nameEN: 'blue',
+            nameHE: 'כחול',
+            hex: '#0000ff'
+        },
+        {
+            nameEN: 'yellow',
+            nameHE: 'צהוב',
+            hex: '#ffff00'
+        },
+        {
+            nameEN: 'orange',
+            nameHE: 'כתום',
+            hex: '#ffa500'
+        },
+        {
+            nameEN: 'purple',
+            nameHE: 'סגול',
+            hex: '#800080'
+        },
+        {
+            nameEN: 'pink',
+            nameHE: 'ורוד',
+            hex: '#ffc0cb'
+        },
+        {
+            nameEN: 'brown',
+            nameHE: 'חום',
+            hex: '#a52a2a'
+        },
+        {
+            nameEN: 'gray',
+            nameHE: 'אפור',
+            hex: '#808080'
+        },
+        {
+            nameEN: 'gold',
+            nameHE: 'זהב',
+            hex: '#ffd700'
+        },
+        {
+            nameEN: 'silver',
+            nameHE: 'כסף',
+            hex: '#c0c0c0'
+        },
+        {
+            nameEN: 'bronze',
+            nameHE: 'נחושת',
+            hex: '#cd7f32'
+        }
+    ],
+
+    // not working yet
+    fonts: [
+        {
+            nameEN: 'Alef',
+            nameHE: 'אלף',
+            path: './src/Gveret Levin Alef Alef Alef.ttf'
+        },
+        {
+            nameEN: 'Alef Bold',
+            nameHE: 'אלף מודגש',
+            path: './src/Gveret Levin Alef Alef Alef Bold.ttf'
+        },
+    ]
+}
+
 /**
  * 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
@@ -50,7 +139,7 @@ export default async function sendSticker(msg) {
             await sleep(1500)
             quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         }
-        if (!quoted){
+        if (!quoted) {
             console.log("trying to get quoted message for more 1 sec...")
             await sleep(1000)
             quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
@@ -78,17 +167,27 @@ export default async function sendSticker(msg) {
 
     // text message
     else if (messageType === MsgType.TEXT) {
-        let msgToSticker = hasQuoted ? msg.message?.conversation || msg.message?.extendedTextMessage?.text : textMsg;
+        let quotedText = hasQuoted ? msg.message?.conversation || msg.message?.extendedTextMessage?.text : "";
 
-        // quoted message have text or the text is not empty
-        if (msgToSticker)
-            return makeTextSticker(id, msgToSticker);
+        // quoted message have text or the text after the command is not empty
+        if (quotedText || textMsg)
+            return makeTextSticker(id, quotedText, textMsg);
     }
     sendMsgQueue(id, "אופס! לא מצאתי תוכן להפוך לסטיקר...\nיש לצטט הודעה או לכתוב טקסט לאחר הפקודה")
 }
 
-async function makeTextSticker(id, text) {
-    const sticker = new Sticker(textToSticker2(text), {
+async function makeTextSticker(id, quotedText, commandText) {
+    let [params_not_formatted, textWithoutParameters] = getParameters(commandText);
+    const params = formatParameters(params_not_formatted);
+
+    console.log("parameters:", params)
+    console.log("text without parameters:", textWithoutParameters)
+    console.log("quoted text:", quotedText)
+
+    // when the user wrote "-help" or "-עזרה"
+    if (params.help) return sendMsgQueue(id, helpMessage());
+
+    const sticker = new Sticker(textToSticker(quotedText || textWithoutParameters, params), {
         pack: '🎉',
         author: 'BabiBot',
         categories: ['🤩', '🎉'],
@@ -134,17 +233,25 @@ async function makeMediaSticker(msg, type) {
     sendCustomMsgQueue(id, stickerMsg)
 }
 
-function textToSticker2(text) {
+/**
+ * 
+ * @param {String} text 
+ * @param {{[param: string] : string}} parameters 
+ * @returns 
+ */
+function textToSticker(text, parameters) {
     text = putEnterBetweenEmojis(text);
     text = doubleEnter(text);
-    console.log(text);
+    console.log("Making sticker with text:", text)
+    console.log("parameters:", parameters)
+
     return new UltimateTextToImage(text + " ", {
         width: 350,
         maxWidth: 400,
         maxHeight: 400,
         fontFamily: "Alef",
         // white color
-        fontColor: "#ffffff",
+        fontColor: parameters.color || "#ffffff", // default white
         fontSize: 150,
         //fontWeight: "bold",
         minFontSize: 25,
@@ -198,4 +305,97 @@ function doubleEnter(text) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * extract the parameters from the command text
+ * @param {String} commandText
+ * @returns {[{[param: string] : string}, string]}
+ */
+function getParameters(commandText) {
+    let arr = commandText.split(" ").filter(i => i);
+
+    let parameters = {};
+    let textWithoutParameters = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i].startsWith('-')) {
+            let key = arr[i].slice(1);
+            let value = arr[i + 1]; // can be undefined
+
+            if (value && !value.startsWith('-')) {
+                parameters[key] = value;
+                i++;
+            }
+
+            if (key === 'help' || key === 'עזרה') { // || key === 'h'
+                parameters.help = "asking for help :)";
+                break;
+            }
+        }
+        else {
+            textWithoutParameters.push(arr[i]);
+        }
+    }
+
+    return [parameters, textWithoutParameters.join(" ") || ""];
+}
+
+/**
+ * format the parameters to the right format
+ * @param {{[param: string] : string}} params
+ * @returns {{[param: string] : string}}
+ */
+function formatParameters(params) {
+    let formatted = {};
+
+    let keys = Object.keys(params);
+
+    for (let param of keys) {
+        let key = param.toLowerCase();
+        let value = params[param]?.toLowerCase();
+
+        if (key === 'color' || key === "צבע") { // || key === 'c'
+            let color = parameters.colors.find(i => i.nameEN === value || i.nameHE === value);
+            if (color) formatted.color = color.hex;
+        }
+
+        else if (key === 'font' || key === "גופן") { // || key === 'f' 
+            let font = parameters.fonts.find(i => i.nameEN === value || i.nameHE === value);
+            if (font) formatted.font = font.path;
+        }
+
+        else if (key === 'help' || key === 'עזרה') { // || key === 'h'
+            formatted.help = "asking for help :)";
+            break;
+        }
+    }
+
+    return formatted;
+}
+
+function helpMessage() {
+    let help = "איך יוצרים סטיקר?\n";
+    help += "אופציה ראשונה: \nשליחת הודעת מדיה (תמונה, סרטון קצר או סטיקר) בצירוף הפקודה, או בציטוט הודעה כזו עם הפקודה\n";
+    help += "אופציה שניה: \nיצירת סטיקר מטקסט, על ידי ציטוט הודעה עם הפקודה, או שליחת הפקודה עם הטקסט הרצוי\n\n";
+
+    help += "פרמטרים לפקודת המדיה:\n";
+    help += "לאחר הפקודה יש להוסיף את סוג הסטיקר:\n";
+    help += "ריבוע, עיגול / עגול, מעוגל\n\n";
+
+    help += "\nפרמטרים לפקודת הטקסט:\n";
+    help += "(יש לכתוב את הפרמטרים בצורה הבאה: -פרמטר ערך)\n"
+    help += "צבע / color\n";
+    //help += "גופן / font\n\n"; // not working yet
+
+    help += "לדוגמא:\n";
+    help += "!סטיקר -צבע כחול אין על באבי בוט!!\n\n";
+    //help += "!סטיקר -צבע אדום -גופן אלף\n\n";
+
+    help += "צבעים:\n";
+    parameters.colors.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
+    // help += "\nגופנים:\n";
+    // parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
+
+    return help;
 }
