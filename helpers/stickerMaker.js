@@ -181,12 +181,12 @@ async function makeTextSticker(id, quotedText, commandText) {
     console.log("text without parameters:", textWithoutParameters)
     console.log("quoted text:", quotedText)
 
-    // no text to make sticker
-    if (!(quotedText || textWithoutParameters)) 
-        return sendMsgQueue(id, "אופס! לא נמצא טקסט ליצירת סטיקר\nלקבלת עזרה כתוב !סטיקר -עזרה")
-
     // when the user wrote "-help" or "-עזרה"
     if (params.help) return sendMsgQueue(id, helpMessage());
+
+    // no text to make sticker
+    if (!(quotedText || textWithoutParameters))
+        return sendMsgQueue(id, "אופס! לא נמצא טקסט ליצירת סטיקר\nלקבלת עזרה כתוב !סטיקר -עזרה")
 
     const sticker = new Sticker(textToSticker(quotedText || textWithoutParameters, params), {
         pack: '🎉',
