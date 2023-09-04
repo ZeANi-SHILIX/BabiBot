@@ -169,11 +169,8 @@ export default async function sendSticker(msg) {
     else if (messageType === MsgType.TEXT) {
         let quotedText = hasQuoted ? msg.message?.conversation || msg.message?.extendedTextMessage?.text : "";
 
-        // quoted message have text or the text after the command is not empty
-        if (quotedText || textMsg)
-            return makeTextSticker(id, quotedText, textMsg);
+        return makeTextSticker(id, quotedText, textMsg);
     }
-    sendMsgQueue(id, "אופס! לא מצאתי תוכן להפוך לסטיקר...\nיש לצטט הודעה או לכתוב טקסט לאחר הפקודה")
 }
 
 async function makeTextSticker(id, quotedText, commandText) {
@@ -183,6 +180,10 @@ async function makeTextSticker(id, quotedText, commandText) {
     console.log("parameters:", params)
     console.log("text without parameters:", textWithoutParameters)
     console.log("quoted text:", quotedText)
+
+    // no text to make sticker
+    if (!(quotedText || textWithoutParameters)) 
+        return sendMsgQueue(id, "אופס! לא נמצא טקסט ליצירת סטיקר\nלקבלת עזרה כתוב !סטיקר -עזרה")
 
     // when the user wrote "-help" or "-עזרה"
     if (params.help) return sendMsgQueue(id, helpMessage());
@@ -375,15 +376,19 @@ function formatParameters(params) {
 }
 
 function helpMessage() {
-    let help = "איך יוצרים סטיקר?\n";
-    help += "אופציה ראשונה: \nשליחת הודעת מדיה (תמונה, סרטון קצר או סטיקר) בצירוף הפקודה, או בציטוט הודעה כזו עם הפקודה\n";
-    help += "אופציה שניה: \nיצירת סטיקר מטקסט, על ידי ציטוט הודעה עם הפקודה, או שליחת הפקודה עם הטקסט הרצוי\n\n";
+    let help = "*איך יוצרים סטיקר?*\n";
+    help += "*אופציה ראשונה:* \nשליחת הודעת מדיה (תמונה, סרטון קצר או סטיקר) בצירוף הפקודה, או בציטוט הודעת מדיה עם הפקודה\n\n";
+    help += "*אופציה שניה:* \nיצירת סטיקר מטקסט, על ידי ציטוט הודעה עם הפקודה, או שליחת הפקודה עם הטקסט הרצוי\n\n";
 
-    help += "פרמטרים לפקודת המדיה:\n";
+    help += "----------------------------------\n\n";
+
+    help += "*פרמטרים לפקודת המדיה:*\n";
     help += "לאחר הפקודה יש להוסיף את סוג הסטיקר:\n";
     help += "ריבוע, עיגול / עגול, מעוגל\n\n";
+    help += "*לדוגמא:*\n";
+    help += "!סטיקר ריבוע\n";
 
-    help += "\nפרמטרים לפקודת הטקסט:\n";
+    help += "*פרמטרים לפקודת הטקסט:*\n";
     help += "(יש לכתוב את הפרמטרים בצורה הבאה: -פרמטר ערך)\n"
     help += "צבע / color\n";
     //help += "גופן / font\n\n"; // not working yet
@@ -392,7 +397,7 @@ function helpMessage() {
     help += "!סטיקר -צבע כחול אין על באבי בוט!!\n\n";
     //help += "!סטיקר -צבע אדום -גופן אלף\n\n";
 
-    help += "צבעים:\n";
+    help += "*צבעים:*\n";
     parameters.colors.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
     // help += "\nגופנים:\n";
     // parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
