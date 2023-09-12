@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import { Canvas } from 'canvas'; // fix on windows (canvas needs to imported first)
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } from '@adiwajshing/baileys';
 import pkg from '@adiwajshing/baileys/WAProto/index.js';
 const { proto } = pkg;
