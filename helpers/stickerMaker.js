@@ -8,6 +8,7 @@ import { MsgType, getMsgType } from './msgType.js';
 import MemoryStore from '../src/store.js';
 import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 import Jimp from "jimp";
+import sharp from 'sharp';
 
 const parameters = {
     colors: [
@@ -214,7 +215,7 @@ async function makeMediaSticker(msg, commandText) {
     const id = msg.key.remoteJid;
     let buffer;
     try {
-        buffer = await downloadMediaMessage(msg, 'buffer')
+        buffer = await downloadMediaMessage(msg, 'buffer');
     } catch (error) {
         errorMsgQueue(error)
         return sendMsgQueue(id, "אופס... נראה שההודעה שציטטת אינה תקינה")
@@ -234,7 +235,11 @@ async function makeMediaSticker(msg, commandText) {
     // buffer type
     const bufferType = msg.message?.imageMessage?.mimetype || msg.message?.videoMessage?.mimetype || msg.message?.stickerMessage?.mimetype;
     // can write text only on image
-    if (bufferType === 'image/jpeg' || bufferType === 'image/png') {
+    if (bufferType === 'image/jpeg' || bufferType === 'image/png' || bufferType === 'image/webp') {
+        if (bufferType === 'image/webp') {
+            buffer = await sharp(buffer).jpeg().toBuffer();
+        }
+
         let text = msg.message?.imageMessage?.caption || "";
 
         // if the user wrote the command with text - remove the text
@@ -348,9 +353,14 @@ function getParameters(commandText) {
             let key = word.slice(1);
             let value = arr[i + 1]; // next word, can be undefined
 
-            if (value && !value.startsWith('-')) {
+            if (value && !value?.startsWith('-')) {
                 parameters[key] = value;
                 i++;
+            }
+
+            if (key === 'help' || key === 'עזרה') {
+                parameters.help = "asking for help :)";
+                break;
             }
         }
         else {
@@ -358,7 +368,7 @@ function getParameters(commandText) {
             textWithoutParameters.push(arr[i]);
         }
     }
-
+    console.log("parameters:", parameters)
     return [formatParameters(parameters), textWithoutParameters.join(" ") || ""];
 }
 
@@ -417,18 +427,23 @@ function helpMessage() {
     help += "\n*פרמטרים לפקודת הטקסט:*\n";
     help += "(יש לכתוב את הפרמטרים בצורה הבאה: -פרמטר ערך)\n"
     help += "צבע / color\n";
-    help += "גופן / font\n\n"; // not working yet
+    help += "גופן / font\n";
+    help += "צורה / shape\n\n";
 
     help += "*לדוגמא:*\n";
-    help += "!סטיקר -צבע כחול אין על באבי בוט!!\n\n";
-    help += "!סטיקר -צבע אדום -גופן אלף\n\n";
+    help += "!סטיקר -צבע כחול אין על באבי בוט!!\n";
+    help += "!סטיקר -צבע אדום -גופן אלף\n";
+    help += "!סטיקר -צורה עיגול\n\n";
 
     help += "*צבעים:*\n";
     parameters.colors.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
+    
     help += "\nגופנים:\n";
     parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
-    // add shape
+    help += "\nצורות:\n";
+    help += "(ייתכן שהטקסט לא יהיה קריא בצורות מסויימות)\n";
+    parameters.shape.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
     return help;
 }
