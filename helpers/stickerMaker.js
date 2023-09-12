@@ -1,30 +1,13 @@
-import dotenv from 'dotenv';
-dotenv.config();
 import { downloadMediaMessage } from '@adiwajshing/baileys';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-
-const { UltimateTextToImage, registerFont } = process.env.NODE_ENV === 'production'
-    ? await import("ultimate-text-to-image")
-    : { UltimateTextToImage: null, registerFont: null };
-
-registerFont?.('./src/Gveret Levin Alef Alef Alef.ttf', { family: 'Alef' });
-
+import { UltimateTextToImage, registerFont, getCanvasImage } from "ultimate-text-to-image";
 import { MsgType, getMsgType } from './msgType.js';
 import MemoryStore from '../src/store.js';
 import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
-
-
-const sticker_types = {
-    "חתוך": StickerTypes.CROPPED,
-    "ריבוע": StickerTypes.CROPPED,
-    "מרובע": StickerTypes.CROPPED,
-    "עיגול": StickerTypes.CIRCLE,
-    "עגול": StickerTypes.CIRCLE,
-    "מעוגל": StickerTypes.ROUNDED
-}
+import Jimp from "jimp";
 
 const parameters = {
     colors: [
@@ -99,21 +82,41 @@ const parameters = {
             hex: '#cd7f32'
         }
     ],
-
-    // not working yet
     fonts: [
         {
             nameEN: 'Alef',
             nameHE: 'אלף',
             path: './src/Gveret Levin Alef Alef Alef.ttf'
+        }
+    ],
+    shape: [
+        {
+            nameEN: 'circle',
+            nameHE: 'עיגול',
+            nameHE2: 'עגול',
+            type: StickerTypes.CIRCLE
+        },
+
+        {
+            nameEN: 'rounded',
+            nameHE: 'מעוגל',
+            type: StickerTypes.ROUNDED
         },
         {
-            nameEN: 'Alef Bold',
-            nameHE: 'אלף מודגש',
-            path: './src/Gveret Levin Alef Alef Alef Bold.ttf'
+            nameEN: 'cropped',
+            nameHE: 'מרובע',
+            nameHE2: 'ריבוע',
+            type: StickerTypes.CROPPED
         },
+        {
+            nameEN: 'full',
+            nameHE: 'מלא',
+            type: StickerTypes.FULL
+        }
     ]
 }
+
+registerFonts();
 
 /**
  * 
@@ -127,11 +130,11 @@ export default async function sendSticker(msg) {
         || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     // remove the command
     textMsg = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
-    // get the sticker type
-    const type = sticker_types[textMsg] || StickerTypes.FULL;
 
     // quoted message
     let hasQuoted = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+    // get the quoted message
+    // if can't get it - send to the user a message
     if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!quoted) {
@@ -146,16 +149,24 @@ export default async function sendSticker(msg) {
         }
         if (!quoted) return sendMsgQueue(id, "אופס... לא מצאתי את ההודעה שציטטת\nנסה לצטט שוב בעוד כמה שניות")
 
-        msg = quoted || msg;
+        msg = quoted;
     }
 
     // get the message type
     const messageType = getMsgType(msg).type;
 
+    // text message
+    if (messageType === MsgType.TEXT) {
+        let quotedText = hasQuoted ? msg.message?.conversation || msg.message?.extendedTextMessage?.text : "";
+        return makeTextSticker(id, quotedText, textMsg);
+    }
+
     // media message
-    if (messageType === MsgType.IMAGE || messageType === MsgType.VIDEO || messageType === MsgType.STICKER) {
+    else if (messageType === MsgType.IMAGE || messageType === MsgType.VIDEO || messageType === MsgType.STICKER) {
+        // send reaction (it can take a while)
         sendCustomMsgQueue(id, { react: { text: '⏳', key: originalMsg.key } });
-        return makeMediaSticker(msg, type)
+
+        makeMediaSticker(msg, textMsg)
             .then(() => sendCustomMsgQueue(id, { react: { text: '✅', key: originalMsg.key } }))
             .catch((err) => {
                 console.log(err)
@@ -165,19 +176,12 @@ export default async function sendSticker(msg) {
             })
     }
 
-    // text message
-    else if (messageType === MsgType.TEXT) {
-        let quotedText = hasQuoted ? msg.message?.conversation || msg.message?.extendedTextMessage?.text : "";
 
-        return makeTextSticker(id, quotedText, textMsg);
-    }
 }
 
 async function makeTextSticker(id, quotedText, commandText) {
-    let [params_not_formatted, textWithoutParameters] = getParameters(commandText);
-    const params = formatParameters(params_not_formatted);
+    const [params, textWithoutParameters] = getParameters(commandText);
 
-    console.log("parameters:", params)
     console.log("text without parameters:", textWithoutParameters)
     console.log("quoted text:", quotedText)
 
@@ -203,9 +207,10 @@ async function makeTextSticker(id, quotedText, commandText) {
 /**
  * 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
- *  @param {StickerTypes} type 
+ * @param {String} commandText
+ * 
  */
-async function makeMediaSticker(msg, type) {
+async function makeMediaSticker(msg, commandText) {
     const id = msg.key.remoteJid;
     let buffer;
     try {
@@ -218,19 +223,31 @@ async function makeMediaSticker(msg, type) {
     // not bigger than 1.5MB
     const size = buffer.byteLength / 1024 / 1024
     if (size > 1.5) return sendMsgQueue(id, "אופס... הקובץ גדול מדי, נסה לשלוח קובץ קטן יותר")
-
+    // set quality according to the size
     const quality = 20 - Math.floor(size * 10);
+
     console.log("making sticker...")
+
+    // get parameters from the text
+    const [params, textWithoutParameters] = getParameters(commandText);
+
+    let text = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+
+    // buffer type
+    const bufferType = msg.message?.imageMessage?.mimetype || msg.message?.videoMessage?.mimetype || msg.message?.stickerMessage?.mimetype;
+    // can write text only on image
+    if (bufferType === 'image/jpeg' || bufferType === 'image/png') {
+        buffer = await textOnImage(textWithoutParameters || text, buffer, params)
+    }
     const sticker = new Sticker(buffer, {
         pack: '🎉',
         author: 'BabiBot',
-        type: type,
-        categories: ['🤩', '🎉'],
+        type: params.shape || StickerTypes.FULL,
         quality: quality
     });
     const stickerMsg = await sticker.toMessage();
 
-    console.log("adding sticker message to queue, type:", type)
+    console.log("adding sticker message to queue, type:", params.shape || StickerTypes.FULL)
     sendCustomMsgQueue(id, stickerMsg)
 }
 
@@ -244,15 +261,14 @@ function textToSticker(text, parameters) {
     text = putEnterBetweenEmojis(text);
     text = doubleEnter(text);
     console.log("Making sticker with text:", text)
-    console.log("parameters:", parameters)
 
     return new UltimateTextToImage(text + " ", {
         width: 350,
         maxWidth: 400,
         maxHeight: 400,
-        fontFamily: "Alef",
+        fontFamily: parameters?.font, // (|| "Alef",  // default Alef)
         // white color
-        fontColor: parameters.color || "#ffffff", // default white
+        fontColor: parameters?.color || "#ffffff", // default white
         fontSize: 150,
         //fontWeight: "bold",
         minFontSize: 25,
@@ -320,26 +336,27 @@ function getParameters(commandText) {
     let textWithoutParameters = [];
 
     for (let i = 0; i < arr.length; i++) {
-        if (arr[i].startsWith('-')) {
-            let key = arr[i].slice(1);
-            let value = arr[i + 1]; // can be undefined
+        let word = arr[i]?.toLowerCase();
+
+        // fix when the user wrote "-param" with enter
+        word = word.startsWith('\n') ? word.slice(1) : word;
+
+        if (word.startsWith('-')) {
+            let key = word.slice(1);
+            let value = arr[i + 1]; // next word, can be undefined
 
             if (value && !value.startsWith('-')) {
                 parameters[key] = value;
                 i++;
             }
-
-            if (key === 'help' || key === 'עזרה') { // || key === 'h'
-                parameters.help = "asking for help :)";
-                break;
-            }
         }
         else {
+            // if the word is not a parameter, push the original word
             textWithoutParameters.push(arr[i]);
         }
     }
 
-    return [parameters, textWithoutParameters.join(" ") || ""];
+    return [formatParameters(parameters), textWithoutParameters.join(" ") || ""];
 }
 
 /**
@@ -356,22 +373,28 @@ function formatParameters(params) {
         let key = param.toLowerCase();
         let value = params[param]?.toLowerCase();
 
-        if (key === 'color' || key === "צבע") { // || key === 'c'
+        if (key === 'help' || key === 'עזרה') { // || key === 'h'
+            formatted.help = "asking for help :)";
+            break;
+        }
+
+        else if (key === 'color' || key === "צבע") { // || key === 'c'
             let color = parameters.colors.find(i => i.nameEN === value || i.nameHE === value);
             if (color) formatted.color = color.hex;
         }
 
         else if (key === 'font' || key === "גופן") { // || key === 'f' 
             let font = parameters.fonts.find(i => i.nameEN === value || i.nameHE === value);
-            if (font) formatted.font = font.path;
+            if (font) formatted.font = font.nameEN;
         }
 
-        else if (key === 'help' || key === 'עזרה') { // || key === 'h'
-            formatted.help = "asking for help :)";
-            break;
+        else if (key === 'shape' || key === "צורה") {
+            let shape = parameters.shape.find(i => i.nameEN === value || i.nameHE === value || i.nameHE2 === value);
+            if (shape) formatted.shape = shape.type;
         }
+
     }
-
+    console.log("formatted parameters:", formatted)
     return formatted;
 }
 
@@ -391,16 +414,66 @@ function helpMessage() {
     help += "\n*פרמטרים לפקודת הטקסט:*\n";
     help += "(יש לכתוב את הפרמטרים בצורה הבאה: -פרמטר ערך)\n"
     help += "צבע / color\n";
-    //help += "גופן / font\n\n"; // not working yet
+    help += "גופן / font\n\n"; // not working yet
 
     help += "*לדוגמא:*\n";
     help += "!סטיקר -צבע כחול אין על באבי בוט!!\n\n";
-    //help += "!סטיקר -צבע אדום -גופן אלף\n\n";
+    help += "!סטיקר -צבע אדום -גופן אלף\n\n";
 
     help += "*צבעים:*\n";
     parameters.colors.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
-    // help += "\nגופנים:\n";
-    // parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
+    help += "\nגופנים:\n";
+    parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
+
+    // add shape
 
     return help;
+}
+
+/**
+ * 
+ * @param {string} text 
+ * @param {Buffer} buffer 
+ * @param {{[param: string] : string}} params 
+ */
+async function textOnImage(text, buffer, params) {
+    // resize the image, so the text will be readable
+    const bufferResized = await Jimp.read(buffer)
+        .then(img => {
+            img.getHeight() > img.getWidth()
+                ? img.resize(Jimp.AUTO, 400)
+                : img.resize(400, Jimp.AUTO);
+            return img.getBufferAsync(Jimp.MIME_JPEG);
+        })
+        .catch(err => {
+            console.log(err)
+            return buffer;
+        });
+
+    const canvasImage = await getCanvasImage({ buffer: bufferResized });
+
+    // use various way to draw the image
+    return new UltimateTextToImage(text, {
+        width: canvasImage.width,
+        height: canvasImage.height,
+        fontSize: 55,
+        fontStyle: "bold",
+        fontFamily: params?.font , //|| "Alef"
+        strokeSize: 3,
+        fontColor: params?.color || "#ffffff",   // default white
+        strokeColor: "#000000",                 // black
+        backgroundColor: "#00000000",           // transparent
+        align: "center",
+        valign: "bottom",
+        margin: 10,
+        images: [{ canvasImage: canvasImage, layer: 0, repeat: "fit" }],
+    })
+        .render()
+        .toBuffer("image/png");
+}
+
+function registerFonts() {
+    for (let font of parameters.fonts) {
+        registerFont(font.path, { family: font.nameEN })
+    }
 }
