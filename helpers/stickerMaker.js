@@ -230,14 +230,16 @@ async function makeMediaSticker(msg, commandText) {
 
     // get parameters from the text
     const [params, textWithoutParameters] = getParameters(commandText);
-
-    let text = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
-    text = text.replace('!sticker', '').replace('!סטיקר', '').trim();
-
+    
     // buffer type
     const bufferType = msg.message?.imageMessage?.mimetype || msg.message?.videoMessage?.mimetype || msg.message?.stickerMessage?.mimetype;
     // can write text only on image
     if (bufferType === 'image/jpeg' || bufferType === 'image/png') {
+        let text = msg.message?.imageMessage?.caption || "";
+
+        // if the user wrote the command with text - remove the text
+        if (!textWithoutParameters && (text.includes('!sticker') || text.includes('!סטיקר'))) text = "";
+
         buffer = await textOnImage(textWithoutParameters || text, buffer, params)
     }
     const sticker = new Sticker(buffer, {
