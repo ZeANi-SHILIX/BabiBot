@@ -232,6 +232,7 @@ async function makeMediaSticker(msg, commandText) {
     const [params, textWithoutParameters] = getParameters(commandText);
 
     let text = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+    text = text.replace('!sticker', '').replace('!סטיקר', '').trim();
 
     // buffer type
     const bufferType = msg.message?.imageMessage?.mimetype || msg.message?.videoMessage?.mimetype || msg.message?.stickerMessage?.mimetype;
