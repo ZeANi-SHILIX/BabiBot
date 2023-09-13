@@ -88,6 +88,11 @@ const parameters = {
             nameEN: 'Alef',
             nameHE: 'אלף',
             path: './src/Gveret Levin Alef Alef Alef.ttf'
+        },
+        {
+            nameEN: 'Normal',
+            nameHE: 'רגיל',
+            path: null
         }
     ],
     shape: [
@@ -392,17 +397,17 @@ function formatParameters(params) {
         }
 
         else if (key === 'color' || key === "צבע") { // || key === 'c'
-            let color = parameters.colors.find(i => i.nameEN === value || i.nameHE === value);
+            let color = parameters.colors.find(i => i.nameEN.toLowerCase() === value || i.nameHE === value);
             if (color) formatted.color = color.hex;
         }
 
         else if (key === 'font' || key === "גופן") { // || key === 'f' 
-            let font = parameters.fonts.find(i => i.nameEN === value || i.nameHE === value);
+            let font = parameters.fonts.find(i => i.nameEN.toLowerCase() === value || i.nameHE === value);
             if (font) formatted.font = font.nameEN;
         }
 
         else if (key === 'shape' || key === "צורה") {
-            let shape = parameters.shape.find(i => i.nameEN === value || i.nameHE === value || i.nameHE2 === value);
+            let shape = parameters.shape.find(i => i.nameEN.toLowerCase() === value || i.nameHE === value || i.nameHE2 === value);
             if (shape) formatted.shape = shape.type;
         }
 
@@ -412,27 +417,22 @@ function formatParameters(params) {
 }
 
 function helpMessage() {
-    let help = "*איך יוצרים סטיקר?*\n";
+    let help = "*איך יוצרים סטיקר?*\n\n";
     help += "*אופציה ראשונה:* \nשליחת הודעת מדיה (תמונה, סרטון קצר או סטיקר) בצירוף הפקודה, או בציטוט הודעת מדיה עם הפקודה\n\n";
     help += "*אופציה שניה:* \nיצירת סטיקר מטקסט, על ידי ציטוט הודעה עם הפקודה, או שליחת הפקודה עם הטקסט הרצוי\n\n";
 
-    help += "----------------------------------\n\n";
+    help += "----------------------------------\n\n";;
 
-    help += "*פרמטרים לפקודת המדיה:*\n";
-    help += "לאחר הפקודה יש להוסיף את סוג הסטיקר:\n";
-    help += "ריבוע, עיגול / עגול, מעוגל\n";
-    help += "*לדוגמא:*\n";
-    help += "!סטיקר ריבוע\n";
-
-    help += "\n*פרמטרים לפקודת הטקסט:*\n";
+    help += "*פרמטרים:*\n";
     help += "(יש לכתוב את הפרמטרים בצורה הבאה: -פרמטר ערך)\n"
     help += "צבע / color\n";
     help += "גופן / font\n";
-    help += "צורה / shape\n\n";
+    help += "צורה / shape\n";
+    help += "(ייתכן שהטקסט לא יהיה קריא בצורות מסויימות)\n\n";
 
     help += "*לדוגמא:*\n";
     help += "!סטיקר -צבע כחול אין על באבי בוט!!\n";
-    help += "!סטיקר -צבע אדום -גופן אלף\n";
+    help += "!סטיקר -צבע אדום -גופן אלף באבי בוט הכי בעולם!\n";
     help += "!סטיקר -צורה עיגול\n\n";
 
     help += "*צבעים:*\n";
@@ -442,9 +442,9 @@ function helpMessage() {
     parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
     help += "\nצורות:\n";
-    help += "(ייתכן שהטקסט לא יהיה קריא בצורות מסויימות)\n";
     parameters.shape.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
+    help += "שימוש מהנה :)";
     return help;
 }
 
@@ -476,9 +476,9 @@ async function textOnImage(text, buffer, params) {
         height: canvasImage.height,
         fontSize: 55,
         fontStyle: "bold",
-        fontFamily: params?.font , //|| "Alef"
+        fontFamily: params?.font ?? "Alef",     // default Alef
         strokeSize: 3,
-        fontColor: params?.color || "#ffffff",   // default white
+        fontColor: params?.color ?? "#ffffff",  // default white
         strokeColor: "#000000",                 // black
         backgroundColor: "#00000000",           // transparent
         align: "center",
@@ -492,6 +492,6 @@ async function textOnImage(text, buffer, params) {
 
 function registerFonts() {
     for (let font of parameters.fonts) {
-        registerFont(font.path, { family: font.nameEN })
+        if (font.path) registerFont(font.path, { family: font.nameEN })
     }
 }
