@@ -1,9 +1,12 @@
+import fetch from 'node-fetch';
+import { sendCustomMsgQueue, sendMsgQueue } from '../src/QueueObj.js';
+import dotenv from 'dotenv';
+dotenv.config();
+
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 const ssid = process.env.MAILLIST || "";
 
-import fetch from 'node-fetch';
-import { sendCustomMsgQueue, sendMsgQueue } from '../src/QueueObj.js';
 
 /**
  * 
