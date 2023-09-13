@@ -1,6 +1,8 @@
 import PQueue from 'p-queue';
 import { GLOBAL } from './storeMsg.js';
 import messageRetryHandler from './retryHandler.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 /** queue of handlers promises.
  * 
