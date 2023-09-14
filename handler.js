@@ -17,7 +17,7 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 //import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate from './custom_modules/Translate.js';
-import { getPhoneNumberOf, getMailOf, getCoursesBlockedBy, getWhatThisCourseBlocks } from './helpers/jct/jct.js';
+import { getPhoneNumberOf, getMailOf, getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses } from './helpers/jct/jct.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -610,7 +610,7 @@ export default async function handleMessage(sock, msg, mongo) {
     // this course is blocking ... (the following courses)
     if (textMsg.includes("חסום על ידי ") || textMsg.includes("חסומים על ידי ")) {
         let query = textMsg.includes("חסום על ידי ") ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11): textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
-        return getBlockedBy(id, query.replace(/\?/g, "").trim())
+        return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
     }
 
     // get all courses
