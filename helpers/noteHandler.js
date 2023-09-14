@@ -1,9 +1,9 @@
 import { downloadMediaMessage } from '@adiwajshing/baileys';
 import messageRetryHandler from "../src/retryHandler.js";
 
-import savedNotes from '../src/notes.js';
-import mediaNote from '../src/mediaNote.js';
-import allNotes from '../src/AllNotes.js';
+import savedNotes from '../src/schemas/notes.js';
+import mediaNote from '../src/schemas/mediaNote.js';
+import allNotes from '../src/schemas/AllNotes.js';
 
 import { MsgType, getMsgType } from './msgType.js';
 import { GLOBAL } from '../src/storeMsg.js'; // TODO: "store" change to memory store

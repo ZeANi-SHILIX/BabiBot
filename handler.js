@@ -14,10 +14,10 @@ import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
-import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
+//import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate from './custom_modules/Translate.js';
-import { getPhoneNumberOf, getMailOf } from './helpers/jct.js';
+import { getPhoneNumberOf, getMailOf, getBlockedBy, getBlocks } from './helpers/jct/jct.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -587,7 +587,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     /**##########
-     * MAIL LIST
+     *    JCT
      * ##########*/
     if (textMsg.includes("מייל של ")) {
         return getMailOf(id, textMsg.slice(textMsg.indexOf("מייל של") + 7).trim())
@@ -599,6 +599,10 @@ export default async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.includes("טלפון של ")) {
         return getPhoneNumberOf(id, textMsg.slice(textMsg.indexOf("טלפון של") + 9).trim())
+    }
+
+    if (textMsg.includes("חוסם את ")) {
+        return getBlocks(id, textMsg.slice(textMsg.indexOf("חוסם את") + 8).trim())
     }
 
 

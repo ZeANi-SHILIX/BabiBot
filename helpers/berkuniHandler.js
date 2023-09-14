@@ -1,6 +1,6 @@
 import MemoryStore from '../src/store.js'
 import { downloadMediaMessage } from '@adiwajshing/baileys';
-import barkuniDB from '../src/barkuni.js';
+import barkuniDB from '../src/schemas/barkuni.js';
 import { Sticker } from 'wa-sticker-formatter';
 import { sendCustomMsgQueue, errorMsgQueue } from '../src/QueueObj.js';
 

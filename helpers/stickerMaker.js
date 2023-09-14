@@ -267,10 +267,10 @@ async function makeMediaSticker(msg, commandText) {
 /**
  * 
  * @param {String} text 
- * @param {{[param: string] : string}} parameters 
+ * @param {{[param: string] : string}} params 
  * @returns 
  */
-function textToSticker(text, parameters) {
+function textToSticker(text, params) {
     text = putEnterBetweenEmojis(text);
     text = doubleEnter(text);
     console.log("Making sticker with text:", text)
@@ -279,9 +279,9 @@ function textToSticker(text, parameters) {
         width: 350,
         maxWidth: 400,
         maxHeight: 400,
-        fontFamily: parameters?.font, // (|| "Alef",  // default Alef)
+        fontFamily: params?.font ?? "Alef",     // default Alef
         // white color
-        fontColor: parameters?.color || "#ffffff", // default white
+        fontColor: params?.color || "#ffffff", // default white
         fontSize: 150,
         //fontWeight: "bold",
         minFontSize: 25,

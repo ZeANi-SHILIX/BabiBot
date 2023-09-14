@@ -1,6 +1,6 @@
 import MemoryStore from '../src/store.js'
 import { downloadMediaMessage } from '@adiwajshing/baileys';
-import kupaRashit from '../src/kupaRashit.js';
+import kupaRashit from '../src/schemas/kupaRashit.js';
 import { Sticker } from 'wa-sticker-formatter';
 import { sendCustomMsgQueue, errorMsgQueue } from '../src/QueueObj.js';
 

@@ -2,11 +2,11 @@ import mongoose from "mongoose";
 mongoose.set('strictQuery', false);
 
 /** set model by schema  */
-import apiKeys from './src/apikeys.js';
-import savedNotes from './src/notes.js';
-import barkuni from './src/barkuni.js';
-import kupaRashit from "./src/kupaRashit.js";
-import mediaNote from './src/mediaNote.js';
+import apiKeys from './src/schemas/apikeys.js';
+import savedNotes from './src/schemas/notes.js';
+import barkuni from './src/schemas/barkuni.js';
+import kupaRashit from "./src/schemas/kupaRashit.js";
+import mediaNote from './src/schemas/mediaNote.js';
 
 
 export default class Mongo {

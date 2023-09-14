@@ -1,12 +1,36 @@
 import fetch from 'node-fetch';
-import { sendCustomMsgQueue, sendMsgQueue } from '../src/QueueObj.js';
+import { sendCustomMsgQueue, sendMsgQueue } from '../../src/QueueObj.js';
 import dotenv from 'dotenv';
 dotenv.config();
+import didYouMean from 'didyoumean2';
+import fs from 'fs';
 
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 const ssid = process.env.MAILLIST || "";
 
+//import blocks_courses from "./blocks_courses.json";
+/**
+ * 
+ * @param {string} jid
+ * @param {string} query
+*/
+export async function getBlockedBy(jid, query) {
+    const are_blocked_by = fs.existsSync("./are_blocked_by.json") ? JSON.parse(fs.readFileSync("./are_blocked_by.json")) : {};
+    let result = didYouMean(query, Object.keys(are_blocked_by));
+    
+    if (result) {
+        let courses = are_blocked_by[result];
+        if (courses.length === 0) {
+            return sendMsgQueue(jid, "אין קורסים שחוסמים את " + result);
+        }
+        
+        return sendMsgQueue(jid, `הקורסים שחוסמים את ${result} הם:\n${courses.join("\n")}`)
+    }
+    else {
+        sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
+    }
+}
 
 /**
  * 
