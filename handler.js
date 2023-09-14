@@ -17,7 +17,7 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 //import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate from './custom_modules/Translate.js';
-import { getPhoneNumberOf, getMailOf, getBlockedBy, getBlocks } from './helpers/jct/jct.js';
+import { getPhoneNumberOf, getMailOf, getCoursesBlockedBy, getWhatThisCourseBlocks } from './helpers/jct/jct.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -601,12 +601,21 @@ export default async function handleMessage(sock, msg, mongo) {
         return getPhoneNumberOf(id, textMsg.slice(textMsg.indexOf("טלפון של") + 9).trim())
     }
 
-    if (textMsg.includes("חוסם את ")) {
-        return getBlocks(id, textMsg.slice(textMsg.indexOf("חוסם את") + 8).replace(/\?/g, "").trim())
+    // you can't do this course because ... (the missing courses)
+    if (textMsg.includes("חוסם את ") || textMsg.includes("קדם של ")) {
+        let query = textMsg.includes("חוסם את ") ? textMsg.slice(textMsg.indexOf("חוסם את") + 8): textMsg.slice(textMsg.indexOf("קדם של") + 7);
+        return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
     }
 
-    if (textMsg.includes("חסום על ידי ")) {
-        return getBlockedBy(id, textMsg.slice(textMsg.indexOf("חסום על ידי") + 11).replace(/\?/g, "").trim())
+    // this course is blocking ... (the following courses)
+    if (textMsg.includes("חסום על ידי ") || textMsg.includes("חסומים על ידי ")) {
+        let query = textMsg.includes("חסום על ידי ") ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11): textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
+        return getBlockedBy(id, query.replace(/\?/g, "").trim())
+    }
+
+    // get all courses
+    if (textMsg.startsWith("כל הקורסים")) {
+        return getAllCourses(id)
     }
 
 

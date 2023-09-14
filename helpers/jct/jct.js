@@ -3,12 +3,13 @@ import { sendCustomMsgQueue, sendMsgQueue } from '../../src/QueueObj.js';
 import dotenv from 'dotenv';
 dotenv.config();
 import didYouMean from 'didyoumean2';
-import fs from 'fs';
 
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 const ssid = process.env.MAILLIST || "";
 
+
+// source: https://github.com/ItamarShalev/semester_organizer/tree/main/algorithms/generated_data
 import blocks_courses from "./blocks_courses.json" assert { type: "json" };
 import are_blocked_by from "./are_blocked_by.json" assert { type: "json" };
 /**
@@ -16,7 +17,7 @@ import are_blocked_by from "./are_blocked_by.json" assert { type: "json" };
  * @param {string} jid
  * @param {string} query
 */
-export async function getBlockedBy(jid, query) {
+export async function getCoursesBlockedBy(jid, query) {
     let result = didYouMean(query, Object.keys(are_blocked_by));
     
     if (result) {
@@ -25,7 +26,7 @@ export async function getBlockedBy(jid, query) {
             return sendMsgQueue(jid, "אין קורסים שחוסמים את " + result);
         }
         
-        return sendMsgQueue(jid, `הקורסים שחוסמים את ${result} הם:\n${courses.join("\n")}`)
+        return sendMsgQueue(jid, `*הקורסים שחוסמים את ${result} הם:*\n${courses.join("\n")}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
@@ -37,7 +38,7 @@ export async function getBlockedBy(jid, query) {
  * @param {string} jid
  * @param {string} query
 */
-export async function getBlocks(jid, query) {
+export async function getWhatThisCourseBlocks(jid, query) {
     let result = didYouMean(query, Object.keys(blocks_courses));
     
     if (result) {
@@ -46,11 +47,16 @@ export async function getBlocks(jid, query) {
             return sendMsgQueue(jid, result + " לא חוסם אף קורס");
         }
 
-        return sendMsgQueue(jid, `${result} חוסם את הקורסים הבאים:\n${courses.join("\n")}`)
+        return sendMsgQueue(jid, `*${result} חוסם את הקורסים הבאים:*\n${courses.join("\n")}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
     }
+}
+
+export function getAllCourses(jid){
+    let courses = Object.keys(blocks_courses);
+    sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${courses.join("\n")}`)
 }
 
 /**
