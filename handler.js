@@ -602,7 +602,11 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("חוסם את ")) {
-        return getBlocks(id, textMsg.slice(textMsg.indexOf("חוסם את") + 8).trim())
+        return getBlocks(id, textMsg.slice(textMsg.indexOf("חוסם את") + 8).replace(/\?/g, "").trim())
+    }
+
+    if (textMsg.includes("חסום על ידי ")) {
+        return getBlockedBy(id, textMsg.slice(textMsg.indexOf("חסום על ידי") + 11).replace(/\?/g, "").trim())
     }
 
 

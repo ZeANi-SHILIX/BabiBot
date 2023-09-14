@@ -9,14 +9,14 @@ const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 const ssid = process.env.MAILLIST || "";
 
-//import blocks_courses from "./blocks_courses.json";
+import blocks_courses from "./blocks_courses.json" assert { type: "json" };
+import are_blocked_by from "./are_blocked_by.json" assert { type: "json" };
 /**
  * 
  * @param {string} jid
  * @param {string} query
 */
 export async function getBlockedBy(jid, query) {
-    const are_blocked_by = fs.existsSync("./are_blocked_by.json") ? JSON.parse(fs.readFileSync("./are_blocked_by.json")) : {};
     let result = didYouMean(query, Object.keys(are_blocked_by));
     
     if (result) {
@@ -26,6 +26,27 @@ export async function getBlockedBy(jid, query) {
         }
         
         return sendMsgQueue(jid, `הקורסים שחוסמים את ${result} הם:\n${courses.join("\n")}`)
+    }
+    else {
+        sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
+    }
+}
+
+/**
+ * 
+ * @param {string} jid
+ * @param {string} query
+*/
+export async function getBlocks(jid, query) {
+    let result = didYouMean(query, Object.keys(blocks_courses));
+    
+    if (result) {
+        let courses = blocks_courses[result];
+        if (courses.length === 0) {
+            return sendMsgQueue(jid, result + " לא חוסם אף קורס");
+        }
+
+        return sendMsgQueue(jid, `${result} חוסם את הקורסים הבאים:\n${courses.join("\n")}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
