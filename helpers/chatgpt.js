@@ -198,14 +198,68 @@ ChatGPT.prototype.tldr = async function (msgs) {
   return res.trim();
 };
 
+ChatGPT.prototype.tldr4 = async function (msgs) {
+  let prompt = "";
+  for (const msg of msgs) {
+    let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text
+      || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
+    let pushName = msg.key.fromMe ? "You" : msg.pushName
+      || msg.key.remoteJid.slice(0, msg.key.remoteJid.indexOf("@")) || "Unknown";
+
+    if (!text)
+      continue;
+
+    prompt += `${pushName}: ${text}\n`;
+  }
+  prompt += "Summarize the conversation as briefly as possible but with as much detail as possible without missing any important information\n";
+  prompt += "the summary should be in hebrew if the conversation is in hebrew";
+
+  let messages = [
+    systemMessage,
+    {
+      "role": "user",
+      "content": prompt
+    }
+  ];
+  const response = await this.openai.createChatCompletion({
+    model: "gpt-4",
+    messages,
+    max_tokens: 256,
+  });
+
+  console.log(response.data);
+  let res = response.data?.choices?.[0]?.message?.content || "";
+  return res;
+};
+
+/**
+ * summarize the text using GPT-3.5 (400 tokens)
+ * @param {string} text 
+ */
+ChatGPT.prototype.summery = async function (text) {
+  text += "\nSummarize the message as briefly as possible, with important details\n";
+  text += "the summary should be in hebrew if the text is in hebrew";
+
+  const response = await this.openai.createCompletion({
+    model: "gpt-3.5-turbo-instruct",
+    prompt: text,
+    temperature: 0.5,
+    max_tokens: 400
+  });
+  console.log(response.data);
+  return response.data?.choices?.[0]?.text || "";
+}
+
 /**
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  */
 ChatGPT.prototype.stt = async function (msg) {
   const id = msg.key.remoteJid;
   // has quoted message?
-  if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage)
-    return sendMsgQueue(id, "יש לצטט הודעה")
+  if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
+    sendMsgQueue(id, "יש לצטט הודעה")
+    return
+  }
 
   // get from store
   let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
@@ -213,14 +267,18 @@ ChatGPT.prototype.stt = async function (msg) {
     sleep(3000);
     quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   }
-  if (!quotedMsg)
-    return sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את ההודעה שוב")
+  if (!quotedMsg) {
+    sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את ההודעה שוב")
+    return
+  }
 
   // get type
   let { type } = getMsgType(quotedMsg);
 
-  if (type !== MsgType.AUDIO)
-    return sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
+  if (type !== MsgType.AUDIO) {
+    sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
+    return
+  }
 
 
   try {
@@ -237,12 +295,11 @@ ChatGPT.prototype.stt = async function (msg) {
     fs.unlinkSync(filename);
 
     // send the result
-    return sendMsgQueue(id, res)
-
+    return res;
   }
   catch (error) {
     errorMsgQueue("stt: " + error)
-    return sendMsgQueue(id, "אופס משהו לא עבד טוב")
+    sendMsgQueue(id, "אופס משהו לא עבד טוב")
   }
 }
 

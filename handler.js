@@ -108,7 +108,13 @@ export default async function handleMessage(sock, msg, mongo) {
                             // kick user
                             return sendCustomMsgQueue(id, { text: "זו לא פעם ראשונה שאתה שולח קישורים כאן!\nביי ביי" })
                                 // kick user
-                                .then(msgQueue.add(async () => await GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove")));
+                                .then(msgQueue.add(async () => {
+                                    GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove").then(info => {
+                                        console.log("kick user:", info);
+                                    }).catch(err => {
+                                        console.error("failed to kick user:", err);
+                                    });
+                                }));
                         }
                         else {
                             // create warned list if not exists
@@ -602,14 +608,19 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     // you can't do this course because ... (the missing courses)
-    if (textMsg.includes("חוסם את ") || textMsg.includes("קדם של ")) {
-        let query = textMsg.includes("חוסם את ") ? textMsg.slice(textMsg.indexOf("חוסם את") + 8): textMsg.slice(textMsg.indexOf("קדם של") + 7);
+    if (textMsg.includes("חוסם את ") || textMsg.includes("חוסמים את ") || textMsg.includes("קדם של ")) {
+        let query = textMsg.includes("חוסם את ")
+            ? textMsg.slice(textMsg.indexOf("חוסם את") + 8)
+            : textMsg.includes("חוסמים את ")
+                ? textMsg.slice(textMsg.indexOf("חוסמים את") + 10)
+                : textMsg.slice(textMsg.indexOf("קדם של") + 7);
+
         return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
     }
 
     // this course is blocking ... (the following courses)
     if (textMsg.includes("חסום על ידי ") || textMsg.includes("חסומים על ידי ")) {
-        let query = textMsg.includes("חסום על ידי ") ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11): textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
+        let query = textMsg.includes("חסום על ידי ") ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11) : textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
         return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
     }
 
@@ -711,7 +722,7 @@ export default async function handleMessage(sock, msg, mongo) {
                 if (history.length < 1)
                     return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
 
-                let res = await chatGPT.tldr(history)
+                let res = await chatGPT.tldr4(history)
                 return sendMsgQueue(id, res);
             })
 
@@ -723,6 +734,50 @@ export default async function handleMessage(sock, msg, mongo) {
 
     }
 
+    if (textMsg.includes("!summery") || textMsg.includes("!סכם")) {
+        if (!GLOBAL.canAskGPT(id))
+            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
+                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
+                // + "https://www.buymeacoffee.com/BabiBot\n"
+                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
+            );
+
+        if (!msg.message?.extendedTextMessage?.contextInfo?.quotedMessage)
+            return sendMsgQueue(id, "יש להגיב על הודעה עם הטקסט שברצונך לסכם");
+
+        // get qouted message
+        let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        if (!quotedMsg)
+            return sendMsgQueue(id, "לא מצאתי את ההודעה שהגבת עליה, נסה להגיב על ההודעה שוב בעוד כמה שניות");
+
+        let { type } = getMsgType(quotedMsg);
+
+        // when audio, convert to text and summery
+        if (type == MsgType.AUDIO) {
+            return chatGPT.stt(msg).then(res => {
+                if (!res) return sendMsgQueue(id, "לא הצלחתי להמיר את הקול לטקסט");
+                
+                chatGPT.summery(res).then(res => {
+                    if (!res) sendMsgQueue(id, "לא הצלחתי לסכם את ההודעה");
+                    else sendMsgQueue(id, res);
+                })
+            })
+        }
+
+        // if not text, skip
+        if (type !== MsgType.TEXT) return sendMsgQueue(id, "לא מצאתי טקסט בהודעה שהגבת עליה");
+
+        let text = quotedMsg.message?.conversation || quotedMsg.message?.extendedTextMessage?.text;
+        if (!text) return sendMsgQueue(id, "לא מצאתי טקסט בהודעה שהגבת עליה");
+
+        if (text.length < 250) return sendMsgQueue(id, "הטקסט קצר מדי, אל תתעצל ותקרא אותו בעצמך 😜");
+
+        return chatGPT.summery(text).then(res => {
+            if (!res) sendMsgQueue(id, "לא הצלחתי לסכם את ההודעה");
+            else sendMsgQueue(id, res);
+        })
+    }
+
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
         if (!GLOBAL.canAskGPT(id))
@@ -732,7 +787,11 @@ export default async function handleMessage(sock, msg, mongo) {
                 // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
             );
 
-        return chatGPT.stt(msg)
+        return chatGPT.stt(msg).then(res => {
+            if (!res) sendMsgQueue(id, "לא הצלחתי להמיר את הקול לטקסט");
+            else sendMsgQueue(id, res);
+        })
+
     }
 
     /**#######
