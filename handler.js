@@ -67,7 +67,6 @@ export default async function handleMessage(sock, msg, mongo) {
     // send ACK
     sock.readMessages([msg.key])
 
-    // print to console
     let groupName;
     if (id.endsWith("@g.us")) {
         groupName = GLOBAL.groupConfig?.[id]?.name;
@@ -137,7 +136,9 @@ export default async function handleMessage(sock, msg, mongo) {
         }
     }
 
-    let bodymsg = caption || textMsg || msg.message?.reactionMessage?.text;
+    // print to console
+    let { type, mime } = getMsgType(msg);
+    let bodymsg = caption || textMsg || msg.message?.reactionMessage?.text || type;
     groupName
         ? console.log(`${msg.pushName} in (${groupName}) - ${bodymsg}`)
         : console.log(`${msg.pushName} (private) - ${bodymsg}`)
@@ -750,8 +751,6 @@ export default async function handleMessage(sock, msg, mongo) {
         if (!quotedMsg)
             return sendMsgQueue(id, "לא מצאתי את ההודעה שהגבת עליה, נסה להגיב על ההודעה שוב בעוד כמה שניות");
 
-        let { type } = getMsgType(quotedMsg);
-
         // when audio, convert to text and summery
         if (type == MsgType.AUDIO) {
             return chatGPT.stt(msg).then(res => {
@@ -874,7 +873,7 @@ export default async function handleMessage(sock, msg, mongo) {
      * INFO
      ############*/
 
-    const { type } = getMsgType(msg);
+    //const { type } = getMsgType(msg);
     if (type === MsgType.AUDIO) {
         return chatGPT.stt(msg);
         // // get file
