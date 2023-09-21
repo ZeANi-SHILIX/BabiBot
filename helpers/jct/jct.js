@@ -1,8 +1,9 @@
-import fetch from 'node-fetch';
-import { sendCustomMsgQueue, sendMsgQueue } from '../../src/QueueObj.js';
 import dotenv from 'dotenv';
 dotenv.config();
+import { errorMsgQueue, sendCustomMsgQueue, sendMsgQueue } from '../../src/QueueObj.js';
 import didYouMean from 'didyoumean2';
+import fetch from 'node-fetch';
+import fs from 'fs';
 
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
@@ -19,13 +20,13 @@ import are_blocked_by from "./are_blocked_by.json" assert { type: "json" };
 */
 export async function getCoursesBlockedBy(jid, query) {
     let result = didYouMean(query, Object.keys(are_blocked_by));
-    
+
     if (result) {
         let courses = are_blocked_by[result];
         if (courses.length === 0) {
             return sendMsgQueue(jid, "אין קורסים שחוסמים את " + result);
         }
-        
+
         return sendMsgQueue(jid, `*הקורסים שחוסמים את ${result} הם:*\n${courses.join("\n")}`)
     }
     else {
@@ -40,7 +41,7 @@ export async function getCoursesBlockedBy(jid, query) {
 */
 export async function getWhatThisCourseBlocks(jid, query) {
     let result = didYouMean(query, Object.keys(blocks_courses));
-    
+
     if (result) {
         let courses = blocks_courses[result];
         if (courses.length === 0) {
@@ -54,7 +55,7 @@ export async function getWhatThisCourseBlocks(jid, query) {
     }
 }
 
-export function getAllCourses(jid){
+export function getAllCourses(jid) {
     let courses = Object.keys(blocks_courses);
     sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${courses.join("\n")}`)
 }
@@ -66,7 +67,8 @@ export function getAllCourses(jid){
  * @returns 
  */
 export async function getMailOf(jid, textMsg) {
-    let contacts = await getMails();
+    let contacts = loadMailsListFromFile();
+    if (contacts.length === 0) contacts = await getMails();
 
     let searchText = textMsg.replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
         .replace(/[?]/g, "")
@@ -108,7 +110,8 @@ export async function getMailOf(jid, textMsg) {
  * @param {string} textMsg 
  */
 export async function getPhoneNumberOf(jid, textMsg) {
-    let contacts = await getMails();
+    let contacts = loadMailsListFromFile();
+    if (contacts.length === 0) contacts = await getMails();
 
     let searchText = textMsg.replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
         .replace(/[?]/g, "")
@@ -178,6 +181,10 @@ async function getMails() {
         contacts.push(contact);
     }
     contacts.shift(); // remove the first row
+
+    // save to file
+    fs.writeFileSync("./helpers/jct/mails.json", JSON.stringify(contacts, null, 2));
+    
     return contacts;
 }
 
@@ -237,4 +244,25 @@ async function makeVcard(contact = {}) {
     VCARD += `END:VCARD`
 
     return VCARD;
+}
+
+export async function saveMailsListToFile() {
+    let contacts = await getMails();
+    fs.writeFileSync("./helpers/jct/mails.json", JSON.stringify(contacts, null, 2));
+}
+
+/**
+ * @returns {{mail: string, mailName: string, nickname: string,
+ *         phone: string, name: string, officeReceptionHours: string,
+ *        phoneReceptionHours: string, location: string, whatsapp: string}[]}
+ */
+function loadMailsListFromFile() {
+    let contacts = [];
+    try {
+        contacts = JSON.parse(fs.readFileSync("./helpers/jct/mails.json"));
+    } catch (error) {
+        console.log(error)
+        errorMsgQueue("Error loading mails list from file")
+    }
+    return contacts;
 }

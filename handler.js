@@ -17,7 +17,10 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 //import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate from './custom_modules/Translate.js';
-import { getPhoneNumberOf, getMailOf, getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses } from './helpers/jct/jct.js';
+import {
+    getPhoneNumberOf, getMailOf, saveMailsListToFile,
+    getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses
+} from './helpers/jct/jct.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -608,6 +611,16 @@ export default async function handleMessage(sock, msg, mongo) {
         return getPhoneNumberOf(id, textMsg.slice(textMsg.indexOf("טלפון של") + 9).trim())
     }
 
+    if (textMsg.startsWith("!עדכוןמיילים")) {
+        try {
+            await saveMailsListToFile();
+            sendMsgQueue(id, "המיילים עודכנו בהצלחה")
+        } catch (error) {
+            sendMsgQueue(id, "אופס... חלה שגיאה בעדכון המיילים")
+            errorMsgQueue(error)
+        }
+    }
+
     // you can't do this course because ... (the missing courses)
     if (textMsg.includes("חוסם את ") || textMsg.includes("חוסמים את ") || textMsg.includes("קדם של ")) {
         let query = textMsg.includes("חוסם את ")
@@ -755,7 +768,7 @@ export default async function handleMessage(sock, msg, mongo) {
         if (type == MsgType.AUDIO) {
             return chatGPT.stt(msg).then(res => {
                 if (!res) return sendMsgQueue(id, "לא הצלחתי להמיר את הקול לטקסט");
-                
+
                 chatGPT.summery(res).then(res => {
                     if (!res) sendMsgQueue(id, "לא הצלחתי לסכם את ההודעה");
                     else sendMsgQueue(id, res);
