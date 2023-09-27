@@ -62,3 +62,102 @@ export default async function translate(text, target = "iw") {
         .then(data => p(JSON.parse(data)))
 }
 
+export const languages = [
+    {
+        code: "iw",
+        name1: "עברית",
+        name2: "hebrew",
+        nickname: "he",
+    },
+    {
+        code: "en",
+        name1: "אנגלית",
+        name2: "english",
+        nickname: "en",
+    },
+    {
+        code: "ar",
+        name1: "ערבית",
+        name2: "arabic",
+        nickname: "ar",
+    },
+    {
+        code: "ru",
+        name1: "רוסית",
+        name2: "russian",
+        nickname: "ru",
+    },
+    {
+        code: "es",
+        name1: "ספרדית",
+        name2: "spanish",
+        nickname: "es",
+    },
+    {
+        code: "fr",
+        name1: "צרפתית",
+        name2: "french",
+        nickname: "fr",
+    },
+    {
+        code: "de",
+        name1: "גרמנית",
+        name2: "german",
+        nickname: "de",
+    },
+    {
+        code: "it",
+        name1: "איטלקית",
+        name2: "italian",
+        nickname: "it",
+    },
+    {
+        code: "tr",
+        name1: "טורקית",
+        name2: "turkish",
+        nickname: "tr",
+    },
+    {
+        code: "el",
+        name1: "יוונית",
+        name2: "greek",
+        nickname: "el",
+    },
+    {
+        code: "hi",
+        name1: "הודית",
+        name2: "hindi",
+        nickname: "hi",
+    },
+    {
+        code: "ja",
+        name1: "יפנית",
+        name2: "japanese",
+        nickname: "ja",
+    },
+    {
+        code: "ko",
+        name1: "קוריאנית",
+        name2: "korean",
+        nickname: "ko",
+    },
+    {
+        code: "zh",
+        name1: "סינית",
+        name2: "chinese",
+        nickname: "zh",
+    },
+    {
+        code: "pl",
+        name1: "פולנית",
+        name2: "polish",
+        nickname: "pl",
+    },
+    {
+        code: "sv",
+        name1: "שוודית",
+        name2: "swedish",
+        nickname: "sv",
+    }
+];
+

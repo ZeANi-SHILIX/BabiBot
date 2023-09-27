@@ -16,7 +16,7 @@ import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
 //import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
-import translate from './custom_modules/Translate.js';
+import translate, { languages } from './custom_modules/Translate.js';
 import {
     getPhoneNumberOf, getMailOf, saveMailsListToFile,
     getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses
@@ -1107,17 +1107,24 @@ function getTargetlanguage(text) {
     let words = text.split(" ");
     let [w1, w2, ...rest] = words;
 
-    // first word is the target language
-    if (w1.startsWith("en")) return { lang: "en", text: w2 ? w2 + " " + rest.join(" ") : "" };
-    if (w1.startsWith("he")) return { lang: "he", text: w2 ? w2 + " " + rest.join(" ") : "" };
+    for (let lang of languages) {
+        let regex;
+        if (w1 === lang.code) regex = new RegExp(`.*?${lang.code}`);
+        if (w1.includes(lang.name1)) regex = new RegExp(`.*?${lang.name1}`);
+        if (w1.includes(lang.name2)) regex = new RegExp(`.*?${lang.name2}`);
+        if (w1 === lang.nickname) regex = new RegExp(`.*?${lang.nickname}`);
 
-    if (w1.includes("אנגלית")) return { lang: "en", text: text.replace(/.*אנגלית/, "").trim() };
-    if (w1.includes("עברית")) return { lang: "he", text: text.replace(/.*עברית/, "").trim() };
+        if (w1 === "to") {
+            if (w2 === lang.code) regex = new RegExp(`to .*?${lang.code}`, "i");
+            if (w2.includes(lang.name1)) regex = new RegExp(`to .*?${lang.name1}`, "i");
+            if (w2.includes(lang.name2)) regex = new RegExp(`to .*?${lang.name2}`, "i");
+            if (w2 === lang.nickname) regex = new RegExp(`to .*?${lang.nickname}`, "i");
+        }
 
-    // first word is "to"
-    if (w1 == "to") {
-        if (w2.startsWith("en")) return { lang: "en", text: rest.join(" ") };
-        if (w2.startsWith("he")) return { lang: "he", text: rest.join(" ") };
+        if (regex) {
+            console.log(text.replace(regex, "").trim());    
+            return { lang: lang.code, text: text.replace(regex, "").trim() }
+        }
     }
 
     // default
