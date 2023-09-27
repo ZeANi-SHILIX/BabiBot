@@ -7,7 +7,7 @@ import sendSticker from './helpers/stickerMaker.js';
 import { DownloadV2, downloadTYoutubeVideo } from './helpers/downloader.js';
 import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
-import messageRetryHandler from './src/retryHandler.js';
+import messageRetryHandler from './src/retryHandler.js'; // can be removed
 import ChatGPT from './helpers/chatgpt.js';
 //import UnofficalGPT from './helpers/unofficalGPT.js';
 import { info } from './helpers/globals.js';
@@ -21,6 +21,8 @@ import {
     getPhoneNumberOf, getMailOf, saveMailsListToFile,
     getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses
 } from './helpers/jct/jct.js';
+import { AllCommands } from './commands.js';
+
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
@@ -29,30 +31,6 @@ const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
 const superuser = process.env.SUPERUSER ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
-
-let commands = {
-    "!פינג": "בדוק אם אני חי",
-    "!סטיקר": "צור סטיקר ממדיה או טקסט בקלות! (שלח '!סטיקר -עזרה' לפרטים נוספים)",
-    "!יוטיוב": "שלח לי קישור לסרטון או טקסט לחיפוש ביוטיוב ואני אשלח לך אותו כקובץ אודיו לשמיעה",
-    "!ברקוני": "קבל סטיקר רנדומלי של ברקוני",
-    "!קופהראשית": "קבל סטיקר רנדומלי של קופה ראשית",
-    "!תרגם": "תרגם את הטקסט בהודעה המצוטטת או את הטקסט לאחר הפקודה",
-    "!גוגל": "קבל קישור לחיפוש בגוגל לטקסט בהודעה המצוטטת או לטקסט לאחר הפקודה",
-    "!השתק": "השתק את הקבוצה לפי זמן מסוים",
-    "!בטלהשתקה": "בטל השתקה (מנהלים בלבד)",
-    "!כולם": "תייג את כל המשתמשים בקבוצה (מנהלים בלבד)",
-    "!חסוםקישורים": "חסום קישורים בקבוצה (מנהלים בלבד)",
-    "!בטלחסימתקישורים": "בטל חסימת קישורים בקבוצה (מנהלים בלבד)",
-    //"!בוט": "שאל את GPT שאלה (ניתן לשאול גם בפרטי ללא הפקודה)",
-    //"!אמלק": "קבל סיכום קצרצר של ההודעות האחרונות בשיחה",
-    //"!תמונה": "תאר לי תמונה ואני אכין לך אותה",
-    //"!תמלל": "שלח לי את הפקודה בציטוט ההודעה בקבוצה, או פשוט רק את השמע בפרטי ואני אתמלל לך אותה"
-
-    // "!הערות" : "קבל את כל ההערות בצאט זה",
-    '!אודות': 'קבל מידע אודות הבוט'
-
-
-}
 
 /**
  * 
@@ -826,36 +804,15 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     // commands list
-    let helpCommand = ["help", "command", "עזרה", "פקודות"];
+    const helpCommand = ["help", "command", "עזרה", "פקודות"];
 
     //in group
-    if (msg.key.remoteJid.includes("@g.us")) {
-        if (helpCommand.some(com => textMsg.includes("!" + com))) {
-            let text = "*רשימת הפקודות הזמינות בבוט:*"
-
-            for (const [key, value] of Object.entries(commands)) {
-                //console.log(key, value);
-                text += `\n*${key}:* _${value}_`;
-            }
-
-            text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
-            text += "\n\nלקריאת הפקודות בצורה נוחה: babibot.live "
-            return sendMsgQueue(id, text);
-        }
+    if (msg.key.remoteJid.includes("@g.us") && helpCommand.some(com => textMsg.includes("!" + com))) {
+        return sendCommandsList(id);
     }
     // in private
     else if (helpCommand.some(com => textMsg.includes(com))) {
-        let text = "*רשימת הפקודות הזמינות בבוט:*\n"
-
-        for (const [key, value] of Object.entries(commands)) {
-            //console.log(key, value);
-            text += `\n*${key}*: _${value}_`;
-        }
-
-        text += "\n\nיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג"
-
-        text += "\n\nלקריאת הפקודות בצורה נוחה: babibot.live "
-        return sendMsgQueue(id, text);
+        return sendCommandsList(id);
     }
 
 
@@ -1129,4 +1086,24 @@ function getTargetlanguage(text) {
 
     // default
     return { lang: "iw", text: text };
+}
+
+function sendCommandsList(jid) {
+    const showNumOfCommands = 7;
+
+    let text = "היי! אני באבי בוט 🥹\nאני בוט חמוד שיכול לעשות המון דברים מגניבים!\n\n"
+        + "הנה כמה דברים שאני יודע לעשות:"
+        + "\n\nשימו לב שיש לכתוב סימן קריאה בתחילת ההודעה כדי להשתמש בפקודה.\nלדוגמא: !פינג\n\n"
+
+    for (let i = 0; i < showNumOfCommands; i++) {
+        const command = AllCommands.iw[i];
+        text += `*${command.name}:* _${command.description}_\n`;
+    }
+
+    // info about the bot
+    text += "*!אודות:* _לקבלת מידע על הבוט_\n";
+
+    text += "\nלקריאת כל הפקודות בצורה נוחה: babibot.live"
+
+    return sendMsgQueue(jid, text);
 }
