@@ -158,6 +158,12 @@ export const languages = [
         name1: "שוודית",
         name2: "swedish",
         nickname: "sv",
+    },
+    {
+        code: "yi",
+        name1: "אידיש",
+        name2: "yiddish",
+        nickname: "יידיש",
     }
 ];
 

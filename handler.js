@@ -1112,7 +1112,7 @@ function getTargetlanguage(text) {
         if (w1 === lang.code) regex = new RegExp(`.*?${lang.code}`);
         if (w1.includes(lang.name1)) regex = new RegExp(`.*?${lang.name1}`);
         if (w1.includes(lang.name2)) regex = new RegExp(`.*?${lang.name2}`);
-        if (w1 === lang.nickname) regex = new RegExp(`.*?${lang.nickname}`);
+        if (w1 === lang.nickname || w1 === "ל" + lang.nickname) regex = new RegExp(`.*?${lang.nickname}`);
 
         if (w1 === "to") {
             if (w2 === lang.code) regex = new RegExp(`to .*?${lang.code}`, "i");
@@ -1122,7 +1122,7 @@ function getTargetlanguage(text) {
         }
 
         if (regex) {
-            console.log(text.replace(regex, "").trim());    
+            console.log(text.replace(regex, "").trim());
             return { lang: lang.code, text: text.replace(regex, "").trim() }
         }
     }
