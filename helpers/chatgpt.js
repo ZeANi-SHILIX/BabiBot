@@ -233,7 +233,7 @@ ChatGPT.prototype.tldr4 = async function (msgs) {
 };
 
 /**
- * summarize the text using GPT-3.5 (400 tokens)
+ * summarize the text using GPT-3.5 
  * @param {string} text 
  */
 ChatGPT.prototype.summery = async function (text) {
@@ -243,8 +243,7 @@ ChatGPT.prototype.summery = async function (text) {
   const response = await this.openai.createCompletion({
     model: "gpt-3.5-turbo-instruct",
     prompt: text,
-    temperature: 0.5,
-    max_tokens: 400
+    temperature: 0.2
   });
   console.log(response.data);
   return response.data?.choices?.[0]?.text || "";
@@ -257,27 +256,24 @@ ChatGPT.prototype.stt = async function (msg) {
   const id = msg.key.remoteJid;
   // has quoted message?
   if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
-    sendMsgQueue(id, "יש לצטט הודעה")
-    return
+    return sendMsgQueue(id, "יש לצטט הודעה")
   }
 
   // get from store
   let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   if (!quotedMsg) {
-    sleep(3000);
+    await sleep(2000);
     quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
   }
   if (!quotedMsg) {
-    sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את ההודעה שוב")
-    return
+    return sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את הפקודה שוב בעוד כמה שניות")
   }
 
   // get type
   let { type } = getMsgType(quotedMsg);
 
   if (type !== MsgType.AUDIO) {
-    sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
-    return
+    return sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
   }
 
 
@@ -295,7 +291,7 @@ ChatGPT.prototype.stt = async function (msg) {
     fs.unlinkSync(filename);
 
     // send the result
-    return res;
+    return sendMsgQueue(id, res);
   }
   catch (error) {
     errorMsgQueue("stt: " + error)

@@ -279,17 +279,15 @@ export default async function handleMessage(sock, msg, mongo) {
         let quoteAll = "*הופה בלאגן!!! @" + phoneOfSender + " קורא/ת לכולם!* \n\n" // fix to set tag to the sender
             + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
 
-        let everybody_msg = msgQueue.add(async () => await sock.sendMessage(id, { text: quoteAll, mentions: members }).then(messageRetryHandler.addMessage));
-
-
-        return //everybodyMSG(everybody_msg, sock);
+        return sendCustomMsgQueue(id, { text: quoteAll, mentions: members });
     }
 
     /**#########
      * STICKER
      ########## */
     if (caption.startsWith('!sticker') || caption.startsWith('!סטיקר') ||
-        textMsg.startsWith('!sticker') || textMsg.startsWith('!סטיקר'))
+        textMsg.startsWith('!sticker') || textMsg.startsWith('!סטיקר') ||
+        caption.startsWith('!מדבקה') || textMsg.startsWith('!מדבקה'))
         return sendSticker(msg);
 
     /**#########
@@ -777,11 +775,7 @@ export default async function handleMessage(sock, msg, mongo) {
                 // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
             );
 
-        return chatGPT.stt(msg).then(res => {
-            if (!res) sendMsgQueue(id, "לא הצלחתי להמיר את הקול לטקסט");
-            else sendMsgQueue(id, res);
-        })
-
+        return chatGPT.stt(msg);
     }
 
     /**#######
@@ -972,82 +966,6 @@ async function stt_heb(data) {
     );
     const result = await response.json();
     return result;
-}
-
-/**
- * 
- * @param {proto.IWebMessageInfo[]} history 
- * @param {string} oldRes 
- * @param {string} id 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
- * @param {proto.IWebMessageInfo.key} editMsgkey 
- * @returns 
- */
-async function continueChat(history, oldRes, id, sock, editMsgkey) {
-    let [res, finish_reason] = await chatGPT.chatDevinci(history);
-    if (res == "") return;
-
-    // edit the last message
-    sock.relayMessage(id, {
-        protocolMessage: {
-            key: editMsgkey,
-            type: 14,
-            editedMessage: {
-                conversation: oldRes + res
-            }
-        }
-    }, {})
-}
-
-async function resendToSTT(file, id, sock, msgkey) {
-    for (let i = 0; i < 10; i++) {
-        console.log("try", i);
-        let res = await stt_heb(file);
-        console.log(res);
-        if (res.estimated_time) {
-            sock.relayMessage(id, {
-                protocolMessage: {
-                    key: msgkey,
-                    type: 14,
-                    editedMessage: {
-                        conversation: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן \nניסיון מספר " + (i + 1) + "/10"
-                    }
-                }
-            }, {})
-            await sleep(15 * 1000);
-            continue;
-        }
-        if (res.error) {
-            await sock.relayMessage(id, {
-                protocolMessage: {
-                    key: msgkey,
-                    type: 14,
-                    editedMessage: {
-                        conversation: res.error,
-                    }
-                }
-            }, {})
-            return;
-        }
-        return await sock.relayMessage(id, {
-            protocolMessage: {
-                key: msgkey,
-                type: 14,
-                editedMessage: {
-                    conversation: res.text,
-                }
-            }
-        }, {})
-    }
-    await sock.relayMessage(id, {
-        protocolMessage: {
-            key: msgkey,
-            type: 14,
-            editedMessage: {
-                conversation: "אני לא מצליח לתמלל את ההודעה שלך כרגע\nנסה שוב בעוד כמה דקות",
-            }
-        }
-    }, {})
 }
 
 async function sleep(ms) {

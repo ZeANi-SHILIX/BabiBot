@@ -38,6 +38,11 @@ const parameters = {
             hex: '#0000ff'
         },
         {
+            nameEN: 'cyan',
+            nameHE: 'תכלת',
+            hex: '#00ffff'
+        },
+        {
             nameEN: 'yellow',
             nameHE: 'צהוב',
             hex: '#ffff00'
@@ -135,7 +140,7 @@ export default async function sendSticker(msg) {
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text
         || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     // remove the command
-    textMsg = textMsg.replace('!sticker', '').replace('!סטיקר', '').trim();
+    textMsg = textMsg.replace('!sticker', '').replace('!סטיקר', '').replace('!מדבקה', '').trim();
 
     // quoted message
     let hasQuoted = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
@@ -144,13 +149,8 @@ export default async function sendSticker(msg) {
     if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         let quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!quoted) {
-            console.log("retrying to get quoted message in 1.5 sec...")
-            await sleep(1500)
-            quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
-        }
-        if (!quoted) {
-            console.log("trying to get quoted message for more 1 sec...")
-            await sleep(1000)
+            console.log("retrying to get quoted message in 3 seconds...")
+            await sleep(3000)
             quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         }
         if (!quoted) return sendMsgQueue(id, "אופס... לא מצאתי את ההודעה שציטטת\nנסה לצטט שוב בעוד כמה שניות")
@@ -236,7 +236,7 @@ async function makeMediaSticker(msg, commandText) {
 
     // get parameters from the text
     const [params, textWithoutParameters] = getParameters(commandText);
-    
+
     // buffer type
     const bufferType = msg.message?.imageMessage?.mimetype || msg.message?.videoMessage?.mimetype || msg.message?.stickerMessage?.mimetype;
     // can write text only on image
@@ -437,7 +437,7 @@ function helpMessage() {
 
     help += "*צבעים:*\n";
     parameters.colors.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
-    
+
     help += "\nגופנים:\n";
     parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
