@@ -45,7 +45,7 @@
     "wa-sticker-formatter": "^4.4.4",
     "youtube-mp3-downloader": "^0.7.11",
     "youtube-search-api": "^1.2.1",
-    "ytdl-core": "^4.11.5"
+    "ytdl-core": "npm:@distube/ytdl-core@^4.13.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

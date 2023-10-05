@@ -38,7 +38,8 @@ export async function DownloadV2(msg) {
             return sendMsgQueue(id, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
         }
         if (TYQueue.size > 0) sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...");
-        return TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId));
+        TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId));
+        return;
     }
 
     // search for the video
