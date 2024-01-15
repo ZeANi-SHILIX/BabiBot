@@ -1,5 +1,5 @@
 import { downloadMediaMessage } from '@adiwajshing/baileys';
-import { Sticker, StickerTypes } from 'wa-sticker-formatter';
+import pkg from 'wa-sticker-formatter';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
@@ -9,6 +9,8 @@ import MemoryStore from '../src/store.js';
 import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 import Jimp from "jimp";
 import sharp from 'sharp';
+
+const { Sticker, StickerTypes } = pkg;
 
 const parameters = {
     colors: [
