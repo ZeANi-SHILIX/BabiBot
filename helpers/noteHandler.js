@@ -28,14 +28,15 @@ export default noteHendler;
  * @param {Boolean} isGlobal optional, default is false
  * @param {boolean} issuperuser optional, default is null
  */
-NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, issuperuser = null) {
+NoteHendler.prototype.saveNote = async function (msg, isGlobal = false, issuperuser = null) {
     let id = msg.key.remoteJid;
 
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-    let q = msgText.split(" ")[1];
+    // split by "\n" or " "
+    let q = msgText.split(/[\n ]/)[1];
     if (!q) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את שם ההערה");
 
-    // check premissions
+    // check permissions
     if (isGlobal && issuperuser !== true)
         return sendMsgQueue(id, "אופס... אין לך הרשאה לשמור הערה גלובלית")
 
@@ -49,7 +50,9 @@ NoteHendler.prototype.saveNote = async function (msg, sock, isGlobal = false, is
 
     // ### text note ### (no quoted message or quoted message is text)
     if (type == MsgType.TEXT) {
-        let a = msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || msgText.split(" ").slice(2).join(" ") || "";
+        let a = quoted?.message?.conversation
+            || quoted?.message?.extendedTextMessage?.text
+            || msgText.split(/[\n ]/).slice(2).join(" ") || "";
         //console.log(a);
         if (!a) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את תוכן ההערה")
 
@@ -200,7 +203,7 @@ NoteHendler.prototype.getNote = async function (msg, sock) {
 
     let msgText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
-    let q = msgText.replace("#", "").split(" ")[0] || msgText.split(" ")[1];
+    let q = msgText.startsWith("#") ? msgText.replace("#", "").split(/[\n ]/)[0] : msgText.split(/[\n ]/)[1];
     if (!q) return sendMsgQueue(id, "אופס... נראה ששכחת לכתוב את שם ההערה");
 
     // note with text

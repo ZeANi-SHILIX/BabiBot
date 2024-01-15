@@ -530,7 +530,7 @@ export default async function handleMessage(sock, msg, mongo) {
         if (!mongo.isConnected)
             return sendMsgQueue(id, "אין חיבור למסד נתונים");
 
-        return noteHendler.saveNote(msg, sock);
+        return noteHendler.saveNote(msg);
     }
 
     // save global notes
@@ -542,7 +542,7 @@ export default async function handleMessage(sock, msg, mongo) {
         if (msg.key.remoteJid?.includes(superuser) || msg.key.participant?.includes(superuser))
             issuperuser = true;
 
-        return noteHendler.saveNote(msg, sock, true, issuperuser);
+        return noteHendler.saveNote(msg, true, issuperuser);
     }
 
     // delete note
@@ -820,7 +820,9 @@ export default async function handleMessage(sock, msg, mongo) {
             "על מנת לראות מה הבוט מסוגל לעשות יש לשלוח את הפקודה '!פקודות'\n" +
             "(הבוט בתהליכי בנייה... רשימת הפקודות איננה סופית!)\n" +
             "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
-            "בוט זה נוצר על ידי שילה בבילה";
+            "בוט זה נוצר על ידי שילה בבילה\n" +
+            "ליצירת קשר:\n" +
+            "t.me/ContactMeSBbot";
 
         return sendMsgQueue(id, text);
     }
