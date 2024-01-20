@@ -140,14 +140,18 @@ export async function downloadTYoutubeVideo(jid, videoId) {
                     let percentage = (seconds / videoDetails.videoDetails.lengthSeconds * 100).toFixed(1);
 
                     console.log('Processing... ', percentage + "% done");
-                    sendCustomMsgQueue(jid, { text: "מעבד... " + percentage + "%", edit: progressMsg.key })
+                    //sendCustomMsgQueue(jid, { text: "מעבד... " + percentage + "%", edit: progressMsg.key })
                 })
                 .on('end', () => {
                     console.log('Processing finished!');
                     console.log("sending message...")
                     sendCustomMsgQueue(jid, { caption: title, audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true }).then(() => {
                         fs.unlinkSync(filename + "." + audioQualityLow.container);
-                        fs.unlinkSync(filename + ".ogg");
+                        try {
+                            fs.unlinkSync(filename + ".ogg");
+                        } catch (error) {
+                            errorMsgQueue("failed to delete file: " + filename + ".ogg")
+                        }
                     })
                     sendCustomMsgQueue(jid, { text: title, edit: progressMsg.key })
                     resolve()
