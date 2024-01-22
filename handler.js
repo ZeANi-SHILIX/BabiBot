@@ -4,7 +4,7 @@ import noteHendler from './helpers/noteHandler.js';
 import BarkuniSticker from './helpers/berkuniHandler.js';
 import KupaRashitSticker from './helpers/kupaRashitHandler.js';
 import sendSticker from './helpers/stickerMaker.js';
-import { DownloadV2, downloadTYoutubeVideo } from './helpers/downloader.js';
+import { DownloadV2, DownloadVideoMP4, downloadTYoutubeVideo } from './helpers/downloader.js';
 import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
 import messageRetryHandler from './src/retryHandler.js'; // can be removed
@@ -786,6 +786,14 @@ export default async function handleMessage(sock, msg, mongo) {
         //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
         return DownloadV2(msg);
     }
+
+    if ((textMsg.startsWith("!video") || textMsg.startsWith("!Video")
+        || textMsg.startsWith("!וידאו") || textMsg.startsWith("!סרטון"))) {
+        //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
+        return DownloadVideoMP4(id, textMsg);
+    }
+
+
 
     /**######
      *  MISC

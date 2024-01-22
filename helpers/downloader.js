@@ -206,3 +206,47 @@ async function downloadShortVideo(jid, text) {
         errorMsgQueue(err)
     })
 }
+
+/**
+ * 
+ * @param {string} jid 
+ * @param {string} text text with youtube link
+ */
+export async function DownloadVideoMP4(jid, text) {
+
+    let videoId = text.split("v=")[1] || text.split("youtu.be/")[1];
+    videoId = videoId?.split(/[& ]/)[0].split("?")[0];
+
+    // if the link is not valid
+    if (!videoId) {
+        return sendMsgQueue(jid, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
+    }
+
+    let videoDetails = await ytdl.getInfo(videoId);
+    let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
+
+    let vidFormat = videoDetails.formats
+        .find((format) => format.container === "mp4"
+            && (format.qualityLabel === "480p" || format.qualityLabel === "360p")
+            && format.hasVideo && format.hasAudio);
+
+    if (!vidFormat) return sendMsgQueue(jid, "אופס! לא הצלחתי להוריד את הסרטון הזה...");
+
+    let stream = ytdl.downloadFromInfo(videoDetails, { format: vidFormat })
+        .pipe(fs.createWriteStream(filename + "." + vidFormat.container));
+
+    stream.on("finish", () => {
+        sendCustomMsgQueue(jid, { video: { url: filename + "." + vidFormat.container }, mimetype: "video/mp4" })
+            .then(() => sleep(5000))
+            .then(() => fs.unlinkSync(filename + "." + vidFormat.container))
+    })
+
+    stream.on("error", (err) => {
+        sendMsgQueue(jid, "אופס משהו לא עבד טוב עם הסרטון הזה...")
+        errorMsgQueue(err)
+    })
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
