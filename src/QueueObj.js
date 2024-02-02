@@ -30,7 +30,7 @@ export const msgQueue = new PQueue({
  */
 export const TYQueue = new PQueue({
     concurrency: 1,
-    interval: 1000, // 1s
+    interval: 5000, // 5s
     timeout: 60000, // 1m
 });
 
