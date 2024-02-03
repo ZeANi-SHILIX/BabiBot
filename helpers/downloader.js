@@ -9,6 +9,30 @@ const youtubeBaseUrl = "https://www.youtube.com/watch?v="
 fs.existsSync("./youtubeDL") || fs.mkdirSync("./youtubeDL");
 
 /**
+ * routes:
+ ** /api/convert - POST with {videoId: string}
+ ** /api/inprogress - GET return { isWorking: boolean }
+ */
+const DLBaseURLS = [
+    "https://ytogg.onrender.com",
+    "https://babi.onrender.com"
+]
+
+// keep onrender server alive every 5 minutes
+setInterval(() => {
+    DLBaseURLS.forEach((url) => {
+        fetch(url + "/api/inprogress")
+            .then(res => res.json())
+            //.then(json => console.log("server is in progress: " + json.isWorking))
+            .catch(err => {
+                console.error("server is not working: ", url)
+                console.error(err)
+            })
+
+    })
+}, 1000 * 60 * 5)
+
+/**
  * 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
  */
@@ -17,11 +41,10 @@ export async function DownloadV2(msg) {
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";;
     // remove the command
     textMsg = textMsg.replace("!youtube", '').replace('!יוטיוב', '').trim();
-    console.log("textMsg: ", textMsg)
 
     // if there is no text - get from the quoted msg
     textMsg = textMsg || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text;
-    console.log("textMsg: ", textMsg)
+    console.log("YouTube Link: ", textMsg)
 
     // if there is no text - return
     if (!textMsg) return sendMsgQueue(id, "אופס... לא מצאתי קישור או טקסט לחיפוש")
@@ -38,7 +61,8 @@ export async function DownloadV2(msg) {
             return sendMsgQueue(id, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
         }
         if (TYQueue.size > 0) sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...");
-        TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId));
+        //TYQueue.add(async () => await downloadTYoutubeVideo(id, videoId));
+        TYQueue.add(async () => await handlerQueueYTDownload(id, videoId))
         return;
     }
 
@@ -167,6 +191,89 @@ export async function downloadTYoutubeVideo(jid, videoId) {
             reject(err)
         });
     })
+}
+
+export async function handlerQueueYTDownload(jid, videoId) {
+    let url = await getServerUrl();
+
+    if (url) {
+        downloadVideoUsingRender(url, jid, videoId)
+    }
+    else {
+        console.log("no server available - try again in 5 seconds")
+        await sleep(5000)
+        TYQueue.add(async () => await handlerQueueYTDownload(jid, videoId)) // try again
+    }
+}
+
+/**
+ * find server that not have work in progress
+ ** using double check 
+ * @returns {Promise<string>}
+ */
+async function getServerUrl() {
+    for (let i = 0; i < DLBaseURLS.length; i++) {
+        let url = DLBaseURLS[i];
+        let test1 = await fetch(url + "/api/inprogress")
+            .then(res => res.json())
+            .then(json => !(json.isWorking)) // if the server not have work in progress
+            .catch(err => false) // mark server as working
+
+        await sleep(500)
+
+        let test2 = await fetch(url + "/api/inprogress")
+            .then(res => res.json())
+            .then(json => !(json.isWorking)) // if the server not have work in progress
+            .catch(err => false) // mark server as working
+
+        if (test1 && test2) return url;
+    }
+    return null;
+}
+
+/**
+ * can handle DLBaseURLS.length at the same time
+ * @param {string} url
+ * @param {string} jid
+ * @param {string} videoId
+ */
+async function downloadVideoUsingRender(url, jid, videoId) {
+    console.log("downloadVideoUsingRender: ", url)
+
+    let progressMsg = await sendMsgQueue(jid, "מתחיל בהורדה...\nאנא המתן");
+    return fetch(url + "/api/convert", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            videoId: videoId,
+        }),
+    })
+        .then(res => res.json())
+        .then(json => {
+            let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
+            if (json.filename) {
+                fs.writeFileSync(filename + ".ogg", json.output, "base64")
+                sendCustomMsgQueue(jid, { text: json.title, edit: progressMsg.key })
+                sendCustomMsgQueue(jid, { audio: { url: filename + ".ogg" }, mimetype: "audio/mpeg", ptt: true })
+                    .then(() => sleep(2000))
+                    .then(() => {
+                        try {
+                            fs.unlinkSync(filename + ".ogg")
+                        } catch (error) {
+                            errorMsgQueue("failed to delete file: " + filename + ".ogg")
+                        }
+                    })
+            }
+            else {
+                sendMsgQueue(jid, "אופס משהו לא עבד טוב...")
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            sendMsgQueue(jid, "אופס משהו לא עבד טוב...\nשלחת לי לינק תקין?")
+        })
 }
 
 /**
