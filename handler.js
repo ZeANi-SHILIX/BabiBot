@@ -783,13 +783,13 @@ export default async function handleMessage(sock, msg, mongo) {
      * YOUTUBE
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
-        //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
+        return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
         return DownloadV2(msg);
     }
 
     if ((textMsg.startsWith("!video") || textMsg.startsWith("!Video")
         || textMsg.startsWith("!וידאו") || textMsg.startsWith("!סרטון"))) {
-        //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
+        return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
         return DownloadVideoMP4(id, textMsg);
     }
 
