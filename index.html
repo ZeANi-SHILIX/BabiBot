@@ -134,9 +134,17 @@
 
     <h1 id="pageTitle">BabiBot - פקודות</h1>
 
+    <div >
+      <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+        data-name="bmc-button" data-slug="BabiBot" data-color="#FFDD00" data-emoji="☕" data-font="Bree"
+        data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000"
+        data-coffee-color="#ffffff"></script>
+    </div>
+
     <div class="privacy" id="privacyNote">
       <h2>פרטיות</h2>
-      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.</p>
+      <p>שימו לב! למפתח של BabiBot קיימת גישה להודעות שתשלחו לבוט, ההודעות נבדקות מפעם לפעם על מנת לשפר ולתקן את הבוט.
+      </p>
     </div>
 
     <div id="commands"></div>
@@ -292,7 +300,7 @@
     reloadPageWithLang(lang);
 
     // change the layout direction
-    if (lang == "iw"){
+    if (lang == "iw") {
       window.document.dir = "rtl";
       document.getElementById("commandMenuTitle").innerHTML = "פקודות:";
       document.getElementById("pageTitle").innerHTML = "BabiBot - פקודות"
@@ -306,7 +314,7 @@
       document.getElementById("privacyNote").innerHTML = `<h2>Privacy</h2>
       <p>Attention! The developer of BabiBot has access to the messages you send to the bot. The messages are periodically reviewed in order to improve and correct the bot.</p>`
     }
-    
+
 
   }
 
