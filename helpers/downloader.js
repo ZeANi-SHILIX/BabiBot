@@ -202,7 +202,8 @@ export async function handlerQueueYTDownload(jid, videoId) {
     else {
         console.log("no server available - try again in 5 seconds")
         await sleep(5000)
-        TYQueue.add(async () => await handlerQueueYTDownload(jid, videoId)) // try again
+        TYQueue.add(async () => await handlerQueueYTDownload(jid, videoId)
+        , { priority: 1 }) // try again
     }
 }
 
