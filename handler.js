@@ -644,6 +644,7 @@ export default async function handleMessage(sock, msg, mongo) {
      *  ChatGPT
      * ##########*/
     if (textMsg.includes("!גבטה") || textMsg.includes("!gpt")) {
+        return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
         if (!GLOBAL.canAskGPT(id))
             return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
                 // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
@@ -699,6 +700,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
+        return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
         if (!GLOBAL.canAskGPT(id))
             return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
                 // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
@@ -732,6 +734,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!summery") || textMsg.includes("!סכם")) {
+        return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
         if (!GLOBAL.canAskGPT(id))
             return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
                 // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
@@ -790,6 +793,9 @@ export default async function handleMessage(sock, msg, mongo) {
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
         //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
+        return sendMsgQueue(id, "שירות הורדת קובץ שמע מיוטיוב לא זמין כרגע."
+            + "\nניתן להשתמש בפקודה '!סרטון' להורדת סרטונים מיוטיוב"
+            + "\nאו לחילופין להשתמש בשירותים אחרים כמו t.me/Musicvideobybot");
         return DownloadV2(msg);
     }
 
