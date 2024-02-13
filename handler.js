@@ -599,22 +599,27 @@ export default async function handleMessage(sock, msg, mongo) {
         }
     }
 
+    let query;
     // you can't do this course because ... (the missing courses)
-    if (textMsg.includes("חוסם את ") || textMsg.includes("חוסמים את ") || textMsg.includes("קדם של ")) {
-        let query = textMsg.includes("חוסם את ")
-            ? textMsg.slice(textMsg.indexOf("חוסם את") + 8)
-            : textMsg.includes("חוסמים את ")
-                ? textMsg.slice(textMsg.indexOf("חוסמים את") + 10)
-                : textMsg.slice(textMsg.indexOf("קדם של") + 7);
-
-        return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
+    if (textMsg.includes("חוסם את ")) {
+        query = textMsg.slice(textMsg.indexOf("חוסם את") + 8);
+    } else if (textMsg.includes("חוסמים את ")) {
+        query = textMsg.slice(textMsg.indexOf("חוסמים את") + 10);
+    } else if (textMsg.includes("קדם של ")) {
+        query = textMsg.slice(textMsg.indexOf("קדם של") + 7);
     }
+    if (query) return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
 
     // this course is blocking ... (the following courses)
-    if (textMsg.includes("חסום על ידי ") || textMsg.includes("חסומים על ידי ")) {
-        let query = textMsg.includes("חסום על ידי ") ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11) : textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
-        return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
+    if (textMsg.includes("חסום על ידי ") || textMsg.includes("נחסם על ידי ")) {
+        query = textMsg.includes("חסום על ידי ")
+            ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11)
+            : textMsg.slice(textMsg.indexOf("נחסם על ידי") + 11);
+    } else if (textMsg.includes("חסומים על ידי ")) {
+        query = textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
     }
+    if (query) return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
+
 
     // get all courses
     if (textMsg.startsWith("כל הקורסים")) {

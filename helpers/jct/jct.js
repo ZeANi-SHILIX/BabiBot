@@ -1,5 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
+const PRODUCTION = process.env.NODE_ENV === 'production';
+PRODUCTION ? null : process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
+
 import { errorMsgQueue, sendCustomMsgQueue, sendMsgQueue } from '../../src/QueueObj.js';
 import didYouMean from 'didyoumean2';
 import fetch from 'node-fetch';
@@ -9,25 +12,84 @@ const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 const ssid = process.env.MAILLIST || "";
 
+let courses = await updateCourses();
+const credits = "המידע נלקח מתוך הפרוייקט\ngithub.com/ItamarShalev/semester_organizer";
 
-// source: https://github.com/ItamarShalev/semester_organizer/tree/main/algorithms/generated_data
-import blocks_courses from "./blocks_courses.json" assert { type: "json" };
-import are_blocked_by from "./are_blocked_by.json" assert { type: "json" };
+function findCourse(query) { 
+    let allCoursesDidYouMean = courses.courses.filter(c => {
+        let allNames = [c.name, ...c.aliases];
+        return didYouMean(query, allNames);
+    });
+    let allNames = allCoursesDidYouMean.map(c => c.name);
+    let allAliases = allCoursesDidYouMean.map(c => c.aliases);
+
+    // find the most similar course
+    let result = didYouMean(query, [...allNames, ...allAliases.flat()]);
+    if (result) {
+        return allCoursesDidYouMean.find(c => c.name === result || c.aliases.includes(result));
+    }
+
+    return null;
+}
+//console.log(findCourse("אלגברה לינארית ב"))
+
+/**
+ * @returns {Promise<{
+*   version: number,
+*   _comment: string,
+*   courses: Array<{
+*     id: number,
+*     name: string,
+*     course_number: number,
+*     aliases: Array<string>,
+*     blocked_by: Array<{
+*       id: number,
+*       course_number: number,
+*       name: string
+*     }>,
+*     blocks: Array<{
+*       id: number,
+*       course_number: number,
+*       name: string
+*     }>
+*   }>
+* >}
+*/
+async function updateCourses() {
+    let link = "https://raw.githubusercontent.com/ItamarShalev/semester_organizer/main/algorithms/generated_data/all_courses_blocked_and_blocks_info.json"
+
+    try {
+        const res = await fetch(link);
+        const data = await res.json();
+        console.log("courses updated");
+        fs.writeFileSync("./helpers/jct/all_courses_blocked_and_blocks_info.json", JSON.stringify(data, null, 4));
+        return data;
+    } catch (err) {
+        console.log(err);
+        errorMsgQueue("Error updating courses");
+        let rawjson = fs.readFileSync("./helpers/jct/all_courses_blocked_and_blocks_info.json");
+        return JSON.parse(rawjson);
+    }
+}
+
+
+
 /**
  * 
  * @param {string} jid
  * @param {string} query
 */
 export async function getCoursesBlockedBy(jid, query) {
-    let result = didYouMean(query, Object.keys(are_blocked_by));
+    let course = findCourse(query);
 
-    if (result) {
-        let courses = are_blocked_by[result];
-        if (courses.length === 0) {
-            return sendMsgQueue(jid, "אין קורסים שחוסמים את " + result);
+    if (course) {
+        let block_by = course.blocked_by;
+        if (block_by.length === 0) {
+            return sendMsgQueue(jid, `אין קורסים שחוסמים את ${course.name}`);
         }
 
-        return sendMsgQueue(jid, `*הקורסים שחוסמים את ${result} הם:*\n${courses.join("\n")}`)
+        let list = block_by.map(c => c.name);
+        return sendMsgQueue(jid, `*הקורסים שחוסמים את ${course.name} הם:*\n${list.join("\n")}\n\n${credits}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
@@ -40,15 +102,16 @@ export async function getCoursesBlockedBy(jid, query) {
  * @param {string} query
 */
 export async function getWhatThisCourseBlocks(jid, query) {
-    let result = didYouMean(query, Object.keys(blocks_courses));
+    let course = findCourse(query);
 
-    if (result) {
-        let courses = blocks_courses[result];
-        if (courses.length === 0) {
-            return sendMsgQueue(jid, result + " לא חוסם אף קורס");
+    if (course) {
+        let blocks = course.blocks;
+        if (blocks.length === 0) {
+            return sendMsgQueue(jid, `${course.name} לא חוסם אף קורס`);
         }
 
-        return sendMsgQueue(jid, `*${result} חוסם את הקורסים הבאים:*\n${courses.join("\n")}`)
+        let list = blocks.map(c => c.name);
+        return sendMsgQueue(jid, `*${course.name} חוסם את הקורסים הבאים:*\n${list.join("\n")}\n\n${credits}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
@@ -56,8 +119,7 @@ export async function getWhatThisCourseBlocks(jid, query) {
 }
 
 export function getAllCourses(jid) {
-    let courses = Object.keys(blocks_courses);
-    sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${courses.join("\n")}`)
+    sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${courses.courses.map(c => c.name).join("\n")}`)
 }
 
 /**
@@ -184,7 +246,7 @@ async function getMails() {
 
     // save to file
     fs.writeFileSync("./helpers/jct/mails.json", JSON.stringify(contacts, null, 2));
-    
+
     return contacts;
 }
 
