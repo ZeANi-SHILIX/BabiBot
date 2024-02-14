@@ -15,7 +15,7 @@ const ssid = process.env.MAILLIST || "";
 let courses = await updateCourses();
 const credits = "המידע נלקח מתוך הפרוייקט\ngithub.com/ItamarShalev/semester_organizer";
 
-function findCourse(query) { 
+function findCourse(query) {
     let allCoursesDidYouMean = courses.courses.filter(c => {
         let allNames = [c.name, ...c.aliases];
         return didYouMean(query, allNames);
@@ -45,12 +45,14 @@ function findCourse(query) {
 *     blocked_by: Array<{
 *       id: number,
 *       course_number: number,
-*       name: string
+*       name: string,
+*       can_be_taken_in_parallel: boolean
 *     }>,
 *     blocks: Array<{
 *       id: number,
 *       course_number: number,
-*       name: string
+*       name: string,
+*       can_be_taken_in_parallel: boolean
 *     }>
 *   }>
 * >}
@@ -88,8 +90,13 @@ export async function getCoursesBlockedBy(jid, query) {
             return sendMsgQueue(jid, `אין קורסים שחוסמים את ${course.name}`);
         }
 
-        let list = block_by.map(c => c.name);
-        return sendMsgQueue(jid, `*הקורסים שחוסמים את ${course.name} הם:*\n${list.join("\n")}\n\n${credits}`)
+        let list = block_by.map(c => {
+            let addon = c.can_be_taken_in_parallel ? " (ניתן לקחת במקביל)" : ""
+            return c.name + addon;
+        });
+        // add number
+        list = list.map((c, i) => `${i + 1}. ${c}`).join("\n");
+        return sendMsgQueue(jid, `*הקורסים שחוסמים את ${course.name} הם:*\n${list}\n\n${credits}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
@@ -110,8 +117,13 @@ export async function getWhatThisCourseBlocks(jid, query) {
             return sendMsgQueue(jid, `${course.name} לא חוסם אף קורס`);
         }
 
-        let list = blocks.map(c => c.name);
-        return sendMsgQueue(jid, `*${course.name} חוסם את הקורסים הבאים:*\n${list.join("\n")}\n\n${credits}`)
+        let list = blocks.map(c => {
+            let addon = c.can_be_taken_in_parallel ? " (ניתן לקחת במקביל)" : ""
+            return c.name + addon;
+        });
+        // add number
+        list = list.map((c, i) => `${i + 1}. ${c}`).join("\n");
+        return sendMsgQueue(jid, `*${course.name} חוסם את הקורסים הבאים:*\n${list}\n\n${credits}`)
     }
     else {
         sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
