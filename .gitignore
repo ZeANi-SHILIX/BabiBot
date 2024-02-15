@@ -1,0 +1,15 @@
+# Ignore binaraies installation packages.
+node_modules
+
+# Ignore binaries installation packages config file.
+package-lock.json
+
+# Ignore JetBreans project settings.
+.idea
+
+auth_info
+.env
+groupConfig.json
+testingFiles
+store
+helpers/jct/all_courses_blocked_and_blocks_info.json
