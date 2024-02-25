@@ -14,7 +14,6 @@ import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
 import { getMsgType, MsgType } from './helpers/msgType.js';
-//import { downloadMediaMessage, getAggregateVotesInPollMessage, updateMessageWithPollUpdate } from '@adiwajshing/baileys';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate, { languages } from './custom_modules/Translate.js';
 import {
@@ -205,45 +204,20 @@ export default async function handleMessage(sock, msg, mongo) {
                     "option 1",
                     "option 2",
                     "option 3",
+                    "option 4",
+                    "option 5",
+                    "option 6",
+                    "option 7",
+                    "option 8",
+                    "option 9",
+                    "option 10",
+                    "option 11",
+                    "option 12" //max 12 options
                 ],
-                selectableCount: 1,
+                selectableCount: 3,
             }
         })
         console.log(poll)
-
-        return;
-    }
-
-    if (msg.message?.pollUpdateMessage || msg.pollUpdates) {
-        return;
-        //console.log(msg.pollUpdates)
-
-        // let key = msg.message.pollUpdateMessage.pollCreationMessageKey;
-        // if (!key) return;
-
-        // let pollCreation = await store.loadMessage(id, key.id);
-        // if (!pollCreation) return;
-
-        // const pollMessage = await getAggregateVotesInPollMessage({
-        //     message: pollCreation,
-        //     pollUpdates: msg.pollUpdates,
-        // }, sock.user.id)
-
-        //console.log(pollMessage)
-
-        // const pollUpdate = msg.message.pollUpdateMessage;
-        // const pollmsg = await store.loadMessage(id, msg.message.pollUpdateMessage.pollCreationMessageKey.id)
-        // console.log(msg.pollUpdates)
-        // console.log(pollmsg)
-
-        // const res = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
-        // console.log(res)
-
-        // updateMessageWithPollUpdate(pollmsg, msg.pollUpdates)
-
-        // const res1 = getAggregateVotesInPollMessage(pollmsg, sock.user.id)
-        //console.log(res1)
-
 
         return;
     }
