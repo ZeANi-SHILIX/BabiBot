@@ -7,16 +7,17 @@ import { errorMsgQueue, sendCustomMsgQueue, sendMsgQueue } from '../../src/Queue
 import didYouMean from 'didyoumean2';
 import fetch from 'node-fetch';
 import fs from 'fs';
+import e from 'express';
 
 const url_begin = 'https://docs.google.com/spreadsheets/d/';
 const url_end = '/gviz/tq?&tqx=out:json';
 const ssid = process.env.MAILLIST || "";
 
-let courses = await updateCourses();
+let COURSES = await getCoursesFromGit();
 const credits = "המידע נלקח מתוך הפרוייקט\ngithub.com/ItamarShalev/semester_organizer";
 
 function findCourse(query) {
-    let allCoursesDidYouMean = courses.courses.filter(c => {
+    let allCoursesDidYouMean = COURSES.courses.filter(c => {
         let allNames = [c.name, ...c.aliases];
         return didYouMean(query, allNames);
     });
@@ -42,6 +43,10 @@ function findCourse(query) {
 *     name: string,
 *     course_number: number,
 *     aliases: Array<string>,
+*     is_active: boolean,
+*     credits: number,
+*     mandatory_for_degrees: Array<string>,
+*     optional_for_degrees: Array<string>,
 *     blocked_by: Array<{
 *       id: number,
 *       course_number: number,
@@ -55,9 +60,9 @@ function findCourse(query) {
 *       can_be_taken_in_parallel: boolean
 *     }>
 *   }>
-* >}
+* >}}
 */
-async function updateCourses() {
+async function getCoursesFromGit() {
     let link = "https://raw.githubusercontent.com/ItamarShalev/semester_organizer/main/algorithms/generated_data/all_courses_blocked_and_blocks_info.json"
 
     try {
@@ -74,7 +79,9 @@ async function updateCourses() {
     }
 }
 
-
+export async function updateCourses() {
+    COURSES = await getCoursesFromGit();
+}
 
 /**
  * 
@@ -82,25 +89,16 @@ async function updateCourses() {
  * @param {string} query
 */
 export async function getCoursesBlockedBy(jid, query) {
-    let course = findCourse(query);
+    let courseInfo = getCourseInfo(query, "blocked_by");
 
-    if (course) {
-        let block_by = course.blocked_by;
-        if (block_by.length === 0) {
-            return sendMsgQueue(jid, `אין קורסים שחוסמים את ${course.name}`);
-        }
+    if (courseInfo.courseInfo === undefined)
+        return sendMsgQueue(jid, `לא מצאתי את הקורס ${courseInfo.courseName}... נסה לחפש שוב במילים אחרות`);
 
-        let list = block_by.map(c => {
-            let addon = c.can_be_taken_in_parallel ? " (ניתן לקחת במקביל)" : ""
-            return c.name + addon;
-        });
-        // add number
-        list = list.map((c, i) => `${i + 1}. ${c}`).join("\n");
-        return sendMsgQueue(jid, `*הקורסים שחוסמים את ${course.name} הם:*\n${list}\n\n${credits}`)
-    }
-    else {
-        sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
-    }
+    if (courseInfo.courseInfo.length === 0)
+        return sendMsgQueue(jid, `אין קורסים שחוסמים את ${courseInfo.courseName}`);
+
+    return sendMsgQueue(jid, `*הקורסים שחוסמים את ${courseInfo.courseName} הם:*\n`
+        + `${courseInfo.courseInfo.join("\n")}\n\n${courseInfo.notes}`)
 }
 
 /**
@@ -109,29 +107,92 @@ export async function getCoursesBlockedBy(jid, query) {
  * @param {string} query
 */
 export async function getWhatThisCourseBlocks(jid, query) {
-    let course = findCourse(query);
+    let courseInfo = getCourseInfo(query, "blocks");
 
-    if (course) {
-        let blocks = course.blocks;
-        if (blocks.length === 0) {
-            return sendMsgQueue(jid, `${course.name} לא חוסם אף קורס`);
+    if (courseInfo.courseInfo === undefined)
+        return sendMsgQueue(jid, `לא מצאתי את הקורס ${courseInfo.courseName}... נסה לחפש שוב במילים אחרות`);
+
+    if (courseInfo.courseInfo.length === 0)
+        return sendMsgQueue(jid, `${courseInfo.courseName} לא חוסם אף קורס`);
+
+    return sendMsgQueue(jid, `*${courseInfo.courseName} חוסם את הקורסים הבאים:*\n`
+        + `${courseInfo.courseInfo.join("\n")}\n\n${courseInfo.notes}`)
+}
+
+/**
+ * 
+ * @param {string} query
+ * @param {"blocked_by" | "blocks"} typeOfQuery
+ * @returns {{courseName: string, degreeType: string, courseInfo: string[] | undefined, notes: string}}
+*/
+function getCourseInfo(query, typeOfQuery) {
+    let [courseName, degreeType] = query.split("-מסלול");
+    courseName = courseName.trim();
+    degreeType = degreeType?.trim();
+    // handle nicknames
+    if (degreeType == "מדמח" || degreeType == 'מדמ"ח') degreeType = "מדעי המחשב";
+    if (degreeType == "הנדסה") degreeType = "הנדסת תוכנה";
+
+    let dataToReturn = {
+        courseName: courseName,
+        degreeType: degreeType,
+        courseInfo: undefined,
+        notes: ""
+    }
+
+    let course = findCourse(courseName.trim());
+
+    if (!course) return dataToReturn;
+
+    let interpretation = {
+        text1: "מקרא:\n"
+            + "🔀 - ניתן לקחת במקביל\n",
+        text2: ""
+            //+ "🔷 - מסלול מדעי המחשב\n"
+            //+ "🔶 - מסלול הנדסת תוכנה\n"
+            + "עיגול - קורס חובה\n"
+            + "ריבוע - קורס רשות",
+        "מדעי המחשב": {
+            "mandatory_for_degrees": "🔵",
+            "optional_for_degrees": "🟦"
+        },
+        "הנדסת תוכנה": {
+            "mandatory_for_degrees": "🟠",
+            "optional_for_degrees": "🟧"
         }
+    }
 
-        let list = blocks.map(c => {
-            let addon = c.can_be_taken_in_parallel ? " (ניתן לקחת במקביל)" : ""
-            return c.name + addon;
-        });
-        // add number
-        list = list.map((c, i) => `${i + 1}. ${c}`).join("\n");
-        return sendMsgQueue(jid, `*${course.name} חוסם את הקורסים הבאים:*\n${list}\n\n${credits}`)
-    }
-    else {
-        sendMsgQueue(jid, `לא מצאתי את הקורס ${query}... נסה לחפש שוב במילים אחרות`)
-    }
+    let list = course[typeOfQuery].map(c => {
+        let fullCourseInfo = COURSES.courses.find(course => course.id === c.id);
+
+        let addon = "";
+        if (fullCourseInfo.mandatory_for_degrees.includes(degreeType)) addon += interpretation[degreeType].mandatory_for_degrees;
+        if (fullCourseInfo.optional_for_degrees.includes(degreeType)) addon += interpretation[degreeType].optional_for_degrees;
+        if (c.can_be_taken_in_parallel) addon += "🔀";
+
+        // when the course is not active add ~ to the name
+        let name = fullCourseInfo.is_active ? c.name : `~${c.name}~`;
+
+        return `${addon} ${name} (${fullCourseInfo.credits} נ"ז)`;
+    });
+    // add number
+    dataToReturn.courseInfo = list.map((c, i) => `${i + 1}. ${c}`);
+
+    // set notes
+    dataToReturn.notes = interpretation.text1;
+
+    if (!["מדעי המחשב", "הנדסת תוכנה"].includes(degreeType))
+        dataToReturn.notes += "\nניתן לסנן לפי מסלול על ידי הוספת -מסלול ושם המסלול אחרי שם הקורס";
+    else
+        dataToReturn.notes += interpretation.text2;
+
+    dataToReturn.notes += '\n\n> ' + credits;
+
+    return dataToReturn;
 }
 
 export function getAllCourses(jid) {
-    sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${courses.courses.map(c => c.name).join("\n")}`)
+    sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${COURSES.courses.map(c => "- " + c.name).join("\n")}`)
 }
 
 /**
@@ -145,7 +206,7 @@ export async function getMailOf(jid, textMsg) {
     if (contacts.length === 0) contacts = await getMails();
 
     let searchText = textMsg.replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
-        .replace(/[?]/g, "")
+        .replace(/[?!]/g, "")
         .replace("בבקשהה", "").replace("בבקשה", "")
         .replace("המרצה ", "").replace("מרצה ", "")
         .replace("המתרגל ", "").replace("מתרגל ", "")

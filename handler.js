@@ -19,7 +19,7 @@ import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } fr
 import translate, { languages } from './custom_modules/Translate.js';
 import {
     getPhoneNumberOf, getMailOf, saveMailsListToFile,
-    getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses
+    getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses, updateCourses
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 
@@ -595,6 +595,16 @@ export default async function handleMessage(sock, msg, mongo) {
             sendMsgQueue(id, "המיילים עודכנו בהצלחה")
         } catch (error) {
             sendMsgQueue(id, "אופס... חלה שגיאה בעדכון המיילים")
+            errorMsgQueue(error)
+        }
+    }
+
+    if (textMsg.startsWith("!עדכוןקורסים")) {
+        try {
+            await updateCourses();
+            sendMsgQueue(id, "הקורסים עודכנו בהצלחה")
+        } catch (error) {
+            sendMsgQueue(id, "אופס... חלה שגיאה בעדכון הקורסים")
             errorMsgQueue(error)
         }
     }
