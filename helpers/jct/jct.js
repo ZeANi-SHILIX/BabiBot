@@ -144,6 +144,8 @@ function getCourseInfo(query, typeOfQuery) {
 
     if (!course) return dataToReturn;
 
+    dataToReturn.courseName = course.name;
+
     let interpretation = {
         text1: "מקרא:\n"
             + "🔀 - ניתן לקחת במקביל\n",
