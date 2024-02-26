@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import { Canvas } from 'canvas'; // fix on windows (canvas needs to imported first)
-import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } from '@adiwajshing/baileys';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, getAggregateVotesInPollMessage} from '@adiwajshing/baileys';
 import pkg from '@adiwajshing/baileys/WAProto/index.js';
 const { proto } = pkg;
 import bodyParser from 'body-parser';
@@ -31,11 +31,21 @@ app.use(bodyParser.json());
 
 const mongo = new Mongo();
 
+const getMessage = async (key) => {
+    if (MemoryStore) {
+        const msg = await MemoryStore.loadMessage(key.remoteJid, key.id)
+        return msg?.message || undefined
+    }
+    // only if store is present
+    return proto.Message.fromObject({})
+}
+
 let qr = "";
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info')
     const { version, isLatest } = await fetchLatestBaileysVersion();
     console.log('version', version.join("."), 'isLatest', isLatest)
+    /** @type {import('@adiwajshing/baileys').WASocket} */
     const sock = makeWASocket.default({
         // can provide additional config here
         printQRInTerminal: true,
@@ -47,9 +57,9 @@ async function connectToWhatsApp() {
         version,
         msgRetryCounterMap,
         retryRequestDelayMs: 300,
-        //defaultQueryTimeoutMs: undefined,
-        //syncFullHistory: true,
-        getMessage: messageRetryHandler.messageRetryHandler
+
+        // this method works for poll, need to check if "waiting for message" problem is back
+        getMessage, //messageRetryHandler.messageRetryHandler
     })
 
     try {
@@ -104,23 +114,33 @@ async function connectToWhatsApp() {
                     + "שלחו לי את המילה '!פקודות' והתחילו להנות!\n\n"
                     + "(לידעתכם ההודעות שתשלחו לבוט אינן חסויות ויש למפתח גישה לראותן, השימוש בבוט מהווה את הסכמתכם לכך)\n\n"
                     + "כל הפקודות --> babibot.live"
-
-
             });
         }
     })
 
-    sock.ev.on("messages.update", async (MessagesUpdate) => {
-        //console.log("message update", MessagesUpdate);
-        // for (const msg of MessagesUpdate) {
-        //     let { key, update } = msg;
-        //     //if (key.fromMe) continue;
-        //     //if (key.remoteJid === 'status@broadcast') continue; // ignore status messages
+    // handle poll updates (show the votes in the poll only for one user)
+    sock.ev.on("messages.update", async (message) => {
+        for (const { key, update } of message) {
+            if (update.pollUpdates) {
+                const pollCreation = await getMessage(key);
+                if (pollCreation) {
+                    const pollMessage = getAggregateVotesInPollMessage({
+                        message: pollCreation,
+                        pollUpdates: update.pollUpdates,
+                    })
+                    const [messageCtx] = message;
+                    let payload = {
+                        ...messageCtx,
+                        body: pollMessage.filter(poll => poll.voters.length > 0),
+                        remoteJid: key.remoteJid,
+                        pollId: key.id,
+                        pollInfo: pollCreation.pollCreationMessage
+                    };
 
-        //     //console.log("message update", msg);
-        //     update.pollUpdates ? console.log("pollUpdates", update.pollUpdates): null;
-
-        // }
+                    console.log("poll message", payload);
+                }
+            }
+        }
     });
 
     const allowCommands = ['!סטיקר', "!גוגל", "!תמלל", "!פקודות"];
