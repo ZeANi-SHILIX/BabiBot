@@ -126,7 +126,9 @@ export async function getWhatThisCourseBlocks(jid, query) {
  * @returns {{courseName: string, degreeType: string, courseInfo: string[] | undefined, notes: string}}
 */
 function getCourseInfo(query, typeOfQuery) {
-    let [courseName, degreeType] = query.split("-מסלול");
+    let [courseName, degreeType] = query.includes("-מסלול")
+        ? query.split("-מסלול")
+        : query.split("- מסלול");
     courseName = courseName.trim();
     degreeType = degreeType?.trim();
     // handle nicknames
@@ -148,6 +150,7 @@ function getCourseInfo(query, typeOfQuery) {
 
     let interpretation = {
         text1: "מקרא:\n"
+            + "~קורס לא פעיל~"
             + "🔀 - ניתן לקחת במקביל\n",
         text2: ""
             //+ "🔷 - מסלול מדעי המחשב\n"
