@@ -7,6 +7,7 @@ import { UltimateTextToImage, registerFont, getCanvasImage } from "ultimate-text
 import { MsgType, getMsgType } from './msgType.js';
 import MemoryStore from '../src/store.js';
 import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
+import { removeBackground } from "@imgly/background-removal-node";
 import Jimp from "jimp";
 import sharp from 'sharp';
 
@@ -124,6 +125,12 @@ const parameters = {
         {
             nameEN: 'full',
             nameHE: 'מלא',
+            type: StickerTypes.FULL
+        }
+        {
+            nameEN: 'noBG',
+            nameHE: 'חסר רקע',
+            nameHE2: 'בלי רקע',
             type: StickerTypes.FULL
         }
     ]
@@ -246,7 +253,9 @@ async function makeMediaSticker(msg, commandText) {
         if (bufferType === 'image/webp') {
             buffer = await sharp(buffer).jpeg().toBuffer();
         }
-
+        if (params.shape.nameEN === "noBG") {
+            buffer = await removeBackground(buffer);
+        }
         let text = msg.message?.imageMessage?.caption || "";
 
         // if the user wrote the command with text - remove the text
