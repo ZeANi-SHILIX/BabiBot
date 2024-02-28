@@ -5,6 +5,7 @@ import { sendMsgQueue, errorMsgQueue } from "../src/QueueObj.js";
 import { downloadMediaMessage } from "@adiwajshing/baileys";
 import { getMsgType, MsgType } from "./msgType.js";
 import MemoryStore from "../src/store.js";
+import { GLOBAL } from "../src/storeMsg.js";
 
 export default function ChatGPT(apiKey, useOfficial = true) {
   const configuration = new Configuration({
@@ -290,7 +291,13 @@ ChatGPT.prototype.stt = async function (msg) {
     // delete file
     fs.unlinkSync(filename);
 
+    // update balance after whisper success
+    let AudioSeconds = quotedMsg.message.audioMessage.seconds;
+    let pricePerMinute = 0.01; 
+    GLOBAL.updateBalanceOpenAI(id, -pricePerMinute * (AudioSeconds / 60));
+
     // send the result
+    errorMsgQueue("stt: " + pricePerMinute * (AudioSeconds / 60).toFixed(2))
     return sendMsgQueue(id, res);
   }
   catch (error) {
@@ -313,6 +320,8 @@ ChatGPT.prototype.whisper = async function (filename) {
     "whisper-1")
 
   fs.unlinkSync(newFilename);
+  
+  console.log(res);
 
   return res?.data?.text;
 
