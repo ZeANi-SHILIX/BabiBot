@@ -41,6 +41,7 @@
     "p-queue": "^7.3.4",
     "qrcode": "^1.5.3",
     "text2png": "^2.3.0",
+    "transparent-background": "^1.4.0",
     "ultimate-text-to-image": "^1.0.1",
     "wa-sticker-formatter": "^4.4.4",
     "youtube-mp3-downloader": "^0.7.11",
