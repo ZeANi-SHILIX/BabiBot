@@ -7,7 +7,7 @@ import { UltimateTextToImage, registerFont, getCanvasImage } from "ultimate-text
 import { MsgType, getMsgType } from './msgType.js';
 import MemoryStore from '../src/store.js';
 import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
-import { removeBackground } from "@imgly/background-removal-node";
+import { transparentBackground } from "transparent-background";
 import Jimp from "jimp";
 import sharp from 'sharp';
 
@@ -127,13 +127,13 @@ const parameters = {
             nameHE: 'מלא',
             type: StickerTypes.FULL
         }
-        {
-            nameEN: 'noBG',
-            nameHE: 'חסר רקע',
-            nameHE2: 'בלי רקע',
-            type: StickerTypes.FULL
-        }
+    ],
+    noBackgroundNames: [
+        'הסררקע',
+        'ללארקע',
+        'nobackground'
     ]
+
 }
 
 registerFonts();
@@ -195,7 +195,8 @@ export default async function sendSticker(msg) {
 }
 
 async function makeTextSticker(id, quotedText, commandText) {
-    const [params, textWithoutParameters] = getParameters(commandText);
+    const parameterText = commandText.replace("!sticker", "").replace("!סטיקר", "").trim() || quotedText;
+    const [params, textWithoutParameters] = getParameters(parameterText);
 
     console.log("text without parameters:", textWithoutParameters)
     console.log("quoted text:", quotedText)
@@ -251,28 +252,46 @@ async function makeMediaSticker(msg, commandText) {
     // can write text only on image
     if (bufferType === 'image/jpeg' || bufferType === 'image/png' || bufferType === 'image/webp') {
         if (bufferType === 'image/webp') {
-            buffer = await sharp(buffer).jpeg().toBuffer();
+            buffer = await sharp(buffer).png().toBuffer();
         }
-        if (params.shape.nameEN === "noBG") {
-            buffer = await removeBackground(buffer);
+        if (params.background === "NoBackground") {
+            buffer = await transparentBackground(buffer, "png", { fast: true });
         }
         let text = msg.message?.imageMessage?.caption || "";
 
         // if the user wrote the command with text - remove the text
         if (!textWithoutParameters && (text.includes('!sticker') || text.includes('!סטיקר'))) text = "";
 
-        buffer = await textOnImage(textWithoutParameters || text, buffer, params)
-    }
-    const sticker = new Sticker(buffer, {
-        pack: '🎉',
-        author: 'BabiBot',
-        type: params.shape || StickerTypes.FULL,
-        quality: quality
-    });
-    const stickerMsg = await sticker.toMessage();
+        // change the shape of the sticker 
+        // TODO: use another library to change the shape
+        const sticker = new Sticker(buffer, {
+            type: params.shape || StickerTypes.FULL,
+            quality: quality
+        });
+        buffer = await sticker.toBuffer() // return webp buffer
 
+        // to png buffer from webp
+        buffer = await sharp(buffer).png().toBuffer();
+
+        // cant work with webp buffer
+        buffer = await textOnImage(textWithoutParameters || text, buffer, params)
+
+        sendCustomMsgQueue(id, await new Sticker(buffer, {
+            pack: '🎉',
+            author: 'BabiBot'
+        }).toMessage());
+    }
+    else {
+        const sticker = new Sticker(buffer, {
+            pack: '🎉',
+            author: 'BabiBot',
+            type: params.shape || StickerTypes.FULL,
+            quality: quality
+        });
+        const stickerMsg = await sticker.toMessage();
+        sendCustomMsgQueue(id, stickerMsg)
+    }
     console.log("adding sticker message to queue, type:", params.shape || StickerTypes.FULL)
-    sendCustomMsgQueue(id, stickerMsg)
 }
 
 /**
@@ -283,7 +302,7 @@ async function makeMediaSticker(msg, commandText) {
  */
 function textToSticker(text, params) {
     text = putEnterBetweenEmojis(text);
-    text = doubleEnter(text);
+    //text = doubleEnter(text);
     console.log("Making sticker with text:", text)
 
     return new UltimateTextToImage(text + " ", {
@@ -356,7 +375,7 @@ function sleep(ms) {
 function getParameters(commandText) {
     let arr = commandText.split(" ").filter(i => i);
 
-    let parameters = {};
+    let tempParameters = {};
     let textWithoutParameters = [];
 
     for (let i = 0; i < arr.length; i++) {
@@ -365,27 +384,41 @@ function getParameters(commandText) {
         // fix when the user wrote "-param" with enter
         word = word.startsWith('\n') ? word.slice(1) : word;
 
+        let isParameter = false;
         if (word.startsWith('-')) {
             let key = word.slice(1);
             let value = arr[i + 1]; // next word, can be undefined
 
+            if (key === "") {
+                // if the key is empty, push the original word
+                textWithoutParameters.push(arr[i]);
+                continue;
+            }
+
             if (value && !value?.startsWith('-')) {
-                parameters[key] = value;
-                i++;
+                tempParameters[key] = value;
+                i++; // next word is the value
+                isParameter = true;
+            }
+
+            if (parameters.noBackgroundNames.includes(key)) {
+                tempParameters.background = "NoBackground";
+                i--; // the next word is not a value
+                isParameter = true;
             }
 
             if (key === 'help' || key === 'עזרה') {
-                parameters.help = "asking for help :)";
+                tempParameters.help = "asking for help :)";
                 break;
             }
         }
-        else {
+        else if (isParameter === false) {
             // if the word is not a parameter, push the original word
             textWithoutParameters.push(arr[i]);
         }
     }
-    console.log("parameters:", parameters)
-    return [formatParameters(parameters), textWithoutParameters.join(" ") || ""];
+    console.log("parameters:", tempParameters)
+    return [formatParameters(tempParameters), textWithoutParameters.join(" ") || ""];
 }
 
 /**
@@ -408,18 +441,26 @@ function formatParameters(params) {
         }
 
         else if (key === 'color' || key === "צבע") { // || key === 'c'
-            let color = parameters.colors.find(i => i.nameEN.toLowerCase() === value || i.nameHE === value);
+            let color = parameters.colors.find(i => i.nameEN.toLowerCase() === value
+                || i.nameHE === value);
             if (color) formatted.color = color.hex;
         }
 
         else if (key === 'font' || key === "גופן") { // || key === 'f' 
-            let font = parameters.fonts.find(i => i.nameEN.toLowerCase() === value || i.nameHE === value);
+            let font = parameters.fonts.find(i => i.nameEN.toLowerCase() === value
+                || i.nameHE === value);
             if (font) formatted.font = font.nameEN;
         }
 
         else if (key === 'shape' || key === "צורה") {
-            let shape = parameters.shape.find(i => i.nameEN.toLowerCase() === value || i.nameHE === value || i.nameHE2 === value);
+            let shape = parameters.shape.find(i => i.nameEN.toLowerCase() === value
+                || i.nameHE === value
+                || i.nameHE2 === value);
             if (shape) formatted.shape = shape.type;
+        }
+
+        else if (parameters.noBackgroundNames.includes(value)) {
+            formatted.background = "NoBackground";
         }
 
     }
@@ -439,6 +480,7 @@ function helpMessage() {
     help += "צבע / color\n";
     help += "גופן / font\n";
     help += "צורה / shape\n";
+    help += "הסר רקע / no background\n";
     help += "(ייתכן שהטקסט לא יהיה קריא בצורות מסויימות)\n\n";
 
     help += "*לדוגמא:*\n";
@@ -454,6 +496,14 @@ function helpMessage() {
 
     help += "\nצורות:\n";
     parameters.shape.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
+
+    help += "\nהסר רקע:\n";
+    help += "יש לכתוב מקף ולאחריו אחת מהמילים הבאות:\n"
+    parameters.noBackgroundNames.forEach(i => help += `${i} / `);
+    help.slice(0, -3); // remove the last "/"
+    help += "לדוגמא: -הסררקע";
+
+    help += "\n\n";
 
     help += "שימוש מהנה :)";
     return help;
@@ -472,7 +522,7 @@ async function textOnImage(text, buffer, params) {
             img.getHeight() > img.getWidth()
                 ? img.resize(Jimp.AUTO, 400)
                 : img.resize(400, Jimp.AUTO);
-            return img.getBufferAsync(Jimp.MIME_JPEG);
+            return img.getBufferAsync(Jimp.MIME_PNG);
         })
         .catch(err => {
             console.log(err)
