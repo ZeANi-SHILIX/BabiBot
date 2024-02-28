@@ -149,10 +149,9 @@ function getCourseInfo(query, typeOfQuery) {
     dataToReturn.courseName = course.name;
 
     let interpretation = {
-        text1: "מקרא:\n"
-            + "~קורס לא פעיל~"
-            + "🔀 - ניתן לקחת במקביל\n",
-        text2: ""
+        notActive: "~קורס לא פעיל~",
+        parallel: "🔀 - ניתן לקחת במקביל",
+        infoByDegrees: ""
             //+ "🔷 - מסלול מדעי המחשב\n"
             //+ "🔶 - מסלול הנדסת תוכנה\n"
             + "עיגול - קורס חובה\n"
@@ -167,15 +166,21 @@ function getCourseInfo(query, typeOfQuery) {
         }
     }
 
+    let noteText = {}
     let list = course[typeOfQuery].map(c => {
         let fullCourseInfo = COURSES.courses.find(course => course.id === c.id);
 
         let addon = "";
         if (fullCourseInfo.mandatory_for_degrees.includes(degreeType)) addon += interpretation[degreeType].mandatory_for_degrees;
         if (fullCourseInfo.optional_for_degrees.includes(degreeType)) addon += interpretation[degreeType].optional_for_degrees;
-        if (c.can_be_taken_in_parallel) addon += "🔀";
+
+        if (c.can_be_taken_in_parallel) {
+            addon += "🔀";
+            noteText["parallel"] = interpretation.parallel;
+        }
 
         // when the course is not active add ~ to the name
+        fullCourseInfo.is_active ? null : noteText["notActive"] = interpretation.notActive;
         let name = fullCourseInfo.is_active ? c.name : `~${c.name}~`;
 
         return `${addon} ${name} (${fullCourseInfo.credits} נ"ז)`;
@@ -184,12 +189,14 @@ function getCourseInfo(query, typeOfQuery) {
     dataToReturn.courseInfo = list.map((c, i) => `${i + 1}. ${c}`);
 
     // set notes
-    dataToReturn.notes = interpretation.text1;
+    if (Object.keys(noteText).length !== 0) {
+        dataToReturn.notes += "מקרא:\n" + Object.values(noteText).join("\n") + "\n";
+    }
 
     if (!["מדעי המחשב", "הנדסת תוכנה"].includes(degreeType))
         dataToReturn.notes += "\nניתן לסנן לפי מסלול על ידי הוספת -מסלול ושם המסלול אחרי שם הקורס";
     else
-        dataToReturn.notes += interpretation.text2;
+        dataToReturn.notes += interpretation.infoByDegrees
 
     dataToReturn.notes += '\n\n> ' + credits;
 
