@@ -93,14 +93,34 @@ const parameters = {
     ],
     fonts: [
         {
-            nameEN: 'Alef',
-            nameHE: 'אלף',
-            path: './src/Gveret Levin Alef Alef Alef.ttf'
-        },
-        {
             nameEN: 'Normal',
             nameHE: 'רגיל',
             path: null
+        },
+        {
+            nameEN: 'Alef',
+            nameHE: 'אלף',
+            path: './src/fonts/Gveret Levin Alef Alef Alef.ttf'
+        },
+        {
+            nameEN: 'BonaNova',
+            nameHE: 'בונהנובה',
+            path: './src/fonts/BonaNova-Regular.ttf'
+        },
+        {
+            nameEN: 'FrankRuhl',
+            nameHE: 'פרנקרוהל',
+            path: './src/fonts/FrankRuhlLibre-Regular.ttf'
+        },
+        {
+            nameEN: 'Rubik',
+            nameHE: 'רוביק',
+            path: './src/fonts/RubikWetPaint-Regular.ttf'
+        },
+        {
+            nameEN: 'Simple',
+            nameHE: 'פשוט',
+            path: './src/fonts/Simple.ttf'
         }
     ],
     shape: [
