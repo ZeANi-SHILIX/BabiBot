@@ -294,7 +294,8 @@ ChatGPT.prototype.stt = async function (msg) {
     // update balance after whisper success
     let AudioSeconds = quotedMsg.message.audioMessage.seconds;
     let pricePerMinute = 0.01; 
-    GLOBAL.updateBalanceOpenAI(id, -pricePerMinute * (AudioSeconds / 60));
+    let userID = id.endsWith("@g.us") ? msg.key.participant : id;
+    GLOBAL.updateBalanceOpenAI(userID, -pricePerMinute * (AudioSeconds / 60));
 
     // send the result
     errorMsgQueue("stt: " + pricePerMinute * (AudioSeconds / 60).toFixed(2))

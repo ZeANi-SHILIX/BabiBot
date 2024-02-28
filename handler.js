@@ -762,7 +762,8 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
-        if (GLOBAL.canIUseOpenAI(id) || id.includes(superuser))
+        let userID = id.endsWith("@g.us") ? msg.key.participant : id;
+        if (GLOBAL.canIUseOpenAI(userID) || userID.includes(superuser))
             return chatGPT.stt(msg);
 
         return sendMsgQueue(id, "שירות התמלול זמין רק למי שתרם לבוט\n"
@@ -833,6 +834,13 @@ export default async function handleMessage(sock, msg, mongo) {
         return sendMsgQueue(id, text);
     }
 
+    // ##############
+    // ##############
+    //  NOT IN GROUP - PRIVATE CHAT
+    // ##############
+    // ##############
+    if (msg.key.remoteJid.includes("@g.us")) return;
+
     if (textMsg.startsWith("!תרומה") || textMsg.startsWith("!donate") || textMsg.startsWith("!donation") || textMsg.startsWith("!תרומות")) {
         // if sender is superuser
         if (id.includes(superuser)) {
@@ -880,19 +888,12 @@ export default async function handleMessage(sock, msg, mongo) {
         return sendMsgQueue(id, "היתרה שלך היא: " + GLOBAL.getBalanceOpenAI(id) + " דולר");
     }
 
-    // ##############
-    // ##############
-    //  NOT IN GROUP
-    // ##############
-    // ##############
-    if (msg.key.remoteJid.includes("@g.us")) return;
-
 
     /**##########
      * INFO
      ############*/
 
-    // for supporter that donate more than 5$ - dont need to send the command
+    // for supporter that donate more than 5$ - dont need to send the command in private chat
     if (type === MsgType.AUDIO) {
         if (GLOBAL.autoSTT(id) || id.includes(superuser))
             return chatGPT.stt(msg);
