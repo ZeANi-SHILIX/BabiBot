@@ -491,17 +491,17 @@ function helpMessage() {
     help += "*צבעים:*\n";
     parameters.colors.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
-    help += "\nגופנים:\n";
+    help += "\n*גופנים:*\n";
     parameters.fonts.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
-    help += "\nצורות:\n";
+    help += "\n*צורות:*\n";
     parameters.shape.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
-    help += "\nהסר רקע:\n";
+    help += "\n*הסר רקע:*\n";
     help += "יש לכתוב מקף ולאחריו אחת מהמילים הבאות:\n"
     parameters.noBackgroundNames.forEach(i => help += `${i} / `);
     help.slice(0, -3); // remove the last "/"
-    help += "לדוגמא: -הסררקע";
+    help += "\nלדוגמא: -הסררקע";
 
     help += "\n\n";
 
