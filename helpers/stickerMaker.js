@@ -423,7 +423,7 @@ function getParameters(commandText) {
 
             if (parameters.noBackgroundNames.includes(key)) {
                 tempParameters.background = "NoBackground";
-                i--; // the next word is not a value
+                if (value) i--; // the next word exist and is not a value
                 isParameter = true;
             }
 
