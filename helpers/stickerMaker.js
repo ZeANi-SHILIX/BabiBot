@@ -13,6 +13,9 @@ import sharp from 'sharp';
 
 const { Sticker, StickerTypes } = pkg;
 
+/*** enable or disable the remove background feature (can take up to 3 minutes on low-spec servers) */
+const enableRemoveBackground = false;
+
 const parameters = {
     colors: [
         {
@@ -274,7 +277,7 @@ async function makeMediaSticker(msg, commandText) {
         if (bufferType === 'image/webp') {
             buffer = await sharp(buffer).png().toBuffer();
         }
-        if (params.background === "NoBackground") {
+        if (params.background === "NoBackground" && enableRemoveBackground) {
             buffer = await transparentBackground(buffer, "png", { fast: true });
         }
         let text = msg.message?.imageMessage?.caption || "";
@@ -500,7 +503,8 @@ function helpMessage() {
     help += "צבע / color\n";
     help += "גופן / font\n";
     help += "צורה / shape\n";
-    help += "הסר רקע / no background\n";
+    if (enableRemoveBackground)
+        help += "הסר רקע / no background\n";
     help += "(ייתכן שהטקסט לא יהיה קריא בצורות מסויימות)\n\n";
 
     help += "*לדוגמא:*\n";
@@ -517,11 +521,13 @@ function helpMessage() {
     help += "\n*צורות:*\n";
     parameters.shape.forEach(i => help += `${i.nameHE} - ${i.nameEN}\n`);
 
-    help += "\n*הסר רקע:*\n";
-    help += "יש לכתוב מקף ולאחריו אחת מהמילים הבאות:\n"
-    parameters.noBackgroundNames.forEach(i => help += `${i} / `);
-    help.slice(0, -3); // remove the last "/"
-    help += "\nלדוגמא: -הסררקע";
+    if (enableRemoveBackground) {
+        help += "\n*הסר רקע:*\n";
+        help += "יש לכתוב מקף ולאחריו אחת מהמילים הבאות:\n"
+        parameters.noBackgroundNames.forEach(i => help += `${i} / `);
+        help.slice(0, -3); // remove the last "/"
+        help += "\nלדוגמא: -הסררקע";
+    }
 
     help += "\n\n";
 
