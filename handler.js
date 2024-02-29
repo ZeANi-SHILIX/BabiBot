@@ -776,10 +776,9 @@ export default async function handleMessage(sock, msg, mongo) {
      * YOUTUBE
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
-        //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
-        return sendMsgQueue(id, "שירות הורדת קובץ שמע מיוטיוב לא זמין כרגע."
-            + "\nניתן להשתמש בפקודה '!סרטון' להורדת סרטונים מיוטיוב"
-            + "\nאו לחילופין להשתמש בשירותים אחרים כמו t.me/Musicvideobybot");
+        // return sendMsgQueue(id, "שירות הורדת קובץ שמע מיוטיוב לא זמין כרגע."
+        //     + "\nניתן להשתמש בפקודה '!סרטון' להורדת סרטונים מיוטיוב"
+        //     + "\nאו לחילופין להשתמש בשירותים אחרים כמו t.me/Musicvideobybot");
         return DownloadV2(msg);
     }
 

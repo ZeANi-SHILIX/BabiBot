@@ -19,18 +19,18 @@ const DLBaseURLS = [
 ]
 
 // keep onrender server alive every 5 minutes
-setInterval(() => {
-    DLBaseURLS.forEach((url) => {
-        fetch(url + "/api/inprogress")
-            .then(res => res.json())
-            //.then(json => console.log("server is in progress: " + json.isWorking))
-            .catch(err => {
-                console.error("server is not working: ", url)
-                console.error(err)
-            })
+// setInterval(() => {
+//     DLBaseURLS.forEach((url) => {
+//         fetch(url + "/api/inprogress")
+//             .then(res => res.json())
+//             //.then(json => console.log("server is in progress: " + json.isWorking))
+//             .catch(err => {
+//                 console.error("server is not working: ", url)
+//                 console.error(err)
+//             })
 
-    })
-}, 1000 * 60 * 5)
+//     })
+// }, 1000 * 60 * 5)
 
 /**
  * 
@@ -194,6 +194,9 @@ export async function downloadTYoutubeVideo(jid, videoId) {
 }
 
 export async function handlerQueueYTDownload(jid, videoId) {
+    // download the video
+    return await DownloadVideoMP4(jid, youtubeBaseUrl + videoId);
+
     let url = await getServerUrl();
 
     if (url) {
