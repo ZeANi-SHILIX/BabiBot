@@ -156,13 +156,19 @@ function getCourseInfo(query, typeOfQuery) {
             //+ "🔶 - מסלול הנדסת תוכנה\n"
             + "עיגול - קורס חובה\n"
             + "ריבוע - קורס רשות",
-        "מדעי המחשב": {
-            "mandatory_for_degrees": "🔵",
-            "optional_for_degrees": "🟦"
-        },
-        "הנדסת תוכנה": {
-            "mandatory_for_degrees": "🟠",
-            "optional_for_degrees": "🟧"
+        degrees: {
+            "מדעי המחשב": {
+                "mandatory_for_degrees": "🔵",
+                "optional_for_degrees": "🟦"
+            },
+            "הנדסת תוכנה": {
+                "mandatory_for_degrees": "🟠",
+                "optional_for_degrees": "🟧"
+            },
+            "ביואינפורמטיקה": {
+                "mandatory_for_degrees": "🟢",
+                "optional_for_degrees": "🟩"
+            }
         }
     }
 
@@ -171,8 +177,8 @@ function getCourseInfo(query, typeOfQuery) {
         let fullCourseInfo = COURSES.courses.find(course => course.id === c.id);
 
         let addon = "";
-        if (fullCourseInfo.mandatory_for_degrees.includes(degreeType)) addon += interpretation[degreeType].mandatory_for_degrees;
-        if (fullCourseInfo.optional_for_degrees.includes(degreeType)) addon += interpretation[degreeType].optional_for_degrees;
+        if (fullCourseInfo.mandatory_for_degrees.includes(degreeType)) addon += interpretation.degrees[degreeType].mandatory_for_degrees;
+        if (fullCourseInfo.optional_for_degrees.includes(degreeType)) addon += interpretation.degrees[degreeType].optional_for_degrees;
 
         if (c.can_be_taken_in_parallel) {
             addon += "🔀";
@@ -193,7 +199,7 @@ function getCourseInfo(query, typeOfQuery) {
         dataToReturn.notes += "מקרא:\n" + Object.values(noteText).join("\n") + "\n";
     }
 
-    if (!["מדעי המחשב", "הנדסת תוכנה"].includes(degreeType))
+    if (!Object.keys(interpretation.degrees).includes(degreeType))
         dataToReturn.notes += "\nניתן לסנן לפי מסלול על ידי הוספת -מסלול ושם המסלול אחרי שם הקורס";
     else
         dataToReturn.notes += interpretation.infoByDegrees
