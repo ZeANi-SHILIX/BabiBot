@@ -90,8 +90,19 @@ export const GLOBAL = {
         }
         console.log("canAskGPT: NO! - 3 times passed");
         return false;
+    },
+    unofficialGPTcredit: 250, // TODO: need to be saved in file
+    updateUnofficialGPTcredit: function (tokens, model) {
+        // 1 credit for 2000 tokens
+        if (["pai-001", "pai-001-rp"].includes(model)) {
+            this.unofficialGPTcredit -= tokens / 2000;
+        }
+        // 1 credit for 4000 tokens
+        if (["pai-001-light", "pai-001-light-rp"].includes(model)) {
+            this.unofficialGPTcredit -= tokens / 4000;
+        }
+        console.log("unofficialGPTcredit: ", this.unofficialGPTcredit);
     }
-
 };
 
 
@@ -119,3 +130,11 @@ function saveConfig() {
     fs.writeFileSync("./groupConfig.json", JSON.stringify(groupConfig));
     //console.log("Group Config saved");
 }
+
+// reset count of unofficialGPTcredit every day at 00:00
+setInterval(() => {
+    const date = new Date();
+    if (date.getHours() === 0 && date.getMinutes() === 0) {
+        GLOBAL.unofficialGPTcredit = 250;
+    }
+}, 60_000);

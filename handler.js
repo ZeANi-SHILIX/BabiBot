@@ -9,7 +9,7 @@ import { GLOBAL } from './src/storeMsg.js';
 import MemoryStore from './src/store.js';
 import messageRetryHandler from './src/retryHandler.js'; // can be removed
 import ChatGPT from './helpers/chatgpt.js';
-//import UnofficalGPT from './helpers/unofficalGPT.js';
+import UnofficalGPT from './helpers/unofficalGPT.js';
 import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -25,7 +25,7 @@ import { AllCommands } from './commands.js';
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
-//const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
+const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 
 const superuser = process.env.SUPERUSER ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
@@ -684,13 +684,13 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
-        if (!GLOBAL.canAskGPT(id))
-            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
-                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
-                // + "https://www.buymeacoffee.com/BabiBot\n"
-                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
-            );
+        //return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
+        // if (!GLOBAL.canAskGPT(id))
+        //     return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
+        //         // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
+        //         // + "https://www.buymeacoffee.com/BabiBot\n"
+        //         // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
+        //     );
 
 
         // get num from message
@@ -699,14 +699,21 @@ export default async function handleMessage(sock, msg, mongo) {
         //let history = await store.loadMessages(id, numMsgToLoad);
         return MemoryStore.loadMessages(id, numMsgToLoad)
             .then(async (history) => {
-                history.pop(); // we don't want the last message (the one we got now)
                 console.log('history length loaded:', history.length);
 
                 if (history.length < 1)
                     return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
+                history = history.sort((a, b) => a.messageTimestamp - b.messageTimestamp);
 
-                let res = await chatGPT.tldr4(history)
-                return sendMsgQueue(id, res);
+                let res = await unofficalGPT.tldr(history);
+                console.log(JSON.stringify({
+                    model: res.model,
+                    usage: res?.usage?.total_tokens,
+                    response: res.choices[0].message.content.trim()
+                }, null, 2));
+
+                GLOBAL.updateUnofficialGPTcredit(res?.usage.total_tokens, res.model);
+                return sendMsgQueue(id, (await translate(res.choices[0].message.content.trim())).text);
             })
 
             .catch(error => {
