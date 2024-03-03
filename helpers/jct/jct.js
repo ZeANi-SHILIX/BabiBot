@@ -179,6 +179,7 @@ function getCourseInfo(query, typeOfQuery) {
         let addon = "";
         if (fullCourseInfo.mandatory_for_degrees.includes(degreeType)) addon += interpretation.degrees[degreeType].mandatory_for_degrees;
         if (fullCourseInfo.optional_for_degrees.includes(degreeType)) addon += interpretation.degrees[degreeType].optional_for_degrees;
+        let degreesAddon = addon;
 
         if (c.can_be_taken_in_parallel) {
             addon += "🔀";
@@ -189,8 +190,12 @@ function getCourseInfo(query, typeOfQuery) {
         fullCourseInfo.is_active ? null : noteText["notActive"] = interpretation.notActive;
         let name = fullCourseInfo.is_active ? c.name : `~${c.name}~`;
 
-        return `${addon} ${name} (${fullCourseInfo.credits} נ"ז)`;
+        return [`${addon} ${name} (${fullCourseInfo.credits} נ"ז)`, degreesAddon != ""];
     });
+    // filter in degreeType is not empty
+    if (degreeType) list = list.filter(c => c[1]);
+    list = list.map(c => c[0]);
+
     // add number
     dataToReturn.courseInfo = list.map((c, i) => `${i + 1}. ${c}`);
 
