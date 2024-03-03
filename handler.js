@@ -21,6 +21,7 @@ import {
     getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses, updateCourses
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
+import { exec } from 'child_process';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -43,6 +44,25 @@ export default async function handleMessage(sock, msg, mongo) {
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
     caption = caption.trim();
     textMsg = textMsg.trim();
+
+    // update the bot without updating npm packages
+    if (id.includes(superuser)) {
+        if (textMsg.startsWith("!update")) {
+            // pull from git
+            exec('git pull', async (err, stdout, stderr) => {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+                if (stdout.includes("Already up to date.")) sendMsgQueue(id, "Already up to date.");
+                else {
+                    await sendMsgQueue(id, stdout + "\nUpdated successfully! Restarting the bot...");
+                    process.exit(0); // pm2 will restart the bot
+                }
+            });
+        }
+    }
+
 
     // send ACK
     sock.readMessages([msg.key])

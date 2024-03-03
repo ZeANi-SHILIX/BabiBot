@@ -13,4 +13,5 @@ groupConfig.json
 testingFiles
 store
 helpers/jct/all_courses_blocked_and_blocks_info.json
+helpers/jct/mails.json
 youtubeDL
