@@ -283,7 +283,9 @@ async function makeMediaSticker(msg, commandText) {
         let text = msg.message?.imageMessage?.caption || "";
 
         // if the user wrote the command with text - remove the text
-        if (!textWithoutParameters && (text.includes('!sticker') || text.includes('!סטיקר'))) text = "";
+        if (!textWithoutParameters &&
+            (text.includes('!sticker') || text.includes('!סטיקר')) || text.includes('!מדבקה'))
+            text = "";
 
         // change the shape of the sticker 
         // TODO: use another library to change the shape
