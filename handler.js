@@ -22,6 +22,7 @@ import {
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
+import e from 'express';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -621,6 +622,12 @@ export default async function handleMessage(sock, msg, mongo) {
             : textMsg.slice(textMsg.indexOf("נחסם על ידי") + 11);
     } else if (textMsg.includes("חסומים על ידי ")) {
         query = textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
+    } else if (textMsg.includes('חסום ע"י ')) {
+        query = textMsg.slice(textMsg.indexOf('חסום ע"י ') + 9);
+    } else if (textMsg.includes('נחסם ע"י ')) {
+        query = textMsg.slice(textMsg.indexOf('נחסם ע"י ') + 9);
+    } else if (textMsg.includes('חסומים ע"י ')) {
+        query = textMsg.slice(textMsg.indexOf('חסומים ע"י ') + 11);
     }
     if (query) return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
 
