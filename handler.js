@@ -639,7 +639,7 @@ export default async function handleMessage(sock, msg, mongo) {
         // and have @ in the quoted message
         if (msg.message.extendedTextMessage?.contextInfo?.participant.startsWith(numberSocket) &&
             msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation.includes("@")) {
-            return sendMsgQueue(id, "בשמחה! תמיד שמח לעזור😃")
+            return sendMsgQueue(id, "בשמחה! תמיד שמח לעזור🤗")
         }
     }
 
