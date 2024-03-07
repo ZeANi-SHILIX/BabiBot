@@ -641,11 +641,8 @@ export default async function handleMessage(sock, msg, mongo) {
     // reply with plesure to "תודה"
     if (textMsg.includes("תודה")) {
         let numberSocket = sock.user.id.slice(0, sock.user.id.indexOf(":"));
-
-        // check if replied to the bot
-        // and have @ in the quoted message
-        if (msg.message.extendedTextMessage?.contextInfo?.participant.startsWith(numberSocket) &&
-            msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation.includes("@")) {
+        // Check if replied to the bot.
+        if (msg.message.extendedTextMessage?.contextInfo?.participant.startsWith(numberSocket)) {
             return sendMsgQueue(id, "בשמחה! תמיד שמח לעזור🤗")
         }
     }
