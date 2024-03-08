@@ -384,14 +384,10 @@ export default async function handleMessage(sock, msg, mongo) {
         console.log(sender);
         if (!sender.admin) {
             let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
-            // get the number from text
-            let timeToMute = textMsg.replace(/[^0-9]/g, '').trim();
-
-            console.log(GLOBAL.groupConfig?.[id]);
 
             let botMsg = await sock.sendMessage(id, {
                 text: `*מזה יש כאן בלאגן?*\n` +
-                    `@${phoneOfSender} רוצה להשתיק את הקבוצה למשך ${timeToMute} דקות...\n` +
+                    `@${phoneOfSender} רוצה להשתיק את הקבוצה למשך ${muteTime_min} דקות...\n` +
                     `ברגע ש${GLOBAL.groupConfig?.[id]?.countUsersToMute ?? DEFAULT_COUNT_USER_TO_MUTE} אנשים יסכימו איתו ויגיבו על ההודעה הזאת בלייק, הקבוצה תושתק.\n` +
                     `אתם מסכימים?`,
                 mentions: [msg.key.participant]
