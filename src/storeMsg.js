@@ -64,7 +64,7 @@ export const GLOBAL = {
         return false;
     },
     /**
-     * @param {string} jid
+     * @param {string} jid id of the user (or the participant in the group)
      */
     canIUseOpenAI: function (jid) {
         // the data is saved by the user id
@@ -74,7 +74,7 @@ export const GLOBAL = {
 
         if (this.userConfig[jid] === undefined) {
             this.userConfig[jid] = {};
-            this.userConfig[jid].balance = 0.05;
+            this.userConfig[jid].balance = 0.02;
             this.userConfig[jid].sttWithoutCommand = false;
             return true; // allow to use the first time
         }
@@ -114,13 +114,14 @@ export const GLOBAL = {
      * @param {string} jid
      */
     autoSTT: function (jid) {
-        if (this.userConfig[jid]?.sttWithoutCommand && this.userConfig[jid].balance > 0) {
+        if (this.userConfig[jid]?.sttWithoutCommand && this.userConfig[jid]?.balance > 0) {
             return true;
         }
         return false;
     }
 };
 
+const savedKeys = ["groupConfig", "userConfig"];
 
 readConfig();
 
@@ -129,22 +130,37 @@ setInterval(() => {
 }, 20_000);
 
 function readConfig() {
-    if (!fs.existsSync("./groupConfig.json")) {
+    let tempConfig = {};
+    if (!fs.existsSync("./savedConfig.json")) {
+        tempConfig = {};
         console.log("Group Config file not found");
-        GLOBAL.groupConfig = {};
-        GLOBAL.userConfig = {};
-        return;
+    }
+    else {   
+        const data = fs.readFileSync("./savedConfig.json");
+        try {
+            tempConfig = JSON.parse(data);
+            console.log(tempConfig);
+        } catch (error) {
+            tempConfig = {};
+            console.log("Error in parsing the savedConfig.json file");
+        }
     }
 
-    const data = fs.readFileSync("./groupConfig.json");
-    const json = JSON.parse(data);
-    console.log(json);
-    GLOBAL.groupConfig = json.groupConfig;
-    GLOBAL.userConfig = json.userConfig;
+    for (const key of savedKeys) {
+        if (tempConfig[key] === undefined) {
+            GLOBAL[key] = {};
+        }
+        else {
+            GLOBAL[key] = tempConfig[key];
+        }
+    }
 }
 
 function saveConfig() {
-    const copyElement = { groupConfig: GLOBAL.groupConfig, userConfig: GLOBAL.userConfig };
-    fs.writeFileSync("./groupConfig.json", JSON.stringify(copyElement, null, 2));
-    //console.log("Group Config saved");
+    const copyElement = {};
+    for (const key of savedKeys) {
+        copyElement[key] = GLOBAL[key];
+    }
+
+    fs.writeFileSync("./savedConfig.json", JSON.stringify(copyElement, null, 2));
 }
