@@ -5,7 +5,7 @@ import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 import { UltimateTextToImage, registerFont, getCanvasImage } from "ultimate-text-to-image";
 import { MsgType, getMsgType } from './msgType.js';
-import MemoryStore from '../src/store.js';
+import MemoryStore from '../src/memorystore.js';
 import { sendMsgQueue, errorMsgQueue, sendCustomMsgQueue } from '../src/QueueObj.js';
 import { transparentBackground } from "transparent-background";
 import Jimp from "jimp";

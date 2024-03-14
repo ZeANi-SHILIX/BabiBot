@@ -1,4 +1,4 @@
-import MemoryStore from '../src/store.js'
+import MemoryStore from '../src/memorystore.js'
 import { downloadMediaMessage } from '@adiwajshing/baileys';
 import kupaRashit from '../src/schemas/kupaRashit.js';
 import { Sticker } from 'wa-sticker-formatter';

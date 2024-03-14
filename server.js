@@ -10,14 +10,14 @@ import QRCode from 'qrcode';
 import Mongo from './mongo.js';
 import { errorMsgQueue, handlerQueue } from './src/QueueObj.js';
 import { GLOBAL } from './src/storeMsg.js';
-import MemoryStore from './src/store.js';
+import MemoryStore from './src/memorystore.js';
 //import jwt from 'jsonwebtoken';
 import handleMessage from './handler.js';
-import messageRetryHandler from "./src/retryHandler.js";
+//import messageRetryHandler from "./src/retryHandler.js";
 
 const msgRetryCounterMap = {};
 
-const secret = process.env.SECRET ?? 'MySecretDefault';
+//const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const SUPERUSER = process.env.SUPERUSER ?? "";
 
@@ -56,7 +56,7 @@ async function connectToWhatsApp() {
         logger: MemoryStore.logger,
         version,
         msgRetryCounterMap,
-        retryRequestDelayMs: 300,
+        retryRequestDelayMs: 150,
 
         // this method works for poll, need to check if "waiting for message" problem is back
         getMessage, //messageRetryHandler.messageRetryHandler
@@ -64,6 +64,7 @@ async function connectToWhatsApp() {
 
     try {
         MemoryStore.store.bind(sock.ev)
+        GLOBAL.store = MemoryStore;
     } catch (error) {
         console.log(error);
         errorMsgQueue(error);

@@ -6,7 +6,7 @@ import KupaRashitSticker from './helpers/kupaRashitHandler.js';
 import sendSticker from './helpers/stickerMaker.js';
 import { DownloadV2, DownloadVideoMP4, downloadTYoutubeVideo, handlerQueueYTDownload } from './helpers/downloader.js';
 import { GLOBAL } from './src/storeMsg.js';
-import MemoryStore from './src/store.js';
+import MemoryStore from './src/memorystore.js';
 import messageRetryHandler from './src/retryHandler.js'; // can be removed
 import ChatGPT from './helpers/chatgpt.js';
 import UnofficalGPT from './helpers/unofficalGPT.js';

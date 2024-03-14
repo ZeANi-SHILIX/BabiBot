@@ -1,4 +1,4 @@
-import MemoryStore from '../src/store.js'
+import MemoryStore from '../src/memorystore.js'
 import { downloadMediaMessage } from '@adiwajshing/baileys';
 import barkuniDB from '../src/schemas/barkuni.js';
 import { Sticker } from 'wa-sticker-formatter';

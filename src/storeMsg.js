@@ -3,6 +3,9 @@ import fs from "fs";
 /** @type {import('@adiwajshing/baileys').WASocket} */
 let tempSock;
 
+/** @type {import('./memorystore').MemoryStore} */
+let tempStore;
+
 /** @type {{[jid:string]: {"messageID": {reactionsCount: number,minToMute: number, startTime: number}}}}*/
 let tempMuteGroup = {};
 
@@ -35,6 +38,7 @@ let tempQuizLev = {};
 */
 export const GLOBAL = {
     sock: tempSock,
+    store : tempStore,
     muteGroup: tempMuteGroup,
     groupConfig: tempGroupConfig,
     timeouts: tempTimeouts,

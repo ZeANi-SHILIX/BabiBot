@@ -6,9 +6,7 @@ import mediaNote from '../src/schemas/mediaNote.js';
 import allNotes from '../src/schemas/AllNotes.js';
 
 import { MsgType, getMsgType } from './msgType.js';
-import { GLOBAL } from '../src/storeMsg.js'; // TODO: "store" change to memory store
-
-import MemoryStore from '../src/store.js';
+import { GLOBAL } from '../src/storeMsg.js';
 import { msgQueue, sendMsgQueue } from '../src/QueueObj.js';
 
 
@@ -42,7 +40,7 @@ NoteHendler.prototype.saveNote = async function (msg, isGlobal = false, issuperu
 
     let quoted;
     try {
-        quoted = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        quoted = await GLOBAL.store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
     } catch (error) {
         console.log(error);
     }
@@ -282,7 +280,7 @@ NoteHendler.prototype.saveNote1 = async function (msg, sock, isGlobal = false, i
     if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
         // get the quoted message
         try {
-            msg = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+            msg = await GLOBAL.store.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
             isQuoted = true;
         } catch (error) {
             console.log(error);

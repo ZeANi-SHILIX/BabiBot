@@ -4,7 +4,7 @@ import { convertOGGToMp3, isOGGFile } from "./convertor.js";
 import { sendMsgQueue, errorMsgQueue } from "../src/QueueObj.js";
 import { downloadMediaMessage } from "@adiwajshing/baileys";
 import { getMsgType, MsgType } from "./msgType.js";
-import MemoryStore from "../src/store.js";
+import MemoryStore from "../src/memorystore.js";
 
 export default function ChatGPT(apiKey, useOfficial = true) {
   const configuration = new Configuration({
