@@ -273,7 +273,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
         let members = groupData.participants.map(p => p.id);
         let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
-        let quoteAll = "*הופה בלאגן!!! @" + phoneOfSender + " קורא/ת לכולם!* \n\n" // fix to set tag to the sender
+        let quoteAll = "*הודעה חשובה בפתח! @" + phoneOfSender + " קורא/ת לכולם!* \n\n" // fix to set tag to the sender
             + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
 
         return sendCustomMsgQueue(id, { text: quoteAll, mentions: members });
