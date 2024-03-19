@@ -719,18 +719,20 @@ export default async function handleMessage(sock, msg, mongo) {
         //let history = await store.loadMessages(id, numMsgToLoad);
         return MemoryStore.loadMessages(id, numMsgToLoad)
             .then(async (history) => {
-                console.log('history length loaded:', history.length);
+                console.log('history length loaded:', history.length + 1);
 
                 if (history.length < 1)
                     return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
                 history = history.sort((a, b) => a.messageTimestamp - b.messageTimestamp);
 
+                history.pop(); // remove the last message (the command itself)
+
                 let res = await unofficalGPT.tldr(history);
                 console.log(JSON.stringify({
                     model: res.model,
                     usage: res?.usage?.total_tokens,
-                    response: res.choices[0].message.content.trim()
-                }, null, 2));
+                    response: res.choices?.[0].message.content.trim()
+                }, null, 2) || res);
 
                 GLOBAL.updateUnofficialGPTcredit(res?.usage.total_tokens, res.model);
                 return sendMsgQueue(id, (await translate(res.choices[0].message.content.trim())).text);
