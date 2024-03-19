@@ -31,6 +31,8 @@ export class MemoryStore {
 
         // set the current part
         this.#loadCurrentPartNumber();
+        // when the server starts, bump the part number
+        this.#getNextPart();
 
         // create the store
         this.store = makeInMemoryStore({ logger: this.logger });
@@ -62,12 +64,13 @@ export class MemoryStore {
     }
 
     #saveCurrentPartNumber() {
-        fs.writeFileSync("./MemoryStore/current_part.txt", this.#currentPart);
+        fs.writeFileSync("./MemoryStore/current_part.json", JSON.stringify({ currentPart: this.#currentPart }));
     }
 
     #loadCurrentPartNumber() {
-        if (fs.existsSync("./MemoryStore/current_part.txt")) {
-            this.#currentPart = parseInt(fs.readFileSync("./MemoryStore/current_part.txt"));
+        if (fs.existsSync("./MemoryStore/current_part.json")) {
+            let json = JSON.parse(fs.readFileSync("./MemoryStore/current_part.json"));
+            this.#currentPart = parseInt(json.currentPart) || 0;
         }
     }
 
