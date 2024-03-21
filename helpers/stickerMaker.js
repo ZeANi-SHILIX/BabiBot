@@ -124,6 +124,11 @@ const parameters = {
             nameEN: 'Simple',
             nameHE: 'פשוט',
             path: './src/fonts/Simple.ttf'
+        },
+        {
+            nameEN: 'Yeret',
+            nameHE: 'ירט',
+            path: './src/fonts/Yeret.ttf'
         }
     ],
     shape: [
