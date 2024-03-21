@@ -43,8 +43,8 @@ export default async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid || "";
     let caption = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || "";
     let textMsg = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
-    caption = caption.replace(new RegExp(String.fromCharCode(160),"g"), " ").trim();
-    textMsg = textMsg.replace(new RegExp(String.fromCharCode(160),"g"), " ").trim();
+    caption = caption.replace(new RegExp(String.fromCharCode(160), "g"), " ").trim();
+    textMsg = textMsg.replace(new RegExp(String.fromCharCode(160), "g"), " ").trim();
 
     // update the bot without updating npm packages
     if (id.includes(superuser)) {
@@ -316,7 +316,7 @@ export default async function handleMessage(sock, msg, mongo) {
         }
         if (!text) return sendCustomMsgQueue(id, { text: "לא נמצא טקסט לתרגום" });
 
-        translate(text, lang)
+        return translate(text, lang)
             .then(res => {
                 sendCustomMsgQueue(id, { text: res.text });
             })
@@ -581,23 +581,26 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.startsWith("!עדכוןמיילים")) {
-        try {
-            await saveMailsListToFile();
-            sendMsgQueue(id, "המיילים עודכנו בהצלחה")
-        } catch (error) {
-            sendMsgQueue(id, "אופס... חלה שגיאה בעדכון המיילים")
-            errorMsgQueue(error)
-        }
+        return saveMailsListToFile()
+            .then(() => {
+                console.log("mails list updated")
+                sendMsgQueue(id, "המיילים עודכנו בהצלחה")
+            })
+            .catch((error) => {
+                sendMsgQueue(id, "אופס... חלה שגיאה בעדכון המיילים")
+                errorMsgQueue(error)
+            });
     }
 
     if (textMsg.startsWith("!עדכוןקורסים")) {
-        try {
-            await updateCourses();
-            sendMsgQueue(id, "הקורסים עודכנו בהצלחה")
-        } catch (error) {
-            sendMsgQueue(id, "אופס... חלה שגיאה בעדכון הקורסים")
-            errorMsgQueue(error)
-        }
+        return updateCourses()
+            .then(() => {
+                sendMsgQueue(id, "הקורסים עודכנו בהצלחה")
+            })
+            .catch((error) => {
+                sendMsgQueue(id, "אופס... חלה שגיאה בעדכון הקורסים")
+                errorMsgQueue(error)
+            })
     }
 
     let query;
