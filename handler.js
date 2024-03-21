@@ -48,7 +48,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // update the bot without updating npm packages
     if (id.includes(superuser)) {
-        if (textMsg.startsWith("!update")) {
+        if (textMsg.startsWith("!update") || textMsg.startsWith("!עדכן")) {
             // pull from git
             exec('git pull', async (err, stdout, stderr) => {
                 if (err) {
@@ -606,8 +606,8 @@ export default async function handleMessage(sock, msg, mongo) {
         query = textMsg.slice(textMsg.indexOf("חוסם את") + 8);
     } else if (textMsg.includes("חוסמים את ")) {
         query = textMsg.slice(textMsg.indexOf("חוסמים את") + 10);
-    } else if (textMsg.includes("קדם של ")) {
-        query = textMsg.slice(textMsg.indexOf("קדם של") + 7);
+    } else if (textMsg.includes(" קדם של ")) {
+        query = textMsg.slice(textMsg.indexOf("קדם של") + 8);
     }
     if (query) return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
 
@@ -717,9 +717,9 @@ export default async function handleMessage(sock, msg, mongo) {
         let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
 
         //let history = await store.loadMessages(id, numMsgToLoad);
-        return MemoryStore.loadMessages(id, numMsgToLoad)
+        return MemoryStore.loadMessages(id, numMsgToLoad + 1)
             .then(async (history) => {
-                console.log('history length loaded:', history.length + 1);
+                console.log('history length loaded:', history.length);
 
                 if (history.length < 1)
                     return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
