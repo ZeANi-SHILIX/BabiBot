@@ -218,7 +218,10 @@ export function getAllCourses(jid) {
     sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${COURSES.courses.map(c => "- " + c.name).join("\n")}`)
 }
 
-/** Take a text asking for contact details and return the name */
+/**
+ * Take a text asking for contact details and return the name
+ * @param {string} textMsg 
+ */
 function cleanName(textMsg) {
     let searchText = textMsg.replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
         .replace(/[?!.]/g, "")
@@ -227,8 +230,8 @@ function cleanName(textMsg) {
         .replace("המתרגל ", "").replace("מתרגל ", "")
         .trim();
 
-    if (searchText.match(/(^| )ד[״"]?ר /)) // match דר, ד"ר, ד״ר
-        searchText = searchText.replace(/ד[״"]?ר /, "")
+    let regex = /(^| )ד[״"']{0,2}ר/;
+    searchText = searchText.replace(regex, "")
 
     return searchText.trim();
 }
