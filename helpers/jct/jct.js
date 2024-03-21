@@ -84,7 +84,7 @@ export async function updateCourses() {
 }
 
 /**
- * 
+ *
  * @param {string} jid
  * @param {string} query
 */
@@ -102,7 +102,7 @@ export async function getCoursesBlockedBy(jid, query) {
 }
 
 /**
- * 
+ *
  * @param {string} jid
  * @param {string} query
 */
@@ -120,7 +120,7 @@ export async function getWhatThisCourseBlocks(jid, query) {
 }
 
 /**
- * 
+ *
  * @param {string} query
  * @param {"blocked_by" | "blocks"} typeOfQuery
  * @returns {{courseName: string, degreeType: string, courseInfo: string[] | undefined, notes: string}}
@@ -218,25 +218,32 @@ export function getAllCourses(jid) {
     sendMsgQueue(jid, `*רשימת הקורסים במכון:*\n${COURSES.courses.map(c => "- " + c.name).join("\n")}`)
 }
 
-/**
- * 
- * @param {string} jid
- * @param {string} textMsg 
- * @returns 
- */
-export async function getMailOf(jid, textMsg) {
-    let contacts = loadMailsListFromFile();
-    if (contacts.length === 0) contacts = await getMails();
-
+/** Take a text asking for contact details and return the name */
+function cleanName(textMsg) {
     let searchText = textMsg.replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
-        .replace(/[?!]/g, "")
+        .replace(/[?!.]/g, "")
         .replace("בבקשהה", "").replace("בבקשה", "")
         .replace("המרצה ", "").replace("מרצה ", "")
         .replace("המתרגל ", "").replace("מתרגל ", "")
         .trim();
 
-    if ((" " + searchText).includes(" דר "))
-        searchText = searchText.replace("דר ", "")
+    if (searchText.match(/(^| )ד[״"]?ר /)) // match דר, ד"ר, ד״ר
+        searchText = searchText.replace(/ד[״"]?ר /, "")
+
+    return searchText.trim();
+}
+
+/**
+ *
+ * @param {string} jid
+ * @param {string} textMsg
+ * @returns
+ */
+export async function getMailOf(jid, textMsg) {
+    let contacts = loadMailsListFromFile();
+    if (contacts.length === 0) contacts = await getMails();
+
+    let searchText = cleanName(textMsg);
 
     let arr_search = searchText.split(" ");
     console.log(arr_search)
@@ -265,21 +272,13 @@ export async function getMailOf(jid, textMsg) {
 
 /**
  * @param {string} jid
- * @param {string} textMsg 
+ * @param {string} textMsg
  */
 export async function getPhoneNumberOf(jid, textMsg) {
     let contacts = loadMailsListFromFile();
     if (contacts.length === 0) contacts = await getMails();
 
-    let searchText = textMsg.replace(/[^\p{L}\p{N}\p{P}\p{Z}^$\n]/gu, '')
-        .replace(/[?]/g, "")
-        .replace("בבקשהה", "").replace("בבקשה", "")
-        .replace("המרצה ", "").replace("מרצה ", "")
-        .replace("המתרגל ", "").replace("מתרגל ", "")
-        .trim();
-
-    if ((" " + searchText).includes(" דר "))
-        searchText = searchText.replace("דר ", "")
+    let searchText = cleanName(textMsg);
 
     let arr_search = searchText.split(" ");
     console.log(arr_search)
@@ -310,9 +309,9 @@ export async function getPhoneNumberOf(jid, textMsg) {
 }
 
 /**
- * 
+ *
  * @returns {Promise<{  mail: string, mailName: string, nickname: string,
- *                      phone: string, name: string, officeReceptionHours: string, 
+ *                      phone: string, name: string, officeReceptionHours: string,
  *                      phoneReceptionHours: string, location: string, whatsapp: string}[]>}
  */
 async function getMails() {
@@ -347,11 +346,11 @@ async function getMails() {
 }
 
 /**
- * 
+ *
  * @param {{mail: string, mailName: string, nickname: string,
  *          phone: string, name: string, officeReceptionHours: string,
- *          phoneReceptionHours: string, location: string, whatsapp: string}} contact 
- * @returns 
+ *          phoneReceptionHours: string, location: string, whatsapp: string}} contact
+ * @returns
  */
 async function makeVcard(contact = {}) {
 
