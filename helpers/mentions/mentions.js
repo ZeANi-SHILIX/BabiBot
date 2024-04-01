@@ -44,10 +44,11 @@ class Mentions {
             users = this.mentions[label].users.filter((user) => users.includes(user));
 
             // if is there any user left, we need to update the mentions
-            if (users.length !== this.mentions[label].users.length) {
-                this.mentions[label].users = users;
-                this.saveMentions();
-            }
+            // (only when is one group?, user can be in another groups)
+            // if (users.length !== this.mentions[label].users.length) {
+            //     this.mentions[label].users = users;
+            //     this.saveMentions();
+            // }
 
             // send the message
             let text = this.mentions[label].text;
