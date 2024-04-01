@@ -19,7 +19,7 @@ const msgRetryCounterMap = {};
 
 //const secret = process.env.SECRET ?? 'MySecretDefault';
 const PRODUCTION = process.env.NODE_ENV === 'production';
-const SUPERUSER = process.env.SUPERUSER ?? "";
+GLOBAL.superuser = process.env.SUPERUSER ?? "";
 
 console.log("PRODUCTION:", PRODUCTION);
 PRODUCTION ? null : process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
@@ -106,9 +106,9 @@ async function connectToWhatsApp() {
         for (const ev of event) {
             console.log(event);
 
-            const superUser_inGroup = ev.participants.some(p => p.admin && p.id.includes(SUPERUSER))
+            const superUser_inGroup = ev.participants.some(p => p.admin && p.id.includes(GLOBAL.superuser))
             // superuser isn't falsy, and he admin at the group - do nothing
-            if (SUPERUSER && superUser_inGroup) return;
+            if (GLOBAL.superuser && superUser_inGroup) return;
 
             await sock.sendMessage(ev.id, {
                 text: "היי! אני באבי בוט 😃\n"
@@ -202,9 +202,9 @@ connectToWhatsApp();
 function canHandleMsg(key) {
     if (PRODUCTION) return true;
     // in private chat
-    if (key.remoteJid.includes(SUPERUSER)) return true;
+    if (key.remoteJid.includes(GLOBAL.superuser)) return true;
     // in group
-    if (key.participant && key.participant.includes(SUPERUSER)) return true;
+    if (key.participant && key.participant.includes(GLOBAL.superuser)) return true;
     return false;
 }
 

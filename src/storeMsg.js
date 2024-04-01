@@ -38,6 +38,7 @@ let tempQuizLev = {};
 */
 export const GLOBAL = {
     sock: tempSock,
+    superuser: "",
     store : tempStore,
     muteGroup: tempMuteGroup,
     groupConfig: tempGroupConfig,
