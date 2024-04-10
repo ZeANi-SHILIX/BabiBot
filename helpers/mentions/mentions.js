@@ -101,6 +101,75 @@ class Mentions {
 
     }
 
+    /**
+     * get the mentions
+     * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+     */
+    async setLabel(msg) {
+        const jid = msg.key.remoteJid;
+
+        // check if the message is in a group
+        if (!jid.includes("@g.us"))
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+        const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
+        commandChar = "&"
+        commands = {
+            mention: "@",
+            editLabel: "!"
+        }
+
+        const msgComponents = textMsg.split(/[\n ]/).toLowerCase();
+
+        const command = msgComponents[0].toLowerCase()
+        
+        if (command === (commandChar + "צור") || command === (commandChar + "create"))
+        {
+            const labelName = msgComponents[1];
+            if (!labelName) return sendMsgQueue(jid, "אופס... נראה ששכחת לכתוב את שם התג");
+                      
+
+            const additionalText = msgText.split(/[\n ]/).slice(2).join(" ") || "";
+            if (this.mentions[labelName]) 
+            {
+                if (this.mentions[labelName].groups.includes(jid))
+                    return sendMsgQueue(jid, "תג זה כבר קיים");
+                else
+                    this.addLabel(labelName, this.mentions[labelName].groups.push(jid), additionalText)
+            }
+            else this.addLabel(labelName, jid, additionalText)
+
+            success = `התג *${labelName}* נוצר בהצלחה!`
+            return sendMsgQueue(jid, success)
+        }
+    }
+
+
+    async getAllLabels(msg) {
+        const jid = msg.key.remoteJid;
+
+        // check if the message is in a group
+        if (!jid.includes("@g.us"))
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+        const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
+
+        commandChar = "&"
+        const msgComponents = textMsg.split(/[\n ]/).toLowerCase();
+        const command = msgComponents[0].toLowerCase()
+        
+        if (command === (commandChar + "רשימה") || command === (commandChar + "רשימת") || command === (commandChar + "list"))
+        {
+            // gather all labels related to this group
+            labelList = []
+            for (let label in this.mentions){
+                if (this.mentions[label].groups.includes(jid))
+                    labelList.push(label)
+            }
+           
+            return sendCustomMsgQueue(jid, labelList.join("\n"))
+        }
+    }
     //############################################################################################################
 
     /**
