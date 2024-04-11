@@ -102,7 +102,7 @@ class Mentions {
     }
 
     /**
-     * get the mentions
+     * handle label operations such as add, remove, edit, etc.
      * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
      */
     async labelHandling(msg){
@@ -113,7 +113,7 @@ class Mentions {
             return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
 
         const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
-        commandChar = textMsg[0]
+
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
         // pure command and label
@@ -132,6 +132,12 @@ class Mentions {
         if (responseMsg) return sendMsgQueue(jid, responseMsg)
     }
 
+    /**
+     * set new label from mentions
+    * @param {string} jid
+    * @param {string} label
+    * @param {string} textMsg
+    */
     setLabel(jid, label, textMsg) {
         
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";          
@@ -157,6 +163,11 @@ class Mentions {
         return `התג *${labelName}* נוצר בהצלחה!`
     }
 
+    /**
+     * delete label from mentions
+    * @param {string} jid
+    * @param {string} label
+    */
     deleteLabel(jid, label) {
         
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
@@ -173,6 +184,10 @@ class Mentions {
         return `התג *${label}* נמחק בהצלחה!`
         }
 
+    /**
+     * get all labels associated with the group
+    * @param {string} jid group id
+    */
     getAllLabels(jid) {
         // gather all labels related to this group
         labelList = []
@@ -185,6 +200,12 @@ class Mentions {
 
     }
 
+    /**
+     * edit label text, add or remove user/s
+    * @param {string} jid
+    * @param {string} label
+    * @param {string} textMsg new text for the label
+    */
     editLabel(jid, label, textMsg) {
         let responseMsg = ""
 
