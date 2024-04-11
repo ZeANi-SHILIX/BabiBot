@@ -147,6 +147,37 @@ class Mentions {
         }
     }
 
+    async deleteLabel(msg) {
+        const jid = msg.key.remoteJid;
+
+        // check if the message is in a group
+        if (!jid.includes("@g.us"))
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+        const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
+        commandChar = "&"
+        const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
+
+        const command = msgComponents[0]
+        
+        if (command === (commandChar + "מחק") || command === (commandChar + "delete"))
+        {
+            const labelName = msgComponents[1];
+            if (!labelName) return sendMsgQueue(jid, "אופס... נראה ששכחת לכתוב את שם התג");
+
+            if (this.mentions[labelName] && this.mentions[labelName].groups.includes(jid)) 
+            {
+                delete this.mentions[labelName]
+            }
+            else return sendMsgQueue(jid, "תג זה לא קיים פה מלכתחילה");
+
+            // update the json file
+            this.saveMentions()
+
+            responseMsg = `התג *${labelName}* נמחק בהצלחה!`
+            return sendMsgQueue(jid, responseMsg)
+        }
+    }
 
     async getAllLabels(msg) {
         const jid = msg.key.remoteJid;
@@ -196,7 +227,7 @@ class Mentions {
             if (!this.mentions[labelName] || !this.mentions[labelName].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
-                if (labelName.startsWith("ל") && this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid))
+                if (labelName.startsWith("ל") && this.mentions[labelName] && this.mentions[labelName].groups.includes(jid))
                     labelName = labelName.slice(1)
                 else
                     return sendMsgQueue(jid, "תג זה לא קיים");
@@ -219,7 +250,7 @@ class Mentions {
             if (!this.mentions[labelName] || !this.mentions[labelName].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
-                if (labelName.startsWith("מ") && this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid))
+                if (labelName.startsWith("מ") && this.mentions[labelName] && this.mentions[labelName].groups.includes(jid))
                     labelName = labelName.slice(1)
                 else
                     return sendMsgQueue(jid, "תג זה לא קיים");
