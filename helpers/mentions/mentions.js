@@ -116,7 +116,7 @@ class Mentions {
         commandChar = "&"
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
-        const command = msgComponents[0].toLowerCase()
+        const command = msgComponents[0]
         
         if (command === (commandChar + "צור") || command === (commandChar + "create"))
         {
@@ -159,7 +159,7 @@ class Mentions {
 
         commandChar = "&"
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
-        const command = msgComponents[0].toLowerCase()
+        const command = msgComponents[0]
         
         if (command === (commandChar + "רשימה") || command === (commandChar + "רשימת") || command === (commandChar + "list"))
         {
@@ -185,7 +185,7 @@ class Mentions {
 
         commandChar = "&"
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
-        const command = msgComponents[0].toLowerCase()
+        const command = msgComponents[0]
         responseMsg = ""
 
         const labelName = msgComponents[1];
@@ -193,7 +193,7 @@ class Mentions {
 
         if (command === "הוסף" || command === "תוסיף" || command === "add")
         {
-            if (!this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid)) 
+            if (!this.mentions[labelName] || !this.mentions[labelName].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
                 if (labelName.startsWith("ל") && this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid))
@@ -216,7 +216,7 @@ class Mentions {
         
         else if (command === "הסר" || command === "תסיר" || command === "remove" || command === "delete")
         {
-            if (!this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid)) 
+            if (!this.mentions[labelName] || !this.mentions[labelName].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
                 if (labelName.startsWith("מ") && this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid))
@@ -239,16 +239,14 @@ class Mentions {
         else if (command === (commandChar + "ערוך") || command === (commandChar + "שנה") || command === (commandChar + "תשנה")
             || command === (commandChar + "edit") || command === (commandChar + "change"))
         {
-            
-            // command continuation, which component to edit
-            const commandToChange = msgComponents[2].toLowerCase()
-            if (!commandToChange) return sendMsgQueue(jid, "אז לא לשנות כלום? טוב.");
-
-            if (commandToChange === "תיאור" || commandToChange === "טקסט" || commandToChange.startsWith("desc"))
+            if (!this.mentions[labelName] || !this.mentions[labelName].groups.includes(jid)) 
+                return sendMsgQueue(jid, "תג זה לא קיים");
+            else
             {
-                //...
-                // TODO
+                //TODO
+                    
             }
+
             responseMsg =`התג *${labelName}* נערך בהצלחה!`
         }
 
