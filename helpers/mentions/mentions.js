@@ -164,19 +164,46 @@ class Mentions {
     }
 
     /**
-     * delete label from mentions
+     * remove label from mentions for the group
+    * @param {string} jid group id
+    * @param {string} label
+    */
+deleteLabel(jid, label) {
+    let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
+            || msg.key.participant.includes(GLOBAL.superuser);
+    if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
+
+    if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
+
+    if (this.mentions[label] && this.mentions[label].groups.includes(jid)) 
+    {
+        this.mentions[label].groups = this.mentions[label].groups.filter(g => g !== jid)
+    }
+    else return "תג זה לא קיים פה מלכתחילה";
+
+    // update the json file
+    this.saveMentions()
+
+    return `התג *${label}* נמחק בהצלחה!`
+    }
+
+    /**
+     * delete label from mentions completely
     * @param {string} jid
     * @param {string} label
     */
     deleteLabel(jid, label) {
-        
+        let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
+                || msg.key.participant.includes(GLOBAL.superuser);
+        if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
+
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
         if (this.mentions[label] && this.mentions[label].groups.includes(jid)) 
         {
             delete this.mentions[label]
         }
-        else return "תג זה לא קיים פה מלכתחילה";
+        else return "תג זה לא קיים מלכתחילה";
 
         // update the json file
         this.saveMentions()
