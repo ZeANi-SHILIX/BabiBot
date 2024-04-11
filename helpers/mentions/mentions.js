@@ -243,8 +243,8 @@ class Mentions {
                 return sendMsgQueue(jid, "תג זה לא קיים");
             else
             {
-                //TODO
-                    
+                let text = msgComponents.slice(2).join(" ") + "\n" || "";
+                this.addLabel(labelName, this.mentions[labelName].groups, text)
             }
 
             responseMsg =`התג *${labelName}* נערך בהצלחה!`
