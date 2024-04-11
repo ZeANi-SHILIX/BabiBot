@@ -116,18 +116,22 @@ class Mentions {
 
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
-        // pure command and label
+        // command without the "&"
         const command = msgComponents[0].slice(1);
+        // label
         const labelName = msgComponents[1];
+        // additional text for label 
+        const preText = textMsg.split(/[\n ]/).slice(2).join(" ") + "\n" || "";
 
-        if (command === "צור" || command === "create") responseMsg = this.setLabel(jid, labelName, textMsg)
+
+        if (command === "צור" || command === "create") responseMsg = this.setLabel(jid, labelName, preText)
 
         if (command === "מחק" || command === "delete") responseMsg = this.deleteLabel(jid, labelName)
 
         if (command === "רשימה" || command === "רשימת" || command === "list") responseMsg = this.getAllLabels(jid)
 
         // editing pretext, adding and removing users...
-        else responseMsg = this.editLabel(jid, labelName, textMsg)
+        else responseMsg = this.editLabel(jid, labelName, preText)
 
         if (responseMsg) return sendMsgQueue(jid, responseMsg)
     }
@@ -138,11 +142,10 @@ class Mentions {
     * @param {string} label
     * @param {string} textMsg
     */
-    setLabel(jid, label, textMsg) {
+    setLabel(jid, label, preText) {
         
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";          
 
-        const preText = textMsg.split(/[\n ]/).slice(2).join(" ") + "\n" || "";
         if (this.mentions[label]) 
         {
             if (this.mentions[label].groups.includes(jid))
@@ -233,7 +236,7 @@ deleteLabel(jid, label) {
     * @param {string} label
     * @param {string} textMsg new text for the label
     */
-    editLabel(jid, label, textMsg) {
+    editLabel(jid, label, preText) {
         let responseMsg = ""
 
         if (command === "הוסף" || command === "תוסיף" || command === "add")
@@ -241,8 +244,9 @@ deleteLabel(jid, label) {
             if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
-                if (label.startsWith("ל") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
-                else return "תג זה לא קיים";
+                //if (label.startsWith("ל") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
+                //else 
+                return "תג זה לא קיים";
             }
 
         
@@ -261,8 +265,9 @@ deleteLabel(jid, label) {
             if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
-                if (label.startsWith("מ") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
-                else return "תג זה לא קיים";
+                //if (label.startsWith("מ") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
+                //else
+                return "תג זה לא קיים";
             }
 
             
@@ -281,8 +286,7 @@ deleteLabel(jid, label) {
             if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) return "תג זה לא קיים";
             else
             {
-                let text = textMsg.split(/[\n ]/).slice(2).join(" ") + "\n" || "";
-                this.addLabel(label, this.mentions[label].groups, text)
+                this.addLabel(label, this.mentions[label].groups, preText)
             }
 
             responseMsg =`התג *${label}* נערך בהצלחה!`
