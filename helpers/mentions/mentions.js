@@ -116,14 +116,15 @@ class Mentions {
         commandChar = textMsg[0]
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
-        const command = msgComponents[0];
+        // pure command and label
+        const command = msgComponents[0].slice(1);
         const labelName = msgComponents[1];
 
-        if (command === (commandChar + "צור") || command === (commandChar + "create")) responseMsg = this.setLabel(jid, labelName, textMsg)
+        if (command === "צור" || command === "create") responseMsg = this.setLabel(jid, labelName, textMsg)
 
-        if (command === (commandChar + "מחק") || command === (commandChar + "delete")) responseMsg = this.deleteLabel(jid, labelName)
+        if (command === "מחק" || command === "delete") responseMsg = this.deleteLabel(jid, labelName)
 
-        if (command === (commandChar + "רשימה") || command === (commandChar + "רשימת") || command === (commandChar + "list")) responseMsg = this.getAllLabels(jid, labelName)
+        if (command === "רשימה" || command === "רשימת" || command === "list") responseMsg = this.getAllLabels(jid)
 
         // editing pretext, adding and removing users...
         else responseMsg = this.editLabel(jid, labelName, textMsg)
@@ -135,17 +136,17 @@ class Mentions {
         
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";          
 
-        const preText = textMsg.split(/[\n ]/).slice(2).join(" ") || "";
+        const preText = textMsg.split(/[\n ]/).slice(2).join(" ") + "\n" || "";
         if (this.mentions[label]) 
         {
             if (this.mentions[label].groups.includes(jid))
-                return sendMsgQueue(jid, "תג זה כבר קיים");
+                return "תג זה כבר קיים";
             // label already exists in other groups
             else
                 {
                     //this.addLabel(labelName, this.mentions[labelName].groups.push(jid), preText)
                     this.addLabel(label, this.mentions[label].groups.push(jid), this.mentions[label].text)
-                    return sendMsgQueue(jid, "תג זה כבר קיים, בקבוצות אחרות");
+                    return "תג זה כבר קיים, בקבוצות אחרות";
                 }
         }
         else this.addLabel(label, jid, preText)
@@ -172,7 +173,7 @@ class Mentions {
         return `התג *${label}* נמחק בהצלחה!`
         }
 
-    getAllLabels(msg) {
+    getAllLabels(jid) {
         // gather all labels related to this group
         labelList = []
         for (let l in this.mentions){
@@ -184,8 +185,8 @@ class Mentions {
 
     }
 
-    editLabel(msg) {
-        responseMsg = ""
+    editLabel(jid, label, textMsg) {
+        let responseMsg = ""
 
         if (command === "הוסף" || command === "תוסיף" || command === "add")
         {
@@ -226,13 +227,13 @@ class Mentions {
                 responseMsg = `המשתמש הוסר בהצלחה!`
             }
 
-        else if (command === (commandChar + "ערוך") || command === (commandChar + "שנה") || command === (commandChar + "תשנה")
-            || command === (commandChar + "edit") || command === (commandChar + "change"))
+        else if (command === "ערוך" || command === "שנה" || command === "תשנה"
+            || command === "edit" || command === "change")
         {
             if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) return "תג זה לא קיים";
             else
             {
-                let text = msgComponents.slice(2).join(" ") + "\n" || "";
+                let text = textMsg.split(/[\n ]/).slice(2).join(" ") + "\n" || "";
                 this.addLabel(label, this.mentions[label].groups, text)
             }
 
