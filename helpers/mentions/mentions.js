@@ -114,12 +114,7 @@ class Mentions {
 
         const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
         commandChar = "&"
-        commands = {
-            mention: "@",
-            editLabel: "!"
-        }
-
-        const msgComponents = textMsg.split(/[\n ]/).toLowerCase();
+        const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
         const command = msgComponents[0].toLowerCase()
         
@@ -129,15 +124,23 @@ class Mentions {
             if (!labelName) return sendMsgQueue(jid, "אופס... נראה ששכחת לכתוב את שם התג");
                       
 
-            const additionalText = msgText.split(/[\n ]/).slice(2).join(" ") || "";
+            const preText = msgText.split(/[\n ]/).slice(2).join(" ") || "";
             if (this.mentions[labelName]) 
             {
                 if (this.mentions[labelName].groups.includes(jid))
                     return sendMsgQueue(jid, "תג זה כבר קיים");
+                // label already exists in other groups
                 else
-                    this.addLabel(labelName, this.mentions[labelName].groups.push(jid), additionalText)
+                    {
+                        //this.addLabel(labelName, this.mentions[labelName].groups.push(jid), preText)
+                        this.addLabel(labelName, this.mentions[labelName].groups.push(jid), this.mentions[labelName].text)
+                        return sendMsgQueue(jid, "תג זה כבר קיים, בקבוצות אחרות");
+                    }
             }
-            else this.addLabel(labelName, jid, additionalText)
+            else this.addLabel(labelName, jid, preText)
+
+            // update the json file
+            this.saveMentions()
 
             success = `התג *${labelName}* נוצר בהצלחה!`
             return sendMsgQueue(jid, success)
@@ -155,7 +158,7 @@ class Mentions {
         const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
 
         commandChar = "&"
-        const msgComponents = textMsg.split(/[\n ]/).toLowerCase();
+        const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
         const command = msgComponents[0].toLowerCase()
         
         if (command === (commandChar + "רשימה") || command === (commandChar + "רשימת") || command === (commandChar + "list"))
@@ -169,6 +172,90 @@ class Mentions {
            
             return sendCustomMsgQueue(jid, labelList.join("\n"))
         }
+    }
+
+    async editLabel(msg) {
+        const jid = msg.key.remoteJid;
+
+        // check if the message is in a group
+        if (!jid.includes("@g.us"))
+            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+        const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
+
+        commandChar = "&"
+        const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
+        const command = msgComponents[0].toLowerCase()
+        responseMsg = ""
+
+        const labelName = msgComponents[1];
+            if (!labelName) return sendMsgQueue(jid, "אופס... נראה ששכחת לציין את שם התג");
+
+        if (command === "הוסף" || command === "תוסיף" || command === "add")
+        {
+            if (!this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid)) 
+            {
+                // remove hebrew preposition if label had one on
+                if (labelName.startsWith("ל") && this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid))
+                    labelName = labelName.slice(1)
+                else
+                    return sendMsgQueue(jid, "תג זה לא קיים");
+            }
+
+        
+            // get list of users from msg to add
+            addedUsers = msg.mentions.filter(user => !this.mentions[labelName].users.includes(user))
+            this.mentions[labelName].users = this.mentions[labelName].users.concat(addedUsers)
+
+            // add oneself
+            if (msg.mentions.length() <= 0)
+                this.mentions[labelName].users.push(msg.key.participant);
+
+            responseMsg = `המשתמש נוסף בהצלחה!`
+        }
+        
+        else if (command === "הסר" || command === "תסיר" || command === "remove" || command === "delete")
+        {
+            if (!this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid)) 
+            {
+                // remove hebrew preposition if label had one on
+                if (labelName.startsWith("מ") && this.mentions[labelName] && !this.mentions[labelName].groups.includes(jid))
+                    labelName = labelName.slice(1)
+                else
+                    return sendMsgQueue(jid, "תג זה לא קיים");
+            }
+
+            
+            // get list of users from msg to remove
+            this.mentions[labelName].users.filter(user => !msg.mentions.includes(user));
+
+            // remove oneself
+            if (msg.mentions.length() <= 0)
+                this.mentions[labelName].users.filter(user => user !== msg.key.participant);
+
+                responseMsg = `המשתמש הוסר בהצלחה!`
+            }
+
+        else if (command === (commandChar + "ערוך") || command === (commandChar + "שנה") || command === (commandChar + "תשנה")
+            || command === (commandChar + "edit") || command === (commandChar + "change"))
+        {
+            
+            // command continuation, which component to edit
+            const commandToChange = msgComponents[2].toLowerCase()
+            if (!commandToChange) return sendMsgQueue(jid, "אז לא לשנות כלום? טוב.");
+
+            if (commandToChange === "תיאור" || commandToChange === "טקסט" || commandToChange.startsWith("desc"))
+            {
+                //...
+                // TODO
+            }
+            responseMsg =`התג *${labelName}* נערך בהצלחה!`
+        }
+
+        // update the json file
+        this.saveMentions()
+
+        return sendCustomMsgQueue(jid, responseMsg)
     }
     //############################################################################################################
 
