@@ -257,6 +257,9 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("@")){
         return mentions.getMentions(msg);
     }
+    else if (textMsg.startsWith("&")){
+        return mentions.labelHandling(msg);
+    }
     // if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
     //     if (!msg.key.remoteJid.includes("@g.us"))
     //         return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
