@@ -17,7 +17,7 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate, { languages } from './custom_modules/Translate.js';
 import {
-    getPhoneNumberOf, getMailOf, saveMailsListToFile,
+    getPhoneNumberOf, getMailOf, saveMailsListToFile, downloadFileAsPDF,
     getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses, updateCourses
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
@@ -635,6 +635,13 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("כל הקורסים")) {
         return getAllCourses(id)
     }
+
+    if (textMsg.startsWith("!pdf")) {
+        let qoutedMsg =  await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        if (!qoutedMsg) return sendMsgQueue(id, "יש לצטט הודעה");
+        return downloadFileAsPDF(qoutedMsg)
+    }
+
 
 
     // reply with plesure to "תודה"

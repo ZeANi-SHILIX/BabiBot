@@ -4,6 +4,7 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 PRODUCTION ? null : process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 
 import { errorMsgQueue, sendCustomMsgQueue, sendMsgQueue } from '../../src/QueueObj.js';
+import { downloadMediaMessage } from '@adiwajshing/baileys';
 import didYouMean from 'didyoumean2';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -425,4 +426,33 @@ function loadMailsListFromFile() {
         errorMsgQueue("Error loading mails list from file")
     }
     return contacts;
+}
+/**
+ * 
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+ */
+export async function downloadFileAsPDF(msg) {
+    let filename = msg.message?.documentMessage?.fileName;
+    if (!filename) return sendMsgQueue(msg.key.remoteJid, "יש לצוטט הודעה מסוג קובץ");
+
+    filename = filename.endsWith(".pdf")
+        ? filename
+        : filename.endsWith(".pdf.html")
+            ? filename.replace(".html", "")
+            : filename + ".pdf";
+
+    downloadMediaMessage(msg, "buffer")
+        .then(buffer => {
+            fs.writeFileSync(filename, buffer);
+            sendCustomMsgQueue(msg.key.remoteJid, {
+                document: fs.readFileSync(filename),
+                fileName: filename
+            });
+            fs.unlinkSync(filename);
+        })
+        .catch(err => {
+            console.log(err);
+            errorMsgQueue("Error downloading file");
+            sendMsgQueue(msg.key.remoteJid, "לא הצלחתי להוריד את הקובץ");
+        });
 }
