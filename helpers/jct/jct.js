@@ -431,24 +431,23 @@ function loadMailsListFromFile() {
  * 
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  */
-export async function downloadFileAsPDF(msg) {
+export async function downloadFileAsPDF(msg, customName) {
     let filename = msg.message?.documentMessage?.fileName;
     if (!filename) return sendMsgQueue(msg.key.remoteJid, "יש לצוטט הודעה מסוג קובץ");
 
-    filename = filename.endsWith(".pdf")
-        ? filename
-        : filename.endsWith(".pdf.html")
-            ? filename.replace(".html", "")
-            : filename + ".pdf";
+    filename = customName ? customName + ".pdf"
+        : filename.endsWith(".pdf")
+            ? filename
+            : filename.endsWith(".pdf.html")
+                ? filename.replace(".html", "")
+                : filename + ".pdf";
 
     downloadMediaMessage(msg, "buffer")
         .then(buffer => {
-            fs.writeFileSync(filename, buffer);
             sendCustomMsgQueue(msg.key.remoteJid, {
-                document: fs.readFileSync(filename),
+                document: buffer,
                 fileName: filename
             });
-            fs.unlinkSync(filename);
         })
         .catch(err => {
             console.log(err);

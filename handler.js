@@ -637,9 +637,10 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.startsWith("!pdf")) {
+        let customName = textMsg.replace("!pdf", "").trim();
         let qoutedMsg =  await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!qoutedMsg) return sendMsgQueue(id, "יש לצטט הודעה");
-        return downloadFileAsPDF(qoutedMsg)
+        return downloadFileAsPDF(qoutedMsg, customName);
     }
 
 
