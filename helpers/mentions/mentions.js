@@ -72,6 +72,18 @@ class Mentions {
             text += users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
             return sendCustomMsgQueue(jid, { text, mentions: users });
         }
+
+        else if (label === "admin" || label === "מנהלים") {
+            let metadata = await GLOBAL.sock.groupMetadata(jid);
+
+            // filter the users
+            let users = metadata.participants.map((user) => user.id)
+                .filter((user) => user.admin // admins only
+                    && !user.includes(GLOBAL.sock.user.id.split("@")[0].split(":")[0])); // not bots
+
+            let text = users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
+            return sendCustomMsgQueue(jid, { text, mentions: users });
+        }
     }
 
     /*############################################################################################################
@@ -117,45 +129,88 @@ class Mentions {
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
         // command without the "&"
-        const command = msgComponents[0].slice(1);
+        const requestedCommand = msgComponents[0].slice(1);
         // label
         const labelName = msgComponents[1];
         // additional text for label 
         const preText = textMsg.split(/[\n ]/).slice(2).join(" ") + "\n" || "";
 
+        const commands = {
+            'create_label': {
+                commandWords: ['create', 'צור', 'תצור'],
+                func: this.createLabel,
+                args: [jid, labelName, preText]
+            },
+            'delete_label': {
+                commandWords: ['delete', 'מחק', 'תמחק'],
+                func: this.deleteLabel,
+                args: [jid, labelName]
+            },
+            'delete_label_perm': {
+                commandWords: ['del_perm', 'מחק_סופי'],
+                func: this.deleteLabel,
+                args: [jid, labelName, true]
+            },
+            'list_labels': {
+                commandWords: ['list', 'רשימה'],
+                func: this.getAllLabels,
+                args: [jid]
+            },
+            'edit_label': {
+                commandWords: ['edit', 'ערוך', 'שנה', 'תשנה'],
+                func: this.editLabel,
+                args: [jid, labelName, preText]
+            },
+            'add_mention': {
+                commandWords: ['add', 'הוסף', 'תוסיף'],
+                func: this.editLabel,
+                args: [jid, labelName] 
+            },
+            'remove_mention': {
+                commandWords: ['remove', 'הסר', 'תסיר'],
+                func: this.removeUserMention,
+                args: [jid, labelName]
+            }
+        }
 
-        if (command === "צור" || command === "create") responseMsg = this.setLabel(jid, labelName, preText)
+        responseMsg = ""
 
-        if (command === "מחק" || command === "delete") responseMsg = this.deleteLabel(jid, labelName)
-
-        if (command === "רשימה" || command === "רשימת" || command === "list") responseMsg = this.getAllLabels(jid)
-
-        // editing pretext, adding and removing users...
-        else responseMsg = this.editLabel(jid, labelName, preText)
-
-        if (responseMsg) return sendMsgQueue(jid, responseMsg)
+        Object.entries(commands).forEach(op => {
+            let currCommand = commands[op]
+            if (currCommand.commandWords.includes(requestedCommand))
+            {
+                responseMsg = currCommand.func(...currCommand.args)
+            }
+        });
+        
+        if (responseMsg === "") // requested command does not currently exist
+        {
+            responseMsg = "אופס, נראה שפקודה זאת לא קיימת..."
+        }
+        
+        return sendMsgQueue(jid, responseMsg)
     }
 
     /**
-     * set new label from mentions
+     * create a new label from mentions
     * @param {string} jid
     * @param {string} label
     * @param {string} textMsg
     */
-    setLabel(jid, label, preText) {
+    createLabel(jid, label, preText) {
         
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";          
 
         if (this.mentions[label]) 
         {
-            if (this.mentions[label].groups.includes(jid))
-                return "תג זה כבר קיים";
+            //if (this.mentions[label].groups.includes(jid))
+            //    return "תג זה כבר קיים";
             // label already exists in other groups
-            else
+            //else
                 {
                     //this.addLabel(labelName, this.mentions[labelName].groups.push(jid), preText)
                     this.addLabel(label, this.mentions[label].groups.push(jid), this.mentions[label].text)
-                    return "תג זה כבר קיים, בקבוצות אחרות";
+                    //return "תג זה כבר קיים, בקבוצות אחרות";
                 }
         }
         else this.addLabel(label, jid, preText)
@@ -171,31 +226,7 @@ class Mentions {
     * @param {string} jid group id
     * @param {string} label
     */
-deleteLabel(jid, label) {
-    let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
-            || msg.key.participant.includes(GLOBAL.superuser);
-    if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
-
-    if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
-
-    if (this.mentions[label] && this.mentions[label].groups.includes(jid)) 
-    {
-        this.mentions[label].groups = this.mentions[label].groups.filter(g => g !== jid)
-    }
-    else return "תג זה לא קיים פה מלכתחילה";
-
-    // update the json file
-    this.saveMentions()
-
-    return `התג *${label}* נמחק בהצלחה!`
-    }
-
-    /**
-     * delete label from mentions completely
-    * @param {string} jid
-    * @param {string} label
-    */
-    deleteLabel(jid, label) {
+    deleteLabel(jid, label, permanent=false) {
         let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
                 || msg.key.participant.includes(GLOBAL.superuser);
         if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
@@ -204,9 +235,14 @@ deleteLabel(jid, label) {
 
         if (this.mentions[label] && this.mentions[label].groups.includes(jid)) 
         {
-            delete this.mentions[label]
+            this.mentions[label].groups = this.mentions[label].groups.filter(g => g !== jid)
+            
+            // delete completely from mentions if requested or inaccessable anymore
+            if (permanent || this.mentions[label].groups.length <= 0){
+                delete this.mentions[label]
+            }
         }
-        else return "תג זה לא קיים מלכתחילה";
+        else return "תג זה לא קיים פה מלכתחילה";
 
         // update the json file
         this.saveMentions()
@@ -219,29 +255,45 @@ deleteLabel(jid, label) {
     * @param {string} jid group id
     */
     getAllLabels(jid) {
-        // gather all labels related to this group
-        labelList = []
-        for (let l in this.mentions){
-            if (this.mentions[l].groups.includes(jid))
-                labelList.push(l)
-        }
-        
+        const allLabels = Object.keys(this.mentions)
+        const labelList = allLabels.filter(l => this.mentions[l].groups.includes(jid));
         return labelList.join("\n")
-
     }
 
     /**
-     * edit label text, add or remove user/s
+     * remove user mentions from label
     * @param {string} jid
     * @param {string} label
-    * @param {string} textMsg new text for the label
     */
-    editLabel(jid, label, preText) {
-        let responseMsg = ""
-
-        if (command === "הוסף" || command === "תוסיף" || command === "add")
+    removeUserMention(jid, label) {
+        if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) 
         {
-            if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) 
+            // remove hebrew preposition if label had one on
+            //if (label.startsWith("מ") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
+            //else
+            return "תג זה לא קיים";
+        }
+
+        
+        // get list of users from msg to remove
+        this.mentions[label].users.filter(user => !msg.mentions.includes(user));
+
+        // remove oneself
+        if (msg.mentions.length() <= 0) this.mentions[label].users.filter(user => user !== msg.key.participant);
+
+        // update the json file
+        this.saveMentions()
+
+        return `המשתמש הוסר בהצלחה!`
+    }
+
+    /**
+     * add user mentions to label
+    * @param {string} jid
+    * @param {string} label
+    */
+    addUserMention(jid, label) {
+        if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) 
             {
                 // remove hebrew preposition if label had one on
                 //if (label.startsWith("ל") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
@@ -250,52 +302,36 @@ deleteLabel(jid, label) {
             }
 
         
-            // get list of users from msg to add
-            addedUsers = msg.mentions.filter(user => !this.mentions[label].users.includes(user))
-            this.mentions[label].users = this.mentions[label].users.concat(addedUsers)
+        // get list of users from msg to add
+        addedUsers = msg.mentions.filter(user => !this.mentions[label].users.includes(user))
+        this.mentions[label].users = this.mentions[label].users.concat(addedUsers)
 
-            // add oneself
-            if (msg.mentions.length() <= 0) this.mentions[label].users.push(msg.key.participant);
+        // add oneself
+        if (msg.mentions.length() <= 0) this.mentions[label].users.push(msg.key.participant);
 
-            responseMsg = `המשתמש נוסף בהצלחה!`
-        }
-        
-        else if (command === "הסר" || command === "תסיר" || command === "remove" || command === "delete")
+        // update the json file
+        this.saveMentions()
+
+        return `המשתמש נוסף בהצלחה!`
+    }
+
+    /**
+     * edit label text
+    * @param {string} jid
+    * @param {string} label
+    * @param {string} preText new text for the label
+    */
+    editLabel(jid, label, preText) {
+        if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) return "תג זה לא קיים";
+        else
         {
-            if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) 
-            {
-                // remove hebrew preposition if label had one on
-                //if (label.startsWith("מ") && this.mentions[label] && this.mentions[label].groups.includes(jid)) label = label.slice(1)
-                //else
-                return "תג זה לא קיים";
-            }
-
-            
-            // get list of users from msg to remove
-            this.mentions[label].users.filter(user => !msg.mentions.includes(user));
-
-            // remove oneself
-            if (msg.mentions.length() <= 0) this.mentions[label].users.filter(user => user !== msg.key.participant);
-
-                responseMsg = `המשתמש הוסר בהצלחה!`
-            }
-
-        else if (command === "ערוך" || command === "שנה" || command === "תשנה"
-            || command === "edit" || command === "change")
-        {
-            if (!this.mentions[label] || !this.mentions[label].groups.includes(jid)) return "תג זה לא קיים";
-            else
-            {
-                this.addLabel(label, this.mentions[label].groups, preText)
-            }
-
-            responseMsg =`התג *${label}* נערך בהצלחה!`
+            this.addLabel(label, this.mentions[label].groups, preText)
         }
 
         // update the json file
         this.saveMentions()
 
-        return responseMsg
+        return `התג *${label}* נערך בהצלחה!`
     }
     //############################################################################################################
 
