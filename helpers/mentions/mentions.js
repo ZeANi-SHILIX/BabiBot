@@ -128,7 +128,7 @@ class Mentions {
 
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
-        // command without the "&"
+        //drop handler prefix
         const requestedCommand = msgComponents[0].slice(1);
         // label
         const labelName = msgComponents[1];

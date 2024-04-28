@@ -257,7 +257,7 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("@")){
         return mentions.getMentions(msg);
     }
-    else if (textMsg.startsWith("&")){
+    else if (textMsg.startsWith("!תג ")){
         return mentions.labelHandling(msg);
     }
     // if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
