@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 
-const Schema = mongoose.Schema;
-
-
-export const JCTDB = new Schema(
+export const federationDB = new mongoose.Schema(
     {
         groups: {
             type: [String],
@@ -16,7 +13,7 @@ export const JCTDB = new Schema(
             required: true,
         }
     },
-    { collection: "JCTDB" }
+    { collection: "federations" }
 );
 
-export default mongoose.model("JCTDB", JCTDB);
+export default mongoose.model("federationsDB", federationDB);

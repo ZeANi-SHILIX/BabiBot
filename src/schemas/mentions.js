@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 
-const Schema = mongoose.Schema;
-
-
-export const labelsDB = new Schema(
+export const labelsDB = new mongoose.Schema(
     {
         label: {
             type: String,
@@ -23,9 +20,8 @@ export const labelsDB = new Schema(
             type: String,
             required: false,
         },
-
         federation: {
-            type: String,
+            type: [String],
             required: true,
             default: null
         }
@@ -33,4 +29,4 @@ export const labelsDB = new Schema(
     { collection: "labels" }
 );
 
-export default mongoose.model("labels", labelsDB);
+export default mongoose.model("labelsDB", labelsDB);
