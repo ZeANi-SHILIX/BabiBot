@@ -3,6 +3,7 @@ import { sendCustomMsgQueue } from '../src/QueueObj.js';
 
 import labelsDB from '../src/schemas/mentions.js';
 import federationsDB from '../src/schemas/federations.js';
+import e from 'express';
 
 class Mentions {
     constructor() {
@@ -27,26 +28,7 @@ class Mentions {
         // no label - do nothing
         if (label === "") return;
 
-        // check if the label exists and contains the group
-        if (this.mentions[label]?.groups.includes(jid)) {
-            // we dont need to get the metadata, but if one of left the group, we need to remove him
-            let metadata = await GLOBAL.sock.groupMetadata(jid);
-            let users = metadata.participants.map((user) => user.jid);
-            users = this.mentions[label].users.filter((user) => users.includes(user));
-
-            // if is there any user left, we need to update the mentions
-            // (only when is one group?, user can be in another groups)
-            // if (users.length !== this.mentions[label].users.length) {
-            //     this.mentions[label].users = users;
-            //     this.saveMentions();
-            // }
-
-            // send the message
-            let text = this.mentions[label].text;
-            text += "\n" + users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
-            return sendCustomMsgQueue(jid, { text, mentions: users });
-        }
-        else if (label === "כולם" || label === "everyone") {
+        if (label === "כולם" || label === "everyone") {
             let metadata = await GLOBAL.sock.groupMetadata(jid);
 
             // check if the user is admin
@@ -73,6 +55,40 @@ class Mentions {
                     && !user.includes(GLOBAL.sock.user.id.split("@")[0].split(":")[0])); // not bots
 
             let text = users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
+            return sendCustomMsgQueue(jid, { text, mentions: users });
+        }
+        else {
+            // get federations
+            const federations = await this.getFederationsByJID(jid);
+            // get all labels
+            let labels = (await labelsDB.find({ label: label }, (err, res) => {
+                if (err) throw err;
+                console.log(res);
+            }));
+
+            // filter
+            // first find label from the chat
+            let tempLabels = labels.filter(label => label.jid === jid)
+            //if not found - search with the feder
+            if (tempLabels.length === 0 && federations.length !== 0) {
+                tempLabels = labels.filter(label => federations.some(feder => label.federation.includes(feder.federation)))
+            }
+            labels = tempLabels
+
+            // if the label is not found
+            if (labels.length === 0) return //sendCustomMsgQueue(jid, { text: "תג זה לא קיים" });
+
+            // TODO: check if the user is admin?
+
+            // when some labels are found - use the first one
+
+            // filter only users in the group
+            let metadata = await GLOBAL.sock.groupMetadata(jid);
+            let users = metadata.participants.map((user) => user.id);
+            users = labels[0].users.filter((user) => users.includes(user));
+
+            let text = labels[0].text;
+            text += "\n" + users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
             return sendCustomMsgQueue(jid, { text, mentions: users });
         }
     }
@@ -132,7 +148,7 @@ class Mentions {
             return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
 
         // need fix - each group can have multiple federations
-        const feders = await this.getFederationsByJID(jid) 
+        const feders = await this.getFederationsByJID(jid)
 
         const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
 
