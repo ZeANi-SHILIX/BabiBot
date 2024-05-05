@@ -23,7 +23,7 @@ export const labelsDB = new mongoose.Schema(
         federation: {
             type: [String],
             required: true,
-            default: null
+            default: []
         }
     },
     { collection: "labels" }

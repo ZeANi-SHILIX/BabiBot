@@ -112,15 +112,24 @@ class Mentions {
     /**
      * create a new label
      * @param {string} label
-     * @param {string} jid
      * @param {string} text
+     * @param {string} jid
+     * @param {string[]} feders
      */
-    addLabel(label, jid, text) {
+    addLabel(label, text, jid = null, feder = []) {
         // TODO:options to add here: feder, users
-        labelsDB.create({ label: label, jid: jid, text: text }, (err, res) => {
-            if (err) throw err;
-            console.log(res);
-        });
+        if (jid) {
+            labelsDB.create({ label: label, jid: jid, text: text }, (err, res) => {
+                if (err) throw err;
+                console.log(res);
+            });
+        }
+        else if (feder) {
+            labelsDB.create({ label: label, text: text, federation: feder}, (err, res) => {
+                if (err) throw err;
+                console.log(res);
+            });
+        }
     }
 
     /**
@@ -162,10 +171,10 @@ class Mentions {
         var numCommandOptions = 1;
 
         // optional global
-        var globalFlag = false;
+        var globalFeder = null;
         if (msgComponents[2] === "-גלובלי" || msgComponents[2] === "-global") {
-            globalFlag = true;
-            numCommandOptions++;
+            globalFeder = msgComponents[3];
+            numCommandOptions += 2;
         }
 
         const msgMentions = msg.mentions ? msg.mentions : msg.key.participant
@@ -177,38 +186,38 @@ class Mentions {
             'create_label': {
                 commandWords: ['create', 'צור', 'תצור'],
                 func: this.createLabel,
-                args: [jid, labelName, preText, globalFlag, feder]
+                args: [jid, labelName, preText, globalFeder, feders]
             },
             'delete_label': {
                 commandWords: ['delete', 'מחק', 'תמחק'],
                 func: this.deleteLabel,
-                args: [jid, labelName, false, globalFlag, feder]
+                args: [jid, labelName, false, globalFeder, feders]
             },
             /*
             'delete_label_perm': {
                 commandWords: ['del_perm', 'מחק_סופי'],
                 func: this.deleteLabel,
-                args: [jid, labelName, true, globalFlag, feder]
+                args: [jid, labelName, true, globalFeder, feder]
             },*/
             'list_labels': {
                 commandWords: ['list', 'רשימה'],
                 func: this.getAllLabels,
-                args: [jid, feder]
+                args: [jid, feders]
             },
             'edit_label': {
                 commandWords: ['edit', 'ערוך', 'שנה', 'תשנה'],
                 func: this.editLabel,
-                args: [jid, labelName, preText, globalFlag, feder]
+                args: [jid, labelName, preText, globalFeder, feders]
             },
             'add_mention': {
                 commandWords: ['add', 'הוסף', 'תוסיף'],
-                func: this.editLabel,
-                args: [jid, labelName, msgMentions, globalFlag, feder]
+                func: this.addUserMention,
+                args: [jid, labelName, msgMentions, globalFeder, feders]
             },
             'remove_mention': {
                 commandWords: ['remove', 'הסר', 'תסיר'],
                 func: this.removeUserMention,
-                args: [jid, labelName, msgMentions, globalFlag, feder]
+                args: [jid, labelName, msgMentions, globalFeder, feders]
             }
         }
 
@@ -235,24 +244,24 @@ class Mentions {
     * @param {string} label
     * @param {string} textMsg
     */
-    async createLabel(jid, label, preText, globalFlag = false, feder = null) {
+    async createLabel(jid, label, preText, globalFeder = null, feders = null) {
 
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
-        if (globalFlag) {
-            //TODO
+        if (globalFeder && globalFeder in feders) {
+            let labelExists = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
+            if (labelExists) return "תג זה כבר קיים";
+
+            this.addLabel(label, text = preText, feder = globalFeder)
         }
         else {
             let chatSpecificLabel = await labelsDB.findOne({ label: label, jid: jid })
 
             if (chatSpecificLabel) return "תג זה כבר קיים";
             else {
-                this.addLabel(label, jid, preText)
+                this.addLabel(label, jid = jid, text = preText)
             }
         }
-
-        // update the json file
-        this.saveMentions()
 
         return `התג *${labelName}* נוצר בהצלחה!`
     }
@@ -262,28 +271,28 @@ class Mentions {
     * @param {string} jid group id
     * @param {string} label
     */
-    async deleteLabel(jid, label, permanent = false, globalFlag = false, feder = null) {
+    async deleteLabel(jid, label, permanent = false, globalFeder = null, feders = null) {
         let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
             || msg.key.participant.includes(GLOBAL.superuser);
         if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
 
-
-        if (globalFlag) {
-            //TODO
-        }
-        else {
-            let chatSpecificLabel = await labelsDB.findOne({ label: label, jid: jid })
-
-            if (!chatSpecificLabel) return "תג זה לא קיים בכלל";
-            else {
-                labelsDB.deleteOne({ _id: chatSpecificLabel._id }, (err, _) => {
+        var reqLabel;
+        if (globalFeder && globalFeder in feders) {
+            reqLabel = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
+            if (reqLabel) {
+                labelsDB.deleteOne({ _id: reqLabel._id }, (err, _) => {
                     if (err) throw err;
                 });
             }
         }
-
-        // update the json file
-        this.saveMentions()
+        else {
+            reqLabel = await labelsDB.findOne({ label: label, jid: jid })
+            if (!reqLabel) return "תג זה לא קיים בכלל";
+        }
+        
+        labelsDB.deleteOne({ _id: reqLabel._id }, (err, _) => {
+            if (err) throw err;
+        });
 
         return `התג *${label}* נמחק בהצלחה!`
     }
@@ -292,13 +301,10 @@ class Mentions {
      * get all labels associated with the group
      * @param {string} jid group id
     */
-    async getAllLabels(jid) {
+    async getAllLabels(jid, feders) {
         // get chat specific labels
         let labels = await labelsDB.find({ jid });
         let labelString = list(labels.map(label => label.label)).join("\n");
-
-        // federation related labels
-        let feders = (await this.getFederationsByJID(jid))
 
         feders.forEach(async feder => {
             // get labels by feder
@@ -316,23 +322,22 @@ class Mentions {
     * @param {string} jid
     * @param {string} label
     */
-    async removeUserMention(jid, label, msgMentions, globalFlag = false, feder = null) {
+    async removeUserMention(jid, label, msgMentions, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
-        if (globalFlag) {
-            //TODO
+        var reqLabel = null;
+        if (globalFeder && globalFeder in feders) {
+            reqLabel = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
+            if (!reqLabel) return
+            jid = null
         }
         else {
-            let chatLabel = await labelsDB.findOne({ label: label, jid: jid });
-            if (!chatLabel) return "תג זה לא קיים";
-            else {
-                let updatedUsers = chatLabel.users.filter(user => !msgMentions.includes(user))
-                await labelsDB.findOneAndUpdate({ label: label, jid: jid, feder: feder }, { users: updatedUsers });
-            }
+            reqLabel = await labelsDB.findOne({ label: label, jid: jid });
+            if (!reqLabel) return "תג זה לא קיים";
         }
 
-        // update the json file
-        this.saveMentions()
+        let updatedUsers = reqLabel.users.filter(user => !msgMentions.includes(user))
+        await labelsDB.findOneAndUpdate({ label: label, jid: jid, federation: feders }, { users: updatedUsers });
 
         return `המשתמש הוסר בהצלחה!`
     }
@@ -342,24 +347,24 @@ class Mentions {
     * @param {string} jid
     * @param {string} label
     */
-    async addUserMention(jid, label, msgMentions, globalFlag = false, feder = null) {
+    async addUserMention(jid, label, msgMentions, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
-        if (globalFlag) {
-            //TODO
+        var reqLabel = null;
+        if (globalFeder && globalFeder in feders) {
+            reqLabel = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
+            if (!reqLabel) return
+            jid = null
         }
         else {
-            let chatLabel = await labelsDB.findOne({ label: label, jid: jid });
-            if (!chatLabel) return "תג זה לא קיים";
-            else {
-                let updatedUsers = msgMentions.filter(user => !chatLabel.users.includes(user))
-                updatedUsers = chatLabel.users.concat(updatedUsers)
-                await labelsDB.findOneAndUpdate({ label: label, jid: jid, feder: feder }, { users: updatedUsers });
-            }
+            reqLabel = await labelsDB.findOne({ label: label, jid: jid });
+            if (!reqLabel) return "תג זה לא קיים";
         }
+        
+        let addedUsers = msgMentions.filter(user => !reqLabel.users.includes(user))
+        updatedUsers = reqLabel.users.concat(addedUsers)
+        await labelsDB.findOneAndUpdate({ label: label, jid: jid, federation: feders }, { users: updatedUsers });
 
-        // update the json file
-        this.saveMentions()
 
         return `המשתמש נוסף בהצלחה!`
     }
@@ -370,22 +375,22 @@ class Mentions {
     * @param {string} label
     * @param {string} preText new text for the label
     */
-    async editLabel(jid, label, globalFlag = false, feder = null, preText) {
+    async editLabel(jid, label, preText, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
-        if (globalFlag) {
-            //TODO
+        var reqLabel = null;
+        if (globalFeder && globalFeder in feders) {
+            reqLabel = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
+            if (!reqLabel) return
+            jid = null
         }
         else {
-            let chatLabel = await labelsDB.findOne({ label: label, jid: jid });
-            if (!chatLabel) return "תג זה לא קיים";
-            else {
-                await labelsDB.findOneAndUpdate({ label: label, jid: jid, feder: feder }, { text: preText });
-            }
+            reqLabel = await labelsDB.findOne({ label: label, jid: jid });
+            if (!reqLabel) return "תג זה לא קיים";
         }
+        
+        await labelsDB.findOneAndUpdate({ label: label, jid: jid, federation: feders }, { text: preText });
 
-        // update the json file
-        this.saveMentions()
 
         return `התג *${label}* נערך בהצלחה!`
     }
