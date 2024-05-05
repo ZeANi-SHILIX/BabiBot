@@ -191,7 +191,7 @@ class Mentions {
             'delete_label': {
                 commandWords: ['delete', 'מחק', 'תמחק'],
                 func: this.deleteLabel,
-                args: [jid, labelName, false, globalFeder, feders]
+                args: [msg.key.participant, jid, labelName, false, globalFeder, feders]
             },
             /*
             'delete_label_perm': {
@@ -218,6 +218,16 @@ class Mentions {
                 commandWords: ['remove', 'הסר', 'תסיר'],
                 func: this.removeUserMention,
                 args: [jid, labelName, msgMentions, globalFeder, feders]
+            },
+            'join_federation': {
+                commandWords: ['join'],
+                func: this.joinFederation,
+                args: [msg.key.participant, jid, globalFeder]
+            },
+            'leave_federation': {
+                commandWords: ['leave'],
+                func: this.leaveFederation,
+                args: [msg.key.participant, jid, globalFeder]
             }
         }
 
@@ -271,9 +281,11 @@ class Mentions {
     * @param {string} jid group id
     * @param {string} label
     */
-    async deleteLabel(jid, label, permanent = false, globalFeder = null, feders = null) {
-        let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
-            || msg.key.participant.includes(GLOBAL.superuser);
+    async deleteLabel(keyParticipant, jid, label, permanent = false, globalFeder = null, feders = null) {
+        let metadata = await GLOBAL.sock.groupMetadata(jid);
+
+        let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
+            || keyParticipant.includes(GLOBAL.superuser);
         if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
 
         var reqLabel;
@@ -289,7 +301,7 @@ class Mentions {
             reqLabel = await labelsDB.findOne({ label: label, jid: jid })
             if (!reqLabel) return "תג זה לא קיים בכלל";
         }
-        
+
         labelsDB.deleteOne({ _id: reqLabel._id }, (err, _) => {
             if (err) throw err;
         });
@@ -393,6 +405,35 @@ class Mentions {
 
 
         return `התג *${label}* נערך בהצלחה!`
+    }
+    /**
+     * add groupchat to the federation's groups
+     * @param {string} jid 
+     * @param {string} feder 
+     */
+    async joinFederation(keyParticipant, jid, feder) {
+        let metadata = await GLOBAL.sock.groupMetadata(jid);
+
+        let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
+            || keyParticipant.includes(GLOBAL.superuser);
+        if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
+
+        await federationsDB.findOneAndUpdate({federation: feder }, { $push: { groups: jid }})
+    }
+
+    /**
+     * remove groupchat from the federation's groups
+     * @param {string} jid 
+     * @param {string} feder 
+     */
+    async leaveFederation(keyParticipant, jid, feder) {
+        let metadata = await GLOBAL.sock.groupMetadata(jid);
+
+        let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
+            || keyParticipant.includes(GLOBAL.superuser);
+        if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
+
+        await federationsDB.findOneAndUpdate({federation: feder }, { $pull: { groups: jid }})
     }
 }
 
