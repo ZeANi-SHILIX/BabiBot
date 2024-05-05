@@ -34,10 +34,10 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
 
 /**
- * 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {import('./mongo')} mongo 
+ *
+ * @param {import('@adiwajshing/baileys').WASocket} sock
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @param {import('./mongo')} mongo
  */
 export default async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid || "";
@@ -615,19 +615,11 @@ export default async function handleMessage(sock, msg, mongo) {
     if (query) return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
 
     // this course is blocking ... (the following courses)
-    if (textMsg.includes("חסום על ידי ") || textMsg.includes("נחסם על ידי ")) {
-        query = textMsg.includes("חסום על ידי ")
-            ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11)
-            : textMsg.slice(textMsg.indexOf("נחסם על ידי") + 11);
-    } else if (textMsg.includes("חסומים על ידי ")) {
-        query = textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
-    } else if (textMsg.includes('חסום ע"י ')) {
-        query = textMsg.slice(textMsg.indexOf('חסום ע"י ') + 9);
-    } else if (textMsg.includes('נחסם ע"י ')) {
-        query = textMsg.slice(textMsg.indexOf('נחסם ע"י ') + 9);
-    } else if (textMsg.includes('חסומים ע"י ')) {
-        query = textMsg.slice(textMsg.indexOf('חסומים ע"י ') + 11);
-    }
+    // match חסום ע"י אינפי, נחסם על ידי אינפי, etc
+    // extract the course name or undefined
+    query = textMsg.match(/(חסום|נחסם|חסומים) (על ידי|ע[״"']{0,2}י) (.*)/)?.[3];
+    // match מה אינפי חוסם
+    query = query || textMsg.match(/מה (.*) חוסם/)?.[1];
     if (query) return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
 
 
@@ -638,7 +630,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.startsWith("!pdf")) {
         let customName = textMsg.replace("!pdf", "").trim();
-        let qoutedMsg =  await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        let qoutedMsg = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!qoutedMsg) return sendMsgQueue(id, "יש לצטט הודעה");
         return downloadFileAsPDF(qoutedMsg, customName);
     }
@@ -938,7 +930,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
 /**
  * @param {String} str
- * @returns {Boolean} 
+ * @returns {Boolean}
  */
 function isIncludeLink(str) {
     str = str.toLowerCase();
@@ -946,9 +938,9 @@ function isIncludeLink(str) {
 }
 
 /**
- * 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {Number} muteTime_min 
+ *
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @param {Number} muteTime_min
  */
 async function muteGroup(msg, muteTime_min) {
     let id = msg.key.remoteJid;
@@ -993,8 +985,8 @@ function getGroupConfig(id) {
 }
 
 /**
- * 
- * @param {string | Buffer} data 
+ *
+ * @param {string | Buffer} data
  * @returns {Promise<{text?: string, error?: string, estimated_time?: number>}}
  */
 async function stt_heb(data) {
@@ -1020,8 +1012,8 @@ async function sleep(ms) {
 }
 
 /**
- * 
- * @param {string} text 
+ *
+ * @param {string} text
  */
 function getTargetlanguage(text) {
     text = text.toLowerCase();
