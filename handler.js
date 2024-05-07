@@ -252,7 +252,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
 
     /**###########
-     *   LABLES
+     *   LABELS
      * ##########*/
     if (textMsg.startsWith("@")){
         return mentions.getMentions(msg);
@@ -260,6 +260,11 @@ export default async function handleMessage(sock, msg, mongo) {
     else if (textMsg.startsWith("!תג ")){
         return mentions.labelHandling(msg);
     }
+    //TODO choose how to specify federation handling
+    //else if (textMsg.startsWith()) {
+    //    return federations.federationsHandling(msg);
+    //}
+
     // if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
     //     if (!msg.key.remoteJid.includes("@g.us"))
     //         return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");

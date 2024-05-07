@@ -136,8 +136,9 @@ class Mentions {
      * verify user permission to execute the command
      * @param {string} user 
      */
-    isPermitted(user) {
-        return this.permittedUsers.includes(user)
+    async isPermitted(user, federName) {
+        feder = await federationsDB.findOne({ federation: federName });
+        return feder.authorizedUsers.includes(user);
     }
 
     async getFederationsByJID(jid) {
@@ -186,7 +187,7 @@ class Mentions {
             'create_label': {
                 commandWords: ['create', 'צור', 'תצור'],
                 func: this.createLabel,
-                args: [jid, labelName, preText, globalFeder, feders]
+                args: [msg.key.participant, jid, labelName, preText, globalFeder, feders]
             },
             'delete_label': {
                 commandWords: ['delete', 'מחק', 'תמחק'],
@@ -207,7 +208,7 @@ class Mentions {
             'edit_label': {
                 commandWords: ['edit', 'ערוך', 'שנה', 'תשנה'],
                 func: this.editLabel,
-                args: [jid, labelName, preText, globalFeder, feders]
+                args: [msg.key.participant, jid, labelName, preText, globalFeder, feders]
             },
             'add_mention': {
                 commandWords: ['add', 'הוסף', 'תוסיף'],
@@ -218,16 +219,6 @@ class Mentions {
                 commandWords: ['remove', 'הסר', 'תסיר'],
                 func: this.removeUserMention,
                 args: [jid, labelName, msgMentions, globalFeder, feders]
-            },
-            'join_federation': {
-                commandWords: ['join'],
-                func: this.joinFederation,
-                args: [msg.key.participant, jid, globalFeder]
-            },
-            'leave_federation': {
-                commandWords: ['leave'],
-                func: this.leaveFederation,
-                args: [msg.key.participant, jid, globalFeder]
             }
         }
 
@@ -254,22 +245,24 @@ class Mentions {
     * @param {string} label
     * @param {string} textMsg
     */
-    async createLabel(jid, label, preText, globalFeder = null, feders = null) {
+    async createLabel(keyParticipant, jid, label, preText, globalFeder = null, feders = null) {
 
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
         if (globalFeder && globalFeder in feders) {
+            if (!this.isPermitted(keyParticipant, globalFeder)) return `פקודה זו זמינה רק למנהלי ${globalFeder}`
+
             let labelExists = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
             if (labelExists) return "תג זה כבר קיים";
 
-            this.addLabel(label, text = preText, feder = globalFeder)
+            this.addLabel(label, preText, null, globalFeder)
         }
         else {
             let chatSpecificLabel = await labelsDB.findOne({ label: label, jid: jid })
 
             if (chatSpecificLabel) return "תג זה כבר קיים";
             else {
-                this.addLabel(label, jid = jid, text = preText)
+                this.addLabel(label, preText, jid, globalFeder)
             }
         }
 
@@ -282,14 +275,10 @@ class Mentions {
     * @param {string} label
     */
     async deleteLabel(keyParticipant, jid, label, permanent = false, globalFeder = null, feders = null) {
-        let metadata = await GLOBAL.sock.groupMetadata(jid);
-
-        let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
-            || keyParticipant.includes(GLOBAL.superuser);
-        if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
-
         var reqLabel;
         if (globalFeder && globalFeder in feders) {
+            if (!this.isPermitted(keyParticipant, globalFeder)) return `פקודה זו זמינה רק למנהלי ${globalFeder}`
+
             reqLabel = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
             if (reqLabel) {
                 labelsDB.deleteOne({ _id: reqLabel._id }, (err, _) => {
@@ -298,6 +287,11 @@ class Mentions {
             }
         }
         else {
+            let metadata = await GLOBAL.sock.groupMetadata(jid);
+            let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
+                || keyParticipant.includes(GLOBAL.superuser);
+            if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
+            
             reqLabel = await labelsDB.findOne({ label: label, jid: jid })
             if (!reqLabel) return "תג זה לא קיים בכלל";
         }
@@ -387,11 +381,13 @@ class Mentions {
     * @param {string} label
     * @param {string} preText new text for the label
     */
-    async editLabel(jid, label, preText, globalFeder = null, feders = null) {
+    async editLabel(keyParticipant, jid, label, preText, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
         var reqLabel = null;
         if (globalFeder && globalFeder in feders) {
+            if (!this.isPermitted(keyParticipant, globalFeder)) return `פקודה זו זמינה רק למנהלי ${globalFeder}`
+
             reqLabel = await labelsDB.findOne({ label: label, federation: { $in: [globalFeder] } })
             if (!reqLabel) return
             jid = null
@@ -406,35 +402,7 @@ class Mentions {
 
         return `התג *${label}* נערך בהצלחה!`
     }
-    /**
-     * add groupchat to the federation's groups
-     * @param {string} jid 
-     * @param {string} feder 
-     */
-    async joinFederation(keyParticipant, jid, feder) {
-        let metadata = await GLOBAL.sock.groupMetadata(jid);
-
-        let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
-            || keyParticipant.includes(GLOBAL.superuser);
-        if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
-
-        await federationsDB.findOneAndUpdate({federation: feder }, { $push: { groups: jid }})
-    }
-
-    /**
-     * remove groupchat from the federation's groups
-     * @param {string} jid 
-     * @param {string} feder 
-     */
-    async leaveFederation(keyParticipant, jid, feder) {
-        let metadata = await GLOBAL.sock.groupMetadata(jid);
-
-        let isAdmin = metadata.participants.find((user) => user.jid === keyParticipant).admin
-            || keyParticipant.includes(GLOBAL.superuser);
-        if (!isAdmin) return "פקודה זו זמינה רק למנהלים";
-
-        await federationsDB.findOneAndUpdate({federation: feder }, { $pull: { groups: jid }})
-    }
+    
 }
 
 export const mentions = new Mentions();

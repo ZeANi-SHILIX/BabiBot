@@ -1,19 +1,23 @@
 import mongoose from "mongoose";
 
-export const federationDB = new mongoose.Schema(
+export const federationsDB = new mongoose.Schema(
     {
+        federation: {
+            type: String,
+            required: true,
+        },
         groups: {
             type: [String],
             required: true,
             default: []
         },
-
-        federation: {
-            type: String,
-            required: true,
+        authorizedUsers: {
+            type: [String],
+            required: false,
+            default: []
         }
     },
-    { collection: "federations" }
+    { collection: "federationsDB" }
 );
 
 export default mongoose.model("federationsDB", federationDB);
