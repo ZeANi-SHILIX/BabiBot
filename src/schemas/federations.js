@@ -20,4 +20,4 @@ export const federationsDB = new mongoose.Schema(
     { collection: "federationsDB" }
 );
 
-export default mongoose.model("federationsDB", federationDB);
+export default mongoose.model("federationsDB", federationsDB);
