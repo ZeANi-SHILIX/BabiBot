@@ -2,7 +2,6 @@ import { GLOBAL } from '../src/storeMsg.js';
 import { sendCustomMsgQueue } from '../src/QueueObj.js';
 
 import federationsDB from '../src/schemas/federations.js';
-import e from 'express';
 
 class Federations {
     /**
@@ -25,7 +24,9 @@ class Federations {
         // requested federation name
         const federName = msgComponents[1];
 
-        const msgMentions = msg.mentions ? msg.mentions : msg.key.participant
+        const msgMentions = msg.message.extendedTextMessage?.contextInfo?.mentionedJid
+            ? msg.message.extendedTextMessage?.contextInfo?.mentionedJid
+            : [msg.key.participant ?? ""];
 
         const commands = {
             'create_federation': {
@@ -63,7 +64,7 @@ class Federations {
 
         responseMsg = ""
 
-        Object.entries(commands).forEach(op => {
+        Object.keys(commands).forEach(op => {
             let currCommand = commands[op]
             if (currCommand.commandWords.includes(requestedCommand)) {
                 responseMsg = currCommand.func(...currCommand.args)
