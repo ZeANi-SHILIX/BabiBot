@@ -436,11 +436,9 @@ export async function downloadFileAsPDF(msg, customName) {
     if (!filename) return sendMsgQueue(msg.key.remoteJid, "יש לצוטט הודעה מסוג קובץ");
 
     filename = customName ? customName + ".pdf"
-        : filename.endsWith(".pdf")
-            ? filename
-            : filename.endsWith(".pdf.html")
-                ? filename.replace(".html", "")
-                : filename + ".pdf";
+        : filename.includes(".pdf")
+            ? filename.split(".pdf")[0] + ".pdf"
+            : filename + ".pdf";
 
     downloadMediaMessage(msg, "buffer")
         .then(buffer => {
