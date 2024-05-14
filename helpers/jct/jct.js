@@ -432,7 +432,7 @@ function loadMailsListFromFile() {
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
  */
 export async function downloadFileAsPDF(msg, customName) {
-    let filename = msg.message?.documentMessage?.fileName;
+    let filename = msg.message?.documentMessage?.fileName || msg.message?.documentWithCaptionMessage.message?.documentMessage?.fileName;
     if (!filename) return sendMsgQueue(msg.key.remoteJid, "יש לצוטט הודעה מסוג קובץ");
 
     filename = customName ? customName + ".pdf"

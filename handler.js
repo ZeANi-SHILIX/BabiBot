@@ -643,8 +643,8 @@ export default async function handleMessage(sock, msg, mongo) {
         if (!qoutedMsg) return sendMsgQueue(id, "יש לצטט הודעה");
         return downloadFileAsPDF(qoutedMsg, customName);
     }
-    if (msg.message?.documentMessage?.caption?.startsWith("!pdf")){
-        let customName = msg.message?.documentMessage?.caption?.replace("!pdf", "").trim();
+    if (msg.message?.documentWithCaptionMessage?.message?.documentMessage?.caption?.startsWith("!pdf")) {
+        let customName = msg.message?.documentWithCaptionMessage?.message?.documentMessage?.caption.replace("!pdf", "").trim();
         return downloadFileAsPDF(msg, customName);
     }
 
