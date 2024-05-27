@@ -801,14 +801,14 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
-        if (!GLOBAL.canAskGPT(id))
-            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
-                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
-                // + "https://www.buymeacoffee.com/BabiBot\n"
-                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
-            );
+        let userID = id.endsWith("@g.us") ? msg.key.participant : id;
+        if (GLOBAL.canIUseOpenAI(userID) || userID.includes(superuser))
+            return chatGPT.stt(msg);
 
-        return chatGPT.stt(msg);
+        return sendMsgQueue(id, "שירות התמלול זמין רק למי שתרם לבוט\n"
+            + "תוכלו לקבל מידע על איך תורמים באמצעות הפקודה '!תרומה'\n"
+            + "אם תרמת כבר ועדיין לא עובד, אנא צור קשר עם המפתח.");
+
     }
 
     /**#######
@@ -865,46 +865,79 @@ export default async function handleMessage(sock, msg, mongo) {
             "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
             "בוט זה נוצר על ידי שילה בבילה\n" +
             "ליצירת קשר:\n" +
-            "t.me/ContactMeSBbot";
+            "t.me/ContactMeSBbot" +
+            "למידע על איך תורמים לפרוייקט שלחו את הפקודה '!תרומה'";
+
 
         return sendMsgQueue(id, text);
     }
 
-    return
     // ##############
     // ##############
-    //  NOT IN GROUP
+    //  NOT IN GROUP - PRIVATE CHAT
     // ##############
     // ##############
     if (msg.key.remoteJid.includes("@g.us")) return;
+
+    if (textMsg.startsWith("!תרומה") || textMsg.startsWith("!donate") || textMsg.startsWith("!donation") || textMsg.startsWith("!תרומות")) {
+        // if sender is superuser
+        if (id.includes(superuser)) {
+            let [donation, phone] = textMsg.split(" ").slice(1);
+            if (donation && phone && !isNaN(donation) && !isNaN(phone)) {
+                phone = phone.startsWith("972") ? +phone : "972" + +phone;
+                let jid = phone + "@s.whatsapp.net";
+
+                if (!GLOBAL.sock.onWhatsApp([jid])) {
+                    return sendMsgQueue(id, "מספר הטלפון אינו תקין");
+                }
+                if (donation < 1) {
+                    return sendMsgQueue(id, "סכום התרומה צריך להיות גדול מ-0");
+                }
+
+                GLOBAL.updateBalanceOpenAI(jid, +donation);
+                return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של " + donation + " דולר למשתמש " + phone);
+            }
+            else {
+                return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה ולאחר מכן את מספר הטלפון");
+            }
+
+        }
+        return sendDonationMsg(id);
+    }
+
+    if (textMsg.startsWith("!יתרה") || textMsg.startsWith("!balance")) {
+        if (id.includes(superuser)) {
+            let phone = textMsg.split(" ").slice(1);
+            if (phone && !isNaN(phone) && phone.length > 8) {
+                phone = phone.startsWith("972") ? +phone : "972" + +phone;
+                let jid = phone + "@s.whatsapp.net";
+
+                if (!GLOBAL.sock.onWhatsApp([jid])) {
+                    return sendMsgQueue(id, "מספר הטלפון אינו תקין");
+                }
+
+                let balance = GLOBAL.getBalanceOpenAI(jid);
+                return sendMsgQueue(id, "היתרה של " + phone + " היא: " + balance + " דולר");
+            }
+            else {
+                return sendMsgQueue(id, "לא נמצא מספר טלפון\nנא להזין את מספר הטלפון");
+            }
+        }
+        return sendMsgQueue(id, "היתרה שלך היא: " + GLOBAL.getBalanceOpenAI(id) + " דולר");
+    }
 
 
     /**##########
      * INFO
      ############*/
 
-    //const { type } = getMsgType(msg);
+    // for supporter that donate more than 5$ - dont need to send the command in private chat
     if (type === MsgType.AUDIO) {
-        return chatGPT.stt(msg);
-        // // get file
-        // let file = await downloadMediaMessage(msg, "buffer");
-        // // convert to text
-        // let info = await stt_heb(file);
-        // console.log(info);
-
-        // if (info.estimated_time) {
-        //     const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
-        //     resendToSTT(file, id, sock, sended.key);
-        //     return
-        // }
-
-        // if (info.error)
-        //     return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
-
-        // // send text
-        // return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
+        if (GLOBAL.autoSTT(id) || id.includes(superuser))
+            return chatGPT.stt(msg);
     }
 
+    return;
     if (type !== MsgType.TEXT) return;
 
     // no command - answer with ChatGPT
@@ -991,29 +1024,6 @@ function getGroupConfig(id) {
     return msgToSend;
 }
 
-/**
- *
- * @param {string | Buffer} data
- * @returns {Promise<{text?: string, error?: string, estimated_time?: number>}}
- */
-async function stt_heb(data) {
-    // if not buffer - load from file
-    if (typeof data !== "object")
-        data = fs.readFileSync(data);
-
-    const response = await fetch(
-        //"https://api-inference.huggingface.co/models/imvladikon/wav2vec2-xls-r-300m-hebrew",
-        "https://api-inference.huggingface.co/models/imvladikon/wav2vec2-xls-r-300m-lm-hebrew",
-        {
-            headers: { Authorization: `Bearer ${process.env.HUGGINGFACE_TOKEN}` },
-            method: "POST",
-            body: data,
-        }
-    );
-    const result = await response.json();
-    return result;
-}
-
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -1068,6 +1078,21 @@ function sendCommandsList(jid) {
     text += "*!אודות:* _לקבלת מידע על הבוט_\n";
 
     text += "\nלקריאת כל הפקודות בצורה נוחה: tinyurl.com/babibot"
+
+    return sendMsgQueue(jid, text);
+}
+
+function sendDonationMsg(jid) {
+    let text = "אוהבים את באבי בוט? 🥹\n"
+        + "רוצים לתמוך בפרוייקט וגם לקבל יכולות נוספות?\n\n"
+        + "תוכלו לתרום בקישורים הבאים:\n"
+        + "https://www.buymeacoffee.com/BabiBot\n"
+        + "https://payboxapp.page.link/C43xQBBdoUAo37oC6\n"
+        + "על מנת לקבל את היכולות הנוספות - יש לשלוח צילום מסך של התרומה לטלגרם, ולציין גם את המספר טלפון שלכם,\n"
+        + "ואני אפעיל את היכולות בהקדם האפשרי.\n"
+        + "> לבוט בטלגרם: t.me/contactmesbbot\n"
+        + "> לבירור יתרה יש לשלוח '!יתרה'\n\n"
+        + "תודה רבה!";
 
     return sendMsgQueue(jid, text);
 }

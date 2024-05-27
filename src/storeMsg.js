@@ -12,6 +12,9 @@ let tempMuteGroup = {};
 /** @type {{[jid:string]: {name: string, approvalTermsOfService: boolean, countUsersToMute: number, spam: string, blockLinks: boolean, blockLinksUser: string[], classes: string[], paidGroup: boolean, lastUsedGPT: number, countGPT: number, lastUsedEveryBodyCommand: number}}} */
 let tempGroupConfig = {};
 
+/** @type {{[jid:string]: {balance: number, sttWithoutCommand: boolean}}} */
+let tempUserConfig = {};
+
 /** @type {{[jid:string]: NodeJS.Timeout }} */
 let tempTimeouts = {};
 
@@ -44,6 +47,7 @@ export const GLOBAL = {
     store : tempStore,
     muteGroup: tempMuteGroup,
     groupConfig: tempGroupConfig,
+    userConfig: tempUserConfig,
     timeouts: tempTimeouts,
     omerReminder: omerReminder,
     clearTimeout: function (id) {
@@ -67,36 +71,60 @@ export const GLOBAL = {
         console.log("everybodyLastUse2min: 2 minutes not passed");
         return false;
     },
-    canAskGPT: function (id) {
-        const time = new Date().getTime();
-
-        if (!this.groupConfig[id]?.lastUsedGPT) {
-            this.groupConfig[id] = {};
-            this.groupConfig[id].lastUsedGPT = time;
-            this.groupConfig[id].countGPT = 1;
-            console.log("canAskGPT: groupConfig not found, created new one");
-            return true;
-        }
-        // if paid group
-        if (this.groupConfig[id].paidGroup) {
-            console.log("canAskGPT: paid group");
-            return true;
+    /**
+     * @param {string} jid id of the user (or the participant in the group)
+     */
+    canIUseOpenAI: function (jid) {
+        // the data is saved by the user id
+        if (jid || jid.endsWith("@g.us")) {
+            return false;
         }
 
-        // check if 5 minutes passed
-        if (time - this.groupConfig[id].lastUsedGPT > 300_000) {
-            this.groupConfig[id].lastUsedGPT = time;    // reset timer
-            this.groupConfig[id].countGPT = 1;          // reset count
-            console.log("canAskGPT: 5 minutes passed");
+        if (this.userConfig[jid] === undefined) {
+            this.userConfig[jid] = {};
+            this.userConfig[jid].balance = 0.02;
+            this.userConfig[jid].sttWithoutCommand = false;
+            return true; // allow to use the first time
+        }
+
+        if (this.userConfig[jid].balance < 0) {
+            this.userConfig[jid].sttWithoutCommand = false;
+            return false;
+        }
+
+        return true;
+    },
+    /**
+     * @param {string} jid id of the user
+     * @param {number} amount Addition or subtraction of the balance (in dollars)
+     */
+    updateBalanceOpenAI: function (jid, amount) {
+        if (this.userConfig[jid] === undefined) {
+            this.userConfig[jid] = {};
+        }
+        this.userConfig[jid].balance += amount;
+
+        // donate more than 5 dollars
+        if (amount > 5) {
+            this.userConfig[jid].sttWithoutCommand = true;
+        }
+        else if (amount > 0) {
+            this.userConfig[jid].sttWithoutCommand = false;
+        }
+    },
+    getBalanceOpenAI: function (jid) {
+        if (this.userConfig[jid] === undefined) {
+            return 0;
+        }
+        return this.userConfig[jid].balance.toFixed(2);
+    },
+    /**
+     * @param {string} jid
+     */
+    autoSTT: function (jid) {
+        if (this.userConfig[jid]?.sttWithoutCommand && this.userConfig[jid]?.balance > 0) {
             return true;
         }
-        // check if 3 times passed
-        if (this.groupConfig[id].countGPT < 3) {
-            this.groupConfig[id].countGPT++;
-            console.log("canAskGPT: 3 times not passed");
-            return true;
-        }
-        console.log("canAskGPT: NO! - 3 times passed");
         return false;
     },
     unofficialGPTcredit: 250, // TODO: need to be saved in file
@@ -113,6 +141,7 @@ export const GLOBAL = {
     }
 };
 
+const savedKeys = ["groupConfig", "userConfig"];
 
 readConfig();
 readOmerReminder();
@@ -123,22 +152,39 @@ setInterval(() => {
 }, 20_000);
 
 function readConfig() {
-    if (!fs.existsSync("./groupConfig.json")) {
+    let tempConfig = {};
+    if (!fs.existsSync("./savedConfig.json")) {
+        tempConfig = {};
         console.log("Group Config file not found");
-        GLOBAL.groupConfig = {};
-        return;
+    }
+    else {   
+        const data = fs.readFileSync("./savedConfig.json");
+        try {
+            tempConfig = JSON.parse(data);
+            console.log(tempConfig);
+        } catch (error) {
+            tempConfig = {};
+            console.log("Error in parsing the savedConfig.json file");
+        }
     }
 
-    const data = fs.readFileSync("./groupConfig.json");
-    const json = JSON.parse(data);
-    console.log(json);
-    GLOBAL.groupConfig = json;
+    for (const key of savedKeys) {
+        if (tempConfig[key] === undefined) {
+            GLOBAL[key] = {};
+        }
+        else {
+            GLOBAL[key] = tempConfig[key];
+        }
+    }
 }
 
 function saveConfig() {
-    const groupConfig = GLOBAL.groupConfig;
-    fs.writeFileSync("./groupConfig.json", JSON.stringify(groupConfig));
-    //console.log("Group Config saved");
+    const copyElement = {};
+    for (const key of savedKeys) {
+        copyElement[key] = GLOBAL[key];
+    }
+
+    fs.writeFileSync("./savedConfig.json", JSON.stringify(copyElement, null, 2));
 }
 
 // reset count of unofficialGPTcredit every day at 00:00

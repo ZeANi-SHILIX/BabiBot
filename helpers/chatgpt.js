@@ -5,6 +5,7 @@ import { sendMsgQueue, errorMsgQueue } from "../src/QueueObj.js";
 import { downloadMediaMessage } from "@adiwajshing/baileys";
 import { getMsgType, MsgType } from "./msgType.js";
 import MemoryStore from "../src/memorystore.js";
+import { GLOBAL } from "../src/storeMsg.js";
 
 export default function ChatGPT(apiKey, useOfficial = true) {
   const configuration = new Configuration({
@@ -254,26 +255,33 @@ ChatGPT.prototype.summery = async function (text) {
  */
 ChatGPT.prototype.stt = async function (msg) {
   const id = msg.key.remoteJid;
-  // has quoted message?
-  if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
-    return sendMsgQueue(id, "יש לצטט הודעה")
-  }
 
-  // get from store
-  let quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-  if (!quotedMsg) {
-    await sleep(2000);
-    quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
-  }
-  if (!quotedMsg) {
-    return sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את הפקודה שוב בעוד כמה שניות")
-  }
+  // get type of original message
+  let { type } = getMsgType(msg);
 
-  // get type
-  let { type } = getMsgType(quotedMsg);
-
+  let quotedMsg = msg;
   if (type !== MsgType.AUDIO) {
-    return sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
+    // has quoted message?
+    if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
+      return sendMsgQueue(id, "יש לצטט הודעה")
+    }
+
+    // get from store
+    quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+    if (!quotedMsg) {
+      await sleep(2000);
+      quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+    }
+    if (!quotedMsg) {
+      return sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את הפקודה שוב בעוד כמה שניות")
+    }
+
+    // get type of quoted message
+    type = getMsgType(quotedMsg).type
+
+    if (type !== MsgType.AUDIO) {
+      return sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
+    }
   }
 
 
@@ -290,7 +298,14 @@ ChatGPT.prototype.stt = async function (msg) {
     // delete file
     fs.unlinkSync(filename);
 
+    // update balance after whisper success
+    let AudioSeconds = quotedMsg.message.audioMessage.seconds;
+    let pricePerMinute = 0.01;
+    let userID = id.endsWith("@g.us") ? msg.key.participant : id;
+    GLOBAL.updateBalanceOpenAI(userID, -pricePerMinute * (AudioSeconds / 60));
+
     // send the result
+    errorMsgQueue("stt: " + pricePerMinute * (AudioSeconds / 60).toFixed(2) + " USD");
     return sendMsgQueue(id, res);
   }
   catch (error) {
@@ -313,6 +328,8 @@ ChatGPT.prototype.whisper = async function (filename) {
     "whisper-1")
 
   fs.unlinkSync(newFilename);
+
+  console.log(res);
 
   return res?.data?.text;
 
