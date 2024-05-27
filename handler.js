@@ -22,7 +22,6 @@ import {
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
-import e from 'express';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -1065,7 +1064,7 @@ function sendCommandsList(jid) {
     // info about the bot
     text += "*!אודות:* _לקבלת מידע על הבוט_\n";
 
-    text += "\nלקריאת כל הפקודות בצורה נוחה: babibot.live"
+    text += "\nלקריאת כל הפקודות בצורה נוחה: tinyurl.com/babibot"
 
     return sendMsgQueue(jid, text);
 }
