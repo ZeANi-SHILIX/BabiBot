@@ -865,8 +865,9 @@ export default async function handleMessage(sock, msg, mongo) {
             "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
             "בוט זה נוצר על ידי שילה בבילה\n" +
             "ליצירת קשר:\n" +
-            "t.me/ContactMeSBbot" +
-            "למידע על איך תורמים לפרוייקט שלחו את הפקודה '!תרומה'";
+            "t.me/ContactMeSBbot\n" +
+            "למידע על איך תורמים לפרוייקט שלחו את הפקודה '!תרומה' בפרטי לבוט.";
+
 
 
         return sendMsgQueue(id, text);
@@ -898,7 +899,7 @@ export default async function handleMessage(sock, msg, mongo) {
                 return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של " + donation + " דולר למשתמש " + phone);
             }
             else {
-                return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה ולאחר מכן את מספר הטלפון");
+                return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה (בדולרים) ולאחר מכן את מספר הטלפון");
             }
 
         }
@@ -1063,7 +1064,7 @@ function getTargetlanguage(text) {
 }
 
 function sendCommandsList(jid) {
-    const showNumOfCommands = 7;
+    const showNumOfCommands = 8;
 
     let text = "היי! אני באבי בוט 🥹\nאני בוט חמוד שיכול לעשות המון דברים מגניבים!\n\n"
         + "הנה כמה דברים שאני יודע לעשות:"
@@ -1090,7 +1091,7 @@ function sendDonationMsg(jid) {
         + "https://payboxapp.page.link/C43xQBBdoUAo37oC6\n"
         + "על מנת לקבל את היכולות הנוספות - יש לשלוח צילום מסך של התרומה לטלגרם, ולציין גם את המספר טלפון שלכם,\n"
         + "ואני אפעיל את היכולות בהקדם האפשרי.\n"
-        + "> לבוט בטלגרם: t.me/contactmesbbot\n"
+        + "> לבוט בטלגרם: t.me/ContactMeSBbot\n"
         + "> לבירור יתרה יש לשלוח '!יתרה'\n\n"
         + "תודה רבה!";
 
