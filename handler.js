@@ -34,10 +34,10 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
 
 /**
- * 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {import('./mongo')} mongo 
+ *
+ * @param {import('@adiwajshing/baileys').WASocket} sock
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @param {import('./mongo')} mongo
  */
 export default async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid || "";
@@ -638,7 +638,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.startsWith("!pdf")) {
         let customName = textMsg.replace("!pdf", "").trim();
-        let qoutedMsg =  await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        let qoutedMsg = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
         if (!qoutedMsg) return sendMsgQueue(id, "יש לצטט הודעה");
         return downloadFileAsPDF(qoutedMsg, customName);
     }
@@ -726,6 +726,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
         // get num from message
         let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
+        if (numMsgToLoad > 1000) {
+            return sendMsgQueue(id, "שגיאה: יותר מדי הודעות")
+        }
 
         //let history = await store.loadMessages(id, numMsgToLoad);
         return MemoryStore.loadMessages(id, numMsgToLoad + 1)
@@ -938,7 +941,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
 /**
  * @param {String} str
- * @returns {Boolean} 
+ * @returns {Boolean}
  */
 function isIncludeLink(str) {
     str = str.toLowerCase();
@@ -946,9 +949,9 @@ function isIncludeLink(str) {
 }
 
 /**
- * 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {Number} muteTime_min 
+ *
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @param {Number} muteTime_min
  */
 async function muteGroup(msg, muteTime_min) {
     let id = msg.key.remoteJid;
@@ -993,8 +996,8 @@ function getGroupConfig(id) {
 }
 
 /**
- * 
- * @param {string | Buffer} data 
+ *
+ * @param {string | Buffer} data
  * @returns {Promise<{text?: string, error?: string, estimated_time?: number>}}
  */
 async function stt_heb(data) {
@@ -1020,8 +1023,8 @@ async function sleep(ms) {
 }
 
 /**
- * 
- * @param {string} text 
+ *
+ * @param {string} text
  */
 function getTargetlanguage(text) {
     text = text.toLowerCase();
