@@ -722,6 +722,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
         // get num from message
         let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
+        if (numMsgToLoad > 1000) {
+            return sendMsgQueue(id, "שגיאה: יותר מדי הודעות")
+        }
 
         //let history = await store.loadMessages(id, numMsgToLoad);
         return MemoryStore.loadMessages(id, numMsgToLoad + 1)
