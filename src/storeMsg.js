@@ -141,14 +141,12 @@ export const GLOBAL = {
     }
 };
 
-const savedKeys = ["groupConfig", "userConfig"];
+const savedKeys = ["groupConfig", "userConfig", "omerReminder"];
 
 readConfig();
-readOmerReminder();
 
 setInterval(() => {
     saveConfig();
-    saveOmerReminder();
 }, 20_000);
 
 function readConfig() {
@@ -194,26 +192,3 @@ setInterval(() => {
         GLOBAL.unofficialGPTcredit = 250;
     }
 }, 60_000);
-
-// temp! - saving omerReminder in separate file
-function readOmerReminder() {
-    let omerReminder = {
-        omerInternal: null,
-        chats: []
-    };
-
-    if (!fs.existsSync("./omerReminder.json")) {
-        console.log("Omer Reminder file not found");
-    }
-    else {
-        const data = fs.readFileSync("./omerReminder.json");
-        omerReminder = JSON.parse(data);
-    }
-
-    GLOBAL.omerReminder = omerReminder;
-}
-
-function saveOmerReminder() {
-    const omerReminder = GLOBAL.omerReminder;
-    fs.writeFileSync("./omerReminder.json", JSON.stringify(omerReminder));
-}
