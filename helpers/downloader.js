@@ -271,7 +271,7 @@ async function downloadVideoUsingRender(url, jid, videoId) {
                     })
             }
             else {
-                sendMsgQueue(jid, "אופס משהו לא עבד טוב...")
+                sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון")
             }
         })
         .catch(err => {
@@ -313,7 +313,7 @@ async function downloadShortVideo(jid, text) {
     })
 
     stream.on("error", (err) => {
-        sendMsgQueue(jid, "אופס משהו לא עבד טוב עם הסרטון הזה...")
+        sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון");
         errorMsgQueue(err)
     })
 }
@@ -345,7 +345,7 @@ export async function DownloadVideoMP4(jid, text) {
             && (format.qualityLabel === "480p" || format.qualityLabel === "360p")
             && format.hasVideo && format.hasAudio);
 
-    if (!vidFormat) return sendMsgQueue(jid, "אופס! לא הצלחתי להוריד את הסרטון הזה...");
+    if (!vidFormat) return sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון");
 
     let stream = ytdl.downloadFromInfo(videoDetails, { format: vidFormat })
         .pipe(fs.createWriteStream(filename + "." + vidFormat.container));
@@ -357,7 +357,7 @@ export async function DownloadVideoMP4(jid, text) {
     })
 
     stream.on("error", (err) => {
-        sendMsgQueue(jid, "אופס משהו לא עבד טוב עם הסרטון הזה...")
+        sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון");
         errorMsgQueue(err)
     })
 }
