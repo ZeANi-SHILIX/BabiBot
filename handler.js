@@ -946,7 +946,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // dev
     if (msg.message?.groupInviteMessage){
-        return sendMsgQueue(superuser + "@s.whatsapp.net", "הזמנה לקבוצה: " + msg.message.groupInviteMessage);
+        //GLOBAL.sock.groupAcceptInvite(msg.message.groupInviteMessage.inviteCode)
+        //GLOBAL.sock.groupAcceptInviteV4(msg.message.groupInviteMessage.groupJid, msg.message.groupInviteMessage);
+        return sendMsgQueue(superuser + "@s.whatsapp.net", "הזמנה לקבוצה: " + JSON.stringify(msg.message.groupInviteMessage, null, 2));
         //conn.acceptInvite(invitecode)
     }
 
