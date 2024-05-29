@@ -76,13 +76,13 @@ export const GLOBAL = {
      */
     canIUseOpenAI: function (jid) {
         // the data is saved by the user id
-        if (jid || jid.endsWith("@g.us")) {
+        if (!jid || jid.endsWith("@g.us")) {
             return false;
         }
 
         if (this.userConfig[jid] === undefined) {
             this.userConfig[jid] = {};
-            this.userConfig[jid].balance = 0.02;
+            this.userConfig[jid].balance = 0.01;
             this.userConfig[jid].sttWithoutCommand = false;
             return true; // allow to use the first time
         }
@@ -141,7 +141,7 @@ export const GLOBAL = {
     }
 };
 
-const savedKeys = ["groupConfig", "userConfig", "omerReminder"];
+const savedKeys = ["groupConfig", "userConfig", "omerReminder", "unofficialGPTcredit"];
 
 readConfig();
 
