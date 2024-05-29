@@ -305,7 +305,8 @@ ChatGPT.prototype.stt = async function (msg) {
     GLOBAL.updateBalanceOpenAI(userID, -pricePerMinute * (AudioSeconds / 60));
 
     // send the result
-    let msgToAdmin = "stt: the user wa.me/" + id + " used the whisper command\nThe cost was: " + pricePerMinute * (AudioSeconds / 60).toFixed(2) + " USD";
+    let msgToAdmin = "stt: the user wa.me/" + userID.split("@")[0] + " used the whisper command\n"
+      + "The cost was: " + pricePerMinute * (AudioSeconds / 60).toFixed(2) + " USD";
     errorMsgQueue(msgToAdmin);
     return sendMsgQueue(id, res);
   }
