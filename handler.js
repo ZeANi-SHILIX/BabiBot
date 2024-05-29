@@ -943,6 +943,13 @@ export default async function handleMessage(sock, msg, mongo) {
                 .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }));
     }
 
+
+    // dev
+    if (msg.message?.groupInviteMessage){
+        return sendMsgQueue(superuser + "@s.whatsapp.net", "הזמנה לקבוצה: " + msg.message.groupInviteMessage);
+        //conn.acceptInvite(invitecode)
+    }
+
     return;
     if (type !== MsgType.TEXT) return;
 
