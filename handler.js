@@ -717,7 +717,7 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        if(GLOBAL.unofficialGPTcredit && GLOBAL.unofficialGPTcredit < 10)
+        if (GLOBAL.unofficialGPTcredit && GLOBAL.unofficialGPTcredit < 10)
             return sendMsgQueue(id, "נגמרו להיום הקרדיטים לשימוש בשירות זה\nנסה שוב מחר");
 
         // get num from message
@@ -944,12 +944,30 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
 
-    // dev
-    if (msg.message?.groupInviteMessage){
-        //GLOBAL.sock.groupAcceptInvite(msg.message.groupInviteMessage.inviteCode)
-        //GLOBAL.sock.groupAcceptInviteV4(msg.message.groupInviteMessage.groupJid, msg.message.groupInviteMessage);
-        return sendMsgQueue(superuser + "@s.whatsapp.net", "הזמנה לקבוצה: " + JSON.stringify(msg.message.groupInviteMessage, null, 2));
-        //conn.acceptInvite(invitecode)
+    // if the bot got invited to a group
+    if (msg.message?.groupInviteMessage) {
+        sendMsgQueue(id, "אפשרות של צירוף באבי לקבוצות זמינה רק לתורמים.\n"
+            + "לפרטים נוספים נא לשלוח '!תרומה' בפרטי לבוט");
+
+        return sendMsgQueue(superuser + "@s.whatsapp.net", JSON.stringify({
+            groupName: msg.message.groupInviteMessage.groupName,
+            inviteCode: msg.message.groupInviteMessage.inviteCode,
+            groupJid: msg.message.groupInviteMessage.groupJid,
+            caption: msg.message.groupInviteMessage.caption,
+            invitedBy: "wa.me/" + id.split("@")[0]
+        }, null, 2));
+    }
+
+    // dev only
+    if (id.includes(superuser) && textMsg.startsWith("!אשר")) {
+        const inviteDetails = JSON.parse(msg.message?.extendedTextMessage?.text || "{}");
+        if (!inviteDetails.groupJid) return sendMsgQueue(id, "לא נמצאו פרטי הזמנה");
+
+        GLOBAL.sock.groupAcceptInvite(inviteDetails.inviteCode).then(() => {
+            sendMsgQueue(id, "ההצטרפות לקבוצה " + inviteDetails.groupName + " בוצעה בהצלחה");
+        }).catch((error) => {
+            errorMsgQueue(error);
+        });
     }
 
     return;
