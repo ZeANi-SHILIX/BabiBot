@@ -105,7 +105,10 @@ export default async function handleMessage(sock, msg, mongo) {
                             // GLOBAL.groupConfig[id].blockLinksUser = GLOBAL.groupConfig[id].blockLinksUser.filter(u => u !== msg.key.participant);
 
                             // kick user
-                            return sendCustomMsgQueue(id, { text: "זו לא פעם ראשונה שאתה שולח קישורים כאן!\nביי ביי" })
+                            return sendCustomMsgQueue(id, {
+                                text: "*הקישורים אסורים כאן!*"
+                                //"זו לא פעם ראשונה שאתה שולח קישורים כאן!\nביי ביי"
+                            })
                                 // kick user
                                 .then(msgQueue.add(async () => {
                                     GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove").then(info => {
@@ -123,7 +126,10 @@ export default async function handleMessage(sock, msg, mongo) {
                             // delete msg
                             sendCustomMsgQueue(id, { delete: msg.key });
                             // send warning
-                            return sendCustomMsgQueue(id, { text: "*הקישורים אסורים כאן!*\nבפעם הבאה תהיה ענישה ותועף מהקבוצה" });
+                            return sendCustomMsgQueue(id, {
+                                text: "*הקישורים אסורים כאן!*"
+                                // \nבפעם הבאה תהיה ענישה ותועף מהקבוצה"
+                            });
                         }
                     }
                 }
@@ -711,14 +717,8 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        //return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
-        // if (!GLOBAL.canAskGPT(id))
-        //     return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
-        //         // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
-        //         // + "https://www.buymeacoffee.com/BabiBot\n"
-        //         // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
-        //     );
-
+        if(GLOBAL.unofficialGPTcredit && GLOBAL.unofficialGPTcredit < 10)
+            return sendMsgQueue(id, "נגמרו להיום הקרדיטים לשימוש בשירות זה\nנסה שוב מחר");
 
         // get num from message
         let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
@@ -802,13 +802,15 @@ export default async function handleMessage(sock, msg, mongo) {
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
         let userID = id.endsWith("@g.us") ? msg.key.participant : id;
-        if (GLOBAL.canIUseOpenAI(userID) || userID.includes(superuser))
-            return chatGPT.stt(msg);
+        if (GLOBAL.canIUseOpenAI(userID) || userID.includes(superuser)) {
+            return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
+                .then(() => chatGPT.stt(msg))
+                .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }))
+        }
 
         return sendMsgQueue(id, "שירות התמלול זמין רק למי שתרם לבוט\n"
             + "תוכלו לקבל מידע על איך תורמים באמצעות הפקודה '!תרומה'\n"
             + "אם תרמת כבר ועדיין לא עובד, אנא צור קשר עם המפתח.");
-
     }
 
     /**#######
@@ -853,6 +855,9 @@ export default async function handleMessage(sock, msg, mongo) {
         return sendCommandsList(id);
     }
 
+    /**########
+     *   INFO
+     ##########*/
 
     if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("!אודות")) {
         let text = "*מידע על הבוט:*\n\n" +
@@ -868,17 +873,8 @@ export default async function handleMessage(sock, msg, mongo) {
             "t.me/ContactMeSBbot\n" +
             "למידע על איך תורמים לפרוייקט שלחו את הפקודה '!תרומה' בפרטי לבוט.";
 
-
-
         return sendMsgQueue(id, text);
     }
-
-    // ##############
-    // ##############
-    //  NOT IN GROUP - PRIVATE CHAT
-    // ##############
-    // ##############
-    if (msg.key.remoteJid.includes("@g.us")) return;
 
     if (textMsg.startsWith("!תרומה") || textMsg.startsWith("!donate") || textMsg.startsWith("!donation") || textMsg.startsWith("!תרומות")) {
         // if sender is superuser
@@ -901,10 +897,21 @@ export default async function handleMessage(sock, msg, mongo) {
             else {
                 return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה (בדולרים) ולאחר מכן את מספר הטלפון");
             }
-
+        }
+        // normal user 
+        else if (id.endsWith("@g.us")) {
+            sendMsgQueue(id, "הפרטים נשלחו לפרטי");
+            return sendDonationMsg(msg.key.participant);
         }
         return sendDonationMsg(id);
     }
+
+    // ##############
+    // ##############
+    //  NOT IN GROUP - PRIVATE CHAT
+    // ##############
+    // ##############
+    if (msg.key.remoteJid.includes("@g.us")) return;
 
     if (textMsg.startsWith("!יתרה") || textMsg.startsWith("!balance")) {
         if (id.includes(superuser)) {
@@ -928,14 +935,12 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
 
-    /**##########
-     * INFO
-     ############*/
-
     // for supporter that donate more than 5$ - dont need to send the command in private chat
     if (type === MsgType.AUDIO) {
         if (GLOBAL.autoSTT(id) || id.includes(superuser))
-            return chatGPT.stt(msg);
+            return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
+                .then(() => chatGPT.stt(msg))
+                .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }));
     }
 
     return;
