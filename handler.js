@@ -66,6 +66,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // send ACK
     await sock.readMessages([msg.key])
+    await sleep(Math.random() * 4000 + 2000); // 2-6 seconds
 
     let groupName;
     if (id.endsWith("@g.us")) {
