@@ -65,7 +65,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
 
     // send ACK
-    sock.readMessages([msg.key])
+    await sock.readMessages([msg.key])
 
     let groupName;
     if (id.endsWith("@g.us")) {
@@ -837,10 +837,9 @@ export default async function handleMessage(sock, msg, mongo) {
     // if the bot got mentioned
     if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
         let mentionedJids = msg.message.extendedTextMessage.contextInfo.mentionedJid;
-        const SOCK_NUM = sock.user.id.split(":")[0].split("@")[0];
-        if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM))) {
-            return sock.sendMessage(id, { text: "היי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות" }).then(messageRetryHandler.addMessage)
-        }
+        const SOCK_NUM = GLOBAL.sock.user.id.split(":")[0].split("@")[0];
+        if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM)))
+            return sendMsgQueue(id, "היי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות");
     }
 
     // commands list
@@ -915,7 +914,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     if (textMsg.startsWith("!יתרה") || textMsg.startsWith("!balance")) {
         if (id.includes(superuser)) {
-            let phone = textMsg.split(" ").slice(1);
+            let phone = textMsg.split(" ")[1];
             if (phone && !isNaN(phone) && phone.length > 8) {
                 phone = phone.startsWith("972") ? +phone : "972" + +phone;
                 let jid = phone + "@s.whatsapp.net";
