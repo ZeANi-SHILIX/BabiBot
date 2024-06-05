@@ -9,7 +9,13 @@ let tempStore;
 /** @type {{[jid:string]: {"messageID": {reactionsCount: number,minToMute: number, startTime: number}}}}*/
 let tempMuteGroup = {};
 
-/** @type {{[jid:string]: {name: string, approvalTermsOfService: boolean, countUsersToMute: number, spam: string, blockLinks: boolean, blockLinksUser: string[], classes: string[], paidGroup: boolean, lastUsedGPT: number, countGPT: number, lastUsedEveryBodyCommand: number}}} */
+/** 
+ * @type {{[jid:string]: {
+ *              name: string, approvalTermsOfService: boolean, countUsersToMute: number, 
+ *              spam: string, blockLinks: boolean, blockLinksUser: string[], classes: string[], 
+ *              paidGroup: boolean, lastUsedGPT: number, countGPT: number, lastUsedEveryBodyCommand: number
+ * }}} 
+ * */
 let tempGroupConfig = {};
 
 /** @type {{[jid:string]: {balance: number, sttWithoutCommand: boolean}}} */
@@ -39,11 +45,8 @@ let omerReminder = {};
  * */
 let tempQuizLev = {};
 
-/**
- * this sock is updating when reconnecting
-*/
 export const GLOBAL = {
-    sock: tempSock,
+    sock: tempSock, // updating when reconnecting (server.js)
     store : tempStore,
     muteGroup: tempMuteGroup,
     groupConfig: tempGroupConfig,
@@ -127,14 +130,14 @@ export const GLOBAL = {
         }
         return false;
     },
-    unofficialGPTcredit: 250, // TODO: need to be saved in file
+    unofficialGPTcredit: 250,
     updateUnofficialGPTcredit: function (tokens, model) {
         // 1 credit for 2000 tokens
         if (["pai-001", "pai-001-rp"].includes(model)) {
             this.unofficialGPTcredit -= tokens / 2000;
         }
         // 1 credit for 4000 tokens
-        if (["pai-001-light", "pai-001-light-rp"].includes(model)) {
+        if (["pai-001-light", "pai-001-light-rp", "gpt-3.5-unfiltered"].includes(model)) {
             this.unofficialGPTcredit -= tokens / 4000;
         }
         console.log("unofficialGPTcredit: ", this.unofficialGPTcredit);
