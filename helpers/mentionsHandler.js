@@ -27,7 +27,7 @@ class Mentions {
             let metadata = await GLOBAL.sock.groupMetadata(jid);
 
             // check if the user is admin
-            let isAdmin = metadata.participants.find((user) => user.jid === msg.key.participant).admin
+            let isAdmin = metadata.participants.find((user) => user.id === msg.key.participant).admin
                 || msg.key.participant.includes(GLOBAL.superuser);
             if (!isAdmin) return sendCustomMsgQueue(jid, { text: "פקודה זו זמינה רק למנהלים" });
 
@@ -45,44 +45,48 @@ class Mentions {
             let metadata = await GLOBAL.sock.groupMetadata(jid);
 
             // filter the users
-            let users = metadata.participants.map((user) => user.id)
+            let users = metadata.participants
                 .filter((user) => user.admin // admins only
-                    && !user.includes(GLOBAL.sock.user.id.split("@")[0].split(":")[0])); // not bots
+                    && !user.id.includes(GLOBAL.sock.user.id.split("@")[0].split(":")[0])) // not bot
+                .map((user) => user.id);
 
             let text = users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
             return sendCustomMsgQueue(jid, { text, mentions: users });
+            // TODO: add quoted message if exists
         }
         else {
-            // get federations
-            const federations = await this.getFederationsByJID(jid);
             // get all labels
-            let labels = await labelsDB.find({ label: label }, (err, res) => {
+            let allLabels = await labelsDB.find({ label: label }, (err, res) => {
                 if (err) throw err;
                 console.log(res);
             });
 
-            // filter
-            // first find label from the chat
-            let tempLabels = labels.filter(label => label.jid === jid)
+            if (allLabels.length === 0) return //sendCustomMsgQueue(jid, { text: "תג זה לא קיים" });
+
+            /** find *first* label */
+            let tempLabel = allLabels.find(label => label.jid === jid)
+
             //if not found - search with the feder
-            if (tempLabels.length === 0 && federations.length !== 0) {
-                tempLabels = labels.filter(label => federations.some(feder => label.federation.includes(feder.federation)))
+            if (!tempLabel) {
+                // get federations
+                const federations = await this.getFederationsByJID(jid);
+                tempLabel = allLabels.find(label => federations.some(feder => label.federation.includes(feder.federation)))
             }
-            labels = tempLabels
 
-            // if the label is not found
-            if (labels.length === 0) return //sendCustomMsgQueue(jid, { text: "תג זה לא קיים" });
+            // if no label was found
+            if (!tempLabel) return //sendCustomMsgQueue(jid, { text: "תג זה לא קיים" });
 
-            // TODO: check if the user is admin?
-
-            /* NOTICE: when some labels are found - use the first one */
 
             // filter only users in the group
-            let metadata = await GLOBAL.sock.groupMetadata(jid);
-            let users = metadata.participants.map((user) => user.id);
-            users = labels[0].users.filter((user) => users.includes(user));
+            const metadata = await GLOBAL.sock.groupMetadata(jid);
 
-            let text = labels[0].text;
+            // TODO: check if the user is admin?
+            const admins = metadata.participants.filter((user) => user.admin);
+
+            let users = metadata.participants.map((user) => user.id);
+            users = tempLabel.users.filter((user) => users.includes(user));
+
+            let text = tempLabel.text;
             text += "\n" + users.map((user) => `@${user.replace("@s.whatsapp.net", "")}`).join(" ");
             return sendCustomMsgQueue(jid, { text, mentions: users });
         }
@@ -122,13 +126,13 @@ class Mentions {
     }
 
     async getFederationsByJID(jid) {
-        const feders = await federationsDB.find({ groups: { $in: [jid] } });
-        return feders
+        return await federationsDB.find({ groups: { $in: [jid] } });
     }
 
     /**
      * handle label operations such as add, remove, edit, etc.
      * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+     * @example "!tag command labelName {-global federName} text"
      */
     async labelHandling(msg) {
         const jid = msg.key.remoteJid;
@@ -138,32 +142,29 @@ class Mentions {
             return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
 
         // need fix - each group can have multiple federations
-        const feders = await this.getFederationsByJID(jid)
+        const feders = await this.getFederationsByJID(jid);
 
         const textMsg = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+        const msgComponents = textMsg.split(/[\n ]/);
 
-        const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
+        const requestedCommand = msgComponents[1].toLowerCase().slice(1);   // drop handler prefix
+        const labelName = msgComponents[2].toLowerCase();                   // label
 
-        //drop handler prefix
-        const requestedCommand = msgComponents[0].slice(1);
-        // label
-        const labelName = msgComponents[1];
-
-        let numCommandOptions = 1;
+        let numCommandOptions = 3;
 
         // optional global
         let globalFeder = null;
-        if (msgComponents[2] === "-גלובלי" || msgComponents[2] === "-global") {
-            globalFeder = msgComponents[3];
+        if (msgComponents[3] === "-גלובלי" || msgComponents[3] === "-global") {
+            globalFeder = msgComponents[4].toLowerCase();
             numCommandOptions += 2;
         }
 
         const msgMentions = msg.message.extendedTextMessage?.contextInfo?.mentionedJid
-            ? msg.message.extendedTextMessage?.contextInfo?.mentionedJid
-            : [msg.key.participant ?? ""];
+            ? msg.message.extendedTextMessage.contextInfo.mentionedJid // msg has mentions
+            : [msg.key.participant ?? ""]; // no mentions - use the sender
 
         // additional text for label 
-        const preText = textMsg.split(/[\n ]/).slice(numCommandOptions).join(" ") + "\n" || "";
+        const preText = msgComponents.slice(numCommandOptions).join(" ") + "\n" || "";
 
         const commands = {
             'create_label': {
@@ -232,10 +233,10 @@ class Mentions {
     * @param {string} label
     * @param {string} preText
     * @param {string} globalFeder federation name for global label
-    * @param {string[]} feders all the federations the group (jid) is part of
+    * @param {{federation: string, groups: string[], authorizedUsers: string[]}[]} feders all the federations the group (jid) is part of
     */
     async createLabel(keyParticipant, jid, label, preText, globalFeder = null, feders = null) {
-
+    
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
         // the user wants to create a global label
@@ -270,7 +271,7 @@ class Mentions {
     * @param {string} label
     * @param {boolean} permanent
     * @param {string} globalFeder
-    * @param {[string]} feders
+    * @param {{{federation: string, groups: string[], authorizedUsers: string[]}[]}} feders
     */
     async deleteLabel(keyParticipant, jid, label, permanent = false, globalFeder = null, feders = null) {
         let reqLabel;
@@ -306,7 +307,7 @@ class Mentions {
     /**
      * get all labels associated with the group
      * @param {string} jid group id
-     * @param {string[]} feders all the federations the group (jid) is part of
+     * @param {{{federation: string, groups: string[], authorizedUsers: string[]}[]}} feders all the federations the group (jid) is part of
     */
     async getAllLabels(jid, feders) {
         /* cant be duplicated labels in the list, because we not saving the jid for global labels */
@@ -330,6 +331,9 @@ class Mentions {
      * remove user mentions from label
     * @param {string} jid
     * @param {string} label
+    * @param {string[]} msgMentions
+    * @param {string} globalFeder
+    * @param {{{federation: string, groups: string[], authorizedUsers: string[]}[]}} feders all the federations the group (jid) is part of
     */
     async removeUserMention(jid, label, msgMentions, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
@@ -355,6 +359,9 @@ class Mentions {
      * add user mentions to label
     * @param {string} jid
     * @param {string} label
+    * @param {string[]} msgMentions
+    * @param {string} globalFeder
+    * @param {{{federation: string, groups: string[], authorizedUsers: string[]}[]}} feders all the federations the group (jid) is part of
     */
     async addUserMention(jid, label, msgMentions, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
@@ -383,6 +390,8 @@ class Mentions {
     * @param {string} jid
     * @param {string} label
     * @param {string} preText new text for the label
+    * @param {string} globalFeder
+    * @param {{{federation: string, groups: string[], authorizedUsers: string[]}[]}} feders all the federations the group (jid) is part of
     */
     async editLabel(keyParticipant, jid, label, preText, globalFeder = null, feders = null) {
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
