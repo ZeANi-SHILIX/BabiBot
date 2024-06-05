@@ -1,4 +1,4 @@
-# Babi Bot: your ultimate companion on WhatsApp
+# Babi Bot: Your Ultimate Companion On WhatsApp
 
 Babi Bot is a WhatsApp bot designed for effective group management and an improved user experience. It offers a wide range of services to users, while providing tailored solutions for students at the Lev Academic Center. Whether you want to optimize your WhatsApp groups, or gain effertless access for the Lev Academic Center's student resources, Babi Bot stands as your ultimate companion.
 
@@ -8,7 +8,6 @@ Babi Bot is a WhatsApp bot designed for effective group management and an improv
 Ensure your system meets the following requirements before proceeding with Babi Bot:
 
 - Node.js version 14.x or higher. You can download and install Node.js from [here](https://nodejs.org/).
-- Chrome browser installed
 
 
 ## Installation
@@ -23,7 +22,7 @@ git clone https://github.com/ZeANi-SHILIX/BabiBot.git
 After downloading the code, navigate to the project directory and install any dependencies using npm:
 
 ```bash
-cd babi-bot
+cd BabiBot
 npm install
 ```
 
@@ -37,45 +36,39 @@ node server.js
 
  ## Features
 
-### Sticker Creator
+### Media
 
-| available |                Feature           |
+| Available |                Feature           |
 | :-----------: | :--------------------------------:|
 |       ✅       | Create a sticker from media & text |
-
-
-### Downloader 
-
-| available |                     Feature                |
-| :------------: | :---------------------------------------------: |
-|       ✅        |   YouTube mp3 Downloader           |
+|       ✅        |   Download from YouTube             |
 |       ✅        |   Download files as PDF extension |
 
-### group Only
+
+### Group Only
 
 
-|   available |              Feature                |
+|   Available |              Feature                |
 | :------------: | :---------------------------------------------: |
 |       ✅        |  Mute / Unmute the group   |
 |       ✅        |  Mention All User |
 |       ✅        |  Block / Unblock links    |
-|       ✅        |   Save / Delete messages             |
-|       ✅        |   Summarize conversation             |
+|       ✅        |   Save / Delete notes             |
+|       ✅        |   Summarize conversation (TLDR)            |
 
 ### Other  
 
-| available  |                     Feature                     |
+| Available  |                     Feature                     |
 | :------------: | :---------------------------------------------: |
-|       ✅        |   Check if the bot works                |
-|       ✅        |   Get a random sticker 
 |       ✅        |   Get a link to search on Google        |
-|       ❌        |   Conversation with GPT chat            |
-|       ❌        |   Get a picture                         |
-|       ✅        |   speech to text                        |
+|       ✅        |   Get a random sticker 
+|       ❌        |   Generate an AI picture                         |
+|       ❌        |   Conversation with ChatGPT            |
+|       ✅        |   Convert audio message to text (Primium)        |
 
 ### JCT 
 
-|  available |                     Feature                     |
+|  Available |                     Feature                     |
 | :------------: | :---------------------------------------------: |
 |       ✅        |   Information about courses                |
 |       ✅        |   Contact of college staff         |
@@ -85,7 +78,7 @@ node server.js
 
 ## Additional Resources
 
-For detailed instructions on how to access and use each feature of Babi Bot, visit the [Babi Bot website](https://babibot.live/)
+For detailed instructions on how to access and use each feature of Babi Bot, visit the [Babi Bot website](https://zeani-shilix.github.io/BabiBot/)
 
 
 
