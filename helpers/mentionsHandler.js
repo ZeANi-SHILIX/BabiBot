@@ -147,8 +147,8 @@ class Mentions {
         const textMsg = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
         const msgComponents = textMsg.split(/[\n ]/);
 
-        const requestedCommand = msgComponents[1].toLowerCase().slice(1);   // drop handler prefix
-        const labelName = msgComponents[2].toLowerCase();                   // label
+        const requestedCommand = msgComponents[1].toLowerCase();
+        const labelName = msgComponents[2].toLowerCase();
 
         let numCommandOptions = 3;
 
@@ -236,7 +236,7 @@ class Mentions {
     * @param {{federation: string, groups: string[], authorizedUsers: string[]}[]} feders all the federations the group (jid) is part of
     */
     async createLabel(keyParticipant, jid, label, preText, globalFeder = null, feders = null) {
-    
+
         if (!label) return "אופס... נראה ששכחת לכתוב את שם התג";
 
         // the user wants to create a global label
