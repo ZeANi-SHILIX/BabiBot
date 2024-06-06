@@ -201,7 +201,14 @@ class Mentions {
             'remove_mention': {
                 commandWords: ['remove', 'הסר', 'תסיר'],
                 func: this.removeUserMention,
-                args: [jid, labelName, msgMentions, globalFeder, feders]
+                args: [jid, labelName, msgMentions, globalFeder, feders],
+                desc: "הסר תיוג שלך או משתמשים אחרים מהרשימה"
+            },
+            'help_manual': {
+                commandWords: ['-help', '-עזרה', '-פקודות'],
+                func: this.helpManual,
+                args: [],
+                desc: "למד מה אפשר לעשות עם התגים של באביבוט!"
             }
         }
 
@@ -412,7 +419,27 @@ class Mentions {
         await labelsDB.findOneAndUpdate({ label: label, jid: jid, federation: feders }, { text: preText });
 
 
-        return `התג *${label}* נערך בהצלחה!`
+        return [true, `התג *${label}* נערך בהצלחה!`]
+    }
+
+    /**
+     * info about the labels feature and how to use it
+     */
+    async helpManual() {
+        // TODO review and rewrite if necessary, add example
+        text = "*אודות התגים / התוויות של הבוט*\n" +
+        "תיוגים קבוצתיים ונוחים בוואטסאפ!\n" + 
+        "תייג את כל האנשים הרלוונטים להודעה בקלות\n" +
+        "`@תג`\n"        
+        "\n" +
+        ":רשימת הפקודות עבור תגים"
+        Object.keys(commands).forEach(op => {
+            let currCommand = commands[op]
+            text += `*${currCommand[commandWords[1]]}*: ${currCommand[desc]}`;
+            // TODO add rest of commandWords to text (optional, start with '> ')
+        })
+        
+        return [true, text];
     }
 
 }
