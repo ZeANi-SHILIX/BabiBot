@@ -170,12 +170,14 @@ class Mentions {
             'create_label': {
                 commandWords: ['create', 'צור', 'תצור'],
                 func: this.createLabel,
-                args: [msg.key.participant, jid, labelName, preText, globalFeder, feders]
+                args: [msg.key.participant, jid, labelName, preText, globalFeder, feders],
+                desc: "צור תג חדש לתיוג"
             },
             'delete_label': {
                 commandWords: ['delete', 'מחק', 'תמחק'],
                 func: this.deleteLabel,
-                args: [msg.key.participant, jid, labelName, false, globalFeder, feders]
+                args: [msg.key.participant, jid, labelName, false, globalFeder, feders],
+                desc: "מחק תג"
             },
             /*
             'delete_label_perm': {
@@ -186,17 +188,20 @@ class Mentions {
             'list_labels': {
                 commandWords: ['list', 'רשימה'],
                 func: this.getAllLabels,
-                args: [jid, feders]
+                args: [jid, feders],
+                desc: "קבל את רשימת התוויות שאפשר לתייג בקבוצה זו"
             },
             'edit_label': {
                 commandWords: ['edit', 'ערוך', 'שנה', 'תשנה'],
                 func: this.editLabel,
-                args: [msg.key.participant, jid, labelName, preText, globalFeder, feders]
+                args: [msg.key.participant, jid, labelName, preText, globalFeder, feders],
+                desc: "שנה את הטקסט המופיע עם התיוג באותה תווית"
             },
             'add_mention': {
                 commandWords: ['add', 'הוסף', 'תוסיף'],
                 func: this.addUserMention,
-                args: [jid, labelName, msgMentions, globalFeder, feders]
+                args: [jid, labelName, msgMentions, globalFeder, feders],
+                desc: "הוסף תיוג שלך או של משתמשים אחרים לרשימה"
             },
             'remove_mention': {
                 commandWords: ['remove', 'הסר', 'תסיר'],
