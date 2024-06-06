@@ -7,6 +7,7 @@ class Federations {
     /**
      * handle federation operations such as add/remove groups, etc.
      * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
+     * @example "!federations {create} {myFederName} {...mentions}"
      */
     async federationsHandling(msg) {
         const jid = msg.key.remoteJid;
@@ -15,17 +16,15 @@ class Federations {
         if (!jid.includes("@g.us"))
             return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
 
-        const textMsg = msg.message.conversation || msg.message.extendedTextMessage.text || "";
+        const textMsg = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
         const msgComponents = textMsg.toLowerCase().split(/[\n ]/);
 
-        // get command & drop handler prefix
-        const requestedCommand = msgComponents[0].slice(1);
-        // requested federation name
-        const federName = msgComponents[1];
+        const requestedCommand = msgComponents[1];
+        const federName = msgComponents[2];
 
         const msgMentions = msg.message.extendedTextMessage?.contextInfo?.mentionedJid
-            ? msg.message.extendedTextMessage?.contextInfo?.mentionedJid
+            ? msg.message.extendedTextMessage.contextInfo.mentionedJid
             : [msg.key.participant ?? ""];
 
         const commands = {
@@ -40,22 +39,22 @@ class Federations {
                 args: [federName, msg.key.participant]
             },
             'add_authorized_users': {
-                commandWords: ['addusers'],
+                commandWords: ['addusers', 'הוסף'],
                 func: this.addAuthorizedUsers,
                 args: [federName, msgMentions]
             },
             'remove_authorized_users': {
-                commandWords: ['removeusers'],
+                commandWords: ['removeusers', 'הסר'],
                 func: this.removeAuthorizedUsers,
                 args: [federName, msgMentions]
             },
             'add_group': {
-                commandWords: ['addgroup'],
+                commandWords: ['addgroup', 'שייך'],
                 func: this.addGroup,
                 args: [federName, jid]
             },
             'remove_group': {
-                commandWords: ['removegroup'],
+                commandWords: ['removegroup', 'הוצא'],
                 func: this.removeGroup,
                 args: [federName, jid]
             }
@@ -87,7 +86,7 @@ class Federations {
      */
     async createFederation(federName, jid) {
         //feder = await federationsDB.findOne({ federation: federName, groups: { $in: [jid]}});
-        feder = await federationsDB.findOne({ federation: federName});
+        const feder = await federationsDB.findOne({ federation: federName});
         if (feder) return "פדרציה בשם זה קיימת כבר, נסה שוב עם שם אחר";
 
         federationsDB.create({ federation: federName, groups: $push [jid] }, (err, res) => {
@@ -112,6 +111,7 @@ class Federations {
             });
             return `*${federName}* נמחקה בהצלחה!`
         }
+        return "אין לך הרשאה למחוק פדרציה זו"
     }
 
     /**
@@ -128,7 +128,7 @@ class Federations {
             await federationsDB.findOneAndUpdate({ federation: federName }, { authorizedUsers: updatedUsers });
             return "מורשי גישה נוספו בהצלחה"
         }
-        
+        return "הפדרציה לא קיימת"
     }
 
     /**
@@ -144,7 +144,7 @@ class Federations {
             await federationsDB.findOneAndUpdate({ federation: federName }, { authorizedUsers: updatedUsers });
             return "מורשי גישה הוסרו בהצלחה"
         }
-        
+        return "הפדרציה לא קיימת"
     }
 
     /**
@@ -155,11 +155,14 @@ class Federations {
      */
     async addGroup(federName, jid) {
         reqFeder = await federationsDB.findOne({ federation: federName })
-        if (reqFeder && !(jid in reqFeder.groups)) {
+
+        if (!reqFeder) return "הפדרציה לא קיימת"
+
+        if (!(jid in reqFeder.groups)) {
             await federationsDB.findOneAndUpdate({ federation: federName }, { $push: { groups: jid} });
             return `הקבוצה נוספה ל${federName} בהצלחה`
         }
-        
+        return "הקבוצה כבר נמצאת בפדרציה"
     }
 
     /**
@@ -170,11 +173,14 @@ class Federations {
      */
     async removeGroup(federName, jid) {
         reqFeder = await federationsDB.findOne({ federation: federName })
-        if (reqFeder && jid in reqFeder.groups) {
+
+        if (!reqFeder) return "הפדרציה לא קיימת"
+
+        if (jid in reqFeder.groups) {
             await federationsDB.findOneAndUpdate({ federation: federName }, { $pull: { groups: jid } });
             return `הקבוצה הוסרה מ${federName} בהצלחה`
         }
-        
+        return "הקבוצה לא נמצאת בפדרציה"
     }
 
 }
