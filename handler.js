@@ -22,8 +22,9 @@ import {
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
-import { mentions } from './helpers/mentions/mentions.js';
+import { mentions } from './helpers/mentionsHandler.js';
 import e from 'express';
+import { federations } from './helpers/federationsHandler.js';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -259,6 +260,10 @@ export default async function handleMessage(sock, msg, mongo) {
     }
     else if (textMsg.startsWith("!תג ")){
         return mentions.labelHandling(msg);
+    }
+    //TODO change prefix to something reasonable...
+    else if (textMsg.startsWith("!פדרציה ")){
+        return federations.labelHandling(msg);
     }
     //TODO choose how to specify federation handling
     //else if (textMsg.startsWith()) {
