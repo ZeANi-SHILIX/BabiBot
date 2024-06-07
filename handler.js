@@ -961,10 +961,14 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // dev only
     if (id.includes(superuser) && textMsg.startsWith("!אשר")) {
-        const inviteDetails = JSON.parse(msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || "{}");
+        if (!msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
+            return sendMsgQueue(id, "יש לצטט הודעה");
+
+        const qoutedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        const inviteDetails = JSON.parse(qoutedMsg.message?.conversation || qoutedMsg.message?.extendedTextMessage?.text || "{}");
         if (!inviteDetails.groupJid) return sendMsgQueue(id, "לא נמצאו פרטי הזמנה");
 
-        GLOBAL.sock.groupAcceptInvite(inviteDetails.inviteCode).then(() => {
+        return GLOBAL.sock.groupAcceptInvite(inviteDetails.inviteCode).then(() => {
             sendMsgQueue(id, "ההצטרפות לקבוצה " + inviteDetails.groupName + " בוצעה בהצלחה");
         }).catch((error) => {
             errorMsgQueue(error);
