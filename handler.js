@@ -961,7 +961,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // dev only
     if (id.includes(superuser) && textMsg.startsWith("!אשר")) {
-        const inviteDetails = JSON.parse(msg.message?.extendedTextMessage?.text || "{}");
+        const inviteDetails = JSON.parse(msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation || "{}");
         if (!inviteDetails.groupJid) return sendMsgQueue(id, "לא נמצאו פרטי הזמנה");
 
         GLOBAL.sock.groupAcceptInvite(inviteDetails.inviteCode).then(() => {
