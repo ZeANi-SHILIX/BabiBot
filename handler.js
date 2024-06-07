@@ -65,7 +65,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
 
     // send ACK
-    await sleep(Math.random()*1000 + 1000); // 1-2 seconds
+    await sleep(Math.random() * 1000 + 1000); // 1-2 seconds
     await sock.readMessages([msg.key])
     await sleep(Math.random() * 3000 + 1000); // 1-4 seconds
 
@@ -951,11 +951,8 @@ export default async function handleMessage(sock, msg, mongo) {
             + "לפרטים נוספים נא לשלוח '!תרומה' בפרטי לבוט");
 
         return sendMsgQueue(superuser + "@s.whatsapp.net", JSON.stringify({
-            groupName: msg.message.groupInviteMessage.groupName,
-            inviteCode: msg.message.groupInviteMessage.inviteCode,
-            groupJid: msg.message.groupInviteMessage.groupJid,
-            caption: msg.message.groupInviteMessage.caption,
-            invitedBy: "wa.me/" + id.split("@")[0]
+            groupInviteMessage: msg.message.groupInviteMessage,
+            keyMsg: msg.key
         }, null, 2));
     }
 
@@ -965,13 +962,15 @@ export default async function handleMessage(sock, msg, mongo) {
             return sendMsgQueue(id, "יש לצטט הודעה");
 
         const qoutedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        /** @type {{keyMsg: {},groupInviteMessage: import('@adiwajshing/baileys').proto.Message.IGroupInviteMessage}} */
         const inviteDetails = JSON.parse(qoutedMsg.message?.conversation || qoutedMsg.message?.extendedTextMessage?.text || "{}");
-        if (!inviteDetails.groupJid) return sendMsgQueue(id, "לא נמצאו פרטי הזמנה");
 
-        return GLOBAL.sock.groupAcceptInvite(inviteDetails.inviteCode).then(() => {
-            sendMsgQueue(id, "ההצטרפות לקבוצה " + inviteDetails.groupName + " בוצעה בהצלחה");
+        if (!inviteDetails.groupInviteMessage) return sendMsgQueue(id, "לא נמצאו פרטי הזמנה");
+
+        return GLOBAL.sock.groupAcceptInviteV4(inviteDetails.keyMsg, inviteDetails.groupInviteMessage).then((status) => {
+            sendMsgQueue(id, "ההצטרפות לקבוצה " + inviteDetails.groupInviteMessage.groupName + " בוצעה בהצלחה");
         }).catch((error) => {
-            errorMsgQueue(error);
+            errorMsgQueue(error ?? "שגיאה בהצטרפות לקבוצה");
         });
     }
 
