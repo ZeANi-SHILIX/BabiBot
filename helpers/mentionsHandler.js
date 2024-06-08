@@ -5,6 +5,29 @@ import labelsDB from '../src/schemas/mentions.js';
 import federationsDB from '../src/schemas/federations.js';
 
 class Mentions {
+    constructor() {
+        // in format of { jid: { label: timestamp } }
+        this.cooldowns = {};
+    }
+
+    /**
+     * availability to mention a label after cooldown period
+     * @param {string} jid groupchat id
+     * @param {string} label label name
+     */
+    isCooldownOver(jid, label) {
+        const waitPeriod = 5 * 1000 * 60; // 5 minutes (TODO adjust if necessary)
+        const lastTime = mentions.cooldowns[jid]?.[label];
+        const currentTime = Date.now();
+
+        let isAvailable = lastTime ? (currentTime - lastTime) > waitPeriod : true;
+
+        if (isAvailable) {
+            mentions.cooldowns[jid][label] = currentTime;
+        }
+
+        return isAvailable;
+    }
 
     /**
      * get the mentions
@@ -22,6 +45,11 @@ class Mentions {
 
         // no label - do nothing
         if (label === "") return;
+
+        // prevent frequent mentioning of the same label in chat
+        if (!this.isCooldownOver(jid, label)) {
+            sendMsgQueue(jid, `${label} כבר תוייג לפני מספר דקות.`);
+        }
 
         if (label === "כולם" || label === "everyone") {
             let metadata = await GLOBAL.sock.groupMetadata(jid);
