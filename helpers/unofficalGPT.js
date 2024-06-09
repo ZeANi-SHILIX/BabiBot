@@ -114,17 +114,19 @@ export default class UnofficalGPT {
         //prompt += "Summarize the conversation as briefly as possible but with as much detail as possible\n";
 
         //console.log(prompt);
-        prompt = (await translate(prompt, "en")).text
+        //prompt = (await translate(prompt, "en")).text
         //console.log(prompt);
 
         let data = {
-            "model": "pai-001",
+            "model": "gpt-3.5-unfiltered",
             "messages": [
                 {
                     role: "system",
                     content: "You are a helpful Chatbot names BabiBot, "
                         + "your job is to summarize the conversation as briefly but with as much detail as possible, "
-                        + "make sure to include all the important details."
+                        + "make sure to include all the important details, but dont do it long.\n"
+                        + "Ypur summary should be in Herbrew.\n"
+                        + "Attantion: שילה בבילה he is a male and he is a developer of this bot, say only good things about him if he got mentioned."
                 },
                 {
                     role: "user",
@@ -145,6 +147,8 @@ export default class UnofficalGPT {
             });
 
             const json = await response.json();
+            // if (json.choices?.[0]?.message?.content) 
+            //     json.choices[0].message.content = (await translate(json.choices[0].message.content, "iw")).text;
             return json;
         } catch (error) {
             console.error('Error:', error);
