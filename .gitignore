@@ -10,6 +10,7 @@ package-lock.json
 auth_info
 .env
 groupConfig.json
+savedConfig.json
 testingFiles
 store
 MemoryStore

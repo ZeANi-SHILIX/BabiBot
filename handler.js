@@ -17,13 +17,12 @@ import { getMsgType, MsgType } from './helpers/msgType.js';
 import { errorMsgQueue, msgQueue, sendCustomMsgQueue, sendMsgQueue, TYQueue } from './src/QueueObj.js';
 import translate, { languages } from './custom_modules/Translate.js';
 import {
-    getPhoneNumberOf, getMailOf, saveMailsListToFile,
+    getPhoneNumberOf, getMailOf, saveMailsListToFile, downloadFileAsPDF,
     getCoursesBlockedBy, getWhatThisCourseBlocks, getAllCourses, updateCourses
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
 import { mentions } from './helpers/mentionsHandler.js';
-import e from 'express';
 import { federations } from './helpers/federationsHandler.js';
 
 
@@ -36,10 +35,10 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
 
 /**
- * 
- * @param {import('@adiwajshing/baileys').WASocket} sock 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {import('./mongo')} mongo 
+ *
+ * @param {import('@adiwajshing/baileys').WASocket} sock
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @param {import('./mongo')} mongo
  */
 export default async function handleMessage(sock, msg, mongo) {
     let id = msg.key.remoteJid || "";
@@ -68,7 +67,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
 
     // send ACK
-    sock.readMessages([msg.key])
+    await sleep(Math.random() * 1000 + 1000); // 1-2 seconds
+    await sock.readMessages([msg.key])
+    await sleep(Math.random() * 3000 + 1000); // 1-4 seconds
 
     let groupName;
     if (id.endsWith("@g.us")) {
@@ -108,7 +109,10 @@ export default async function handleMessage(sock, msg, mongo) {
                             // GLOBAL.groupConfig[id].blockLinksUser = GLOBAL.groupConfig[id].blockLinksUser.filter(u => u !== msg.key.participant);
 
                             // kick user
-                            return sendCustomMsgQueue(id, { text: "זו לא פעם ראשונה שאתה שולח קישורים כאן!\nביי ביי" })
+                            return sendCustomMsgQueue(id, {
+                                text: "*הקישורים אסורים כאן!*"
+                                //"זו לא פעם ראשונה שאתה שולח קישורים כאן!\nביי ביי"
+                            })
                                 // kick user
                                 .then(msgQueue.add(async () => {
                                     GLOBAL.sock.groupParticipantsUpdate(id, [msg.key.participant], "remove").then(info => {
@@ -126,7 +130,10 @@ export default async function handleMessage(sock, msg, mongo) {
                             // delete msg
                             sendCustomMsgQueue(id, { delete: msg.key });
                             // send warning
-                            return sendCustomMsgQueue(id, { text: "*הקישורים אסורים כאן!*\nבפעם הבאה תהיה ענישה ותועף מהקבוצה" });
+                            return sendCustomMsgQueue(id, {
+                                text: "*הקישורים אסורים כאן!*"
+                                // \nבפעם הבאה תהיה ענישה ותועף מהקבוצה"
+                            });
                         }
                     }
                 }
@@ -635,19 +642,11 @@ export default async function handleMessage(sock, msg, mongo) {
     if (query) return getCoursesBlockedBy(id, query.replace(/\?/g, "").trim())
 
     // this course is blocking ... (the following courses)
-    if (textMsg.includes("חסום על ידי ") || textMsg.includes("נחסם על ידי ")) {
-        query = textMsg.includes("חסום על ידי ")
-            ? textMsg.slice(textMsg.indexOf("חסום על ידי") + 11)
-            : textMsg.slice(textMsg.indexOf("נחסם על ידי") + 11);
-    } else if (textMsg.includes("חסומים על ידי ")) {
-        query = textMsg.slice(textMsg.indexOf("חסומים על ידי") + 13);
-    } else if (textMsg.includes('חסום ע"י ')) {
-        query = textMsg.slice(textMsg.indexOf('חסום ע"י ') + 9);
-    } else if (textMsg.includes('נחסם ע"י ')) {
-        query = textMsg.slice(textMsg.indexOf('נחסם ע"י ') + 9);
-    } else if (textMsg.includes('חסומים ע"י ')) {
-        query = textMsg.slice(textMsg.indexOf('חסומים ע"י ') + 11);
-    }
+    // match חסום ע"י אינפי, נחסם על ידי אינפי, etc
+    // extract the course name or undefined
+    query = textMsg.match(/(חסום|נחסם|חסומים) (על ידי|ע[״"']{0,2}י) (.*)/)?.[3];
+    // match מה אינפי חוסם
+    query = query || textMsg.match(/מה (.*) חוסם/)?.[1];
     if (query) return getWhatThisCourseBlocks(id, query.replace(/\?/g, "").trim())
 
 
@@ -655,6 +654,19 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("כל הקורסים")) {
         return getAllCourses(id)
     }
+
+    // used when dowlnoading file from LevNet
+    if (textMsg.startsWith("!pdf")) {
+        let customName = textMsg.replace("!pdf", "").trim();
+        let qoutedMsg = await MemoryStore.loadMessage(id, msg.message?.extendedTextMessage?.contextInfo?.stanzaId);
+        if (!qoutedMsg) return sendMsgQueue(id, "יש לצטט הודעה");
+        return downloadFileAsPDF(qoutedMsg, customName);
+    }
+    if (msg.message?.documentWithCaptionMessage?.message?.documentMessage?.caption?.startsWith("!pdf")) {
+        let customName = msg.message?.documentWithCaptionMessage?.message?.documentMessage?.caption.replace("!pdf", "").trim();
+        return downloadFileAsPDF(msg, customName);
+    }
+
 
 
     // reply with plesure to "תודה"
@@ -727,17 +739,14 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        //return sendMsgQueue(id, "שירות ChatGPT לא זמין כרגע")
-        // if (!GLOBAL.canAskGPT(id))
-        //     return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
-        //         // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
-        //         // + "https://www.buymeacoffee.com/BabiBot\n"
-        //         // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
-        //     );
-
+        if (GLOBAL.unofficialGPTcredit && GLOBAL.unofficialGPTcredit < 10)
+            return sendMsgQueue(id, "נגמרו להיום הקרדיטים לשימוש בשירות זה\nנסה שוב מחר");
 
         // get num from message
         let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
+        if (numMsgToLoad > 1000) {
+            return sendMsgQueue(id, "שגיאה: יותר מדי הודעות")
+        }
 
         //let history = await store.loadMessages(id, numMsgToLoad);
         return MemoryStore.loadMessages(id, numMsgToLoad + 1)
@@ -814,14 +823,16 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
-        if (!GLOBAL.canAskGPT(id))
-            return sendMsgQueue(id, "יותר מידי שאלות בזמן קצר... נסה שוב מאוחר יותר\n"
-                // + "תוכלו להסיר את ההגבלה על ידי תרומה לבוט:\n"
-                // + "https://www.buymeacoffee.com/BabiBot\n"
-                // + "https://payboxapp.page.link/C43xQBBdoUAo37oC6"
-            );
+        let userID = id.endsWith("@g.us") ? msg.key.participant : id;
+        if (GLOBAL.canIUseOpenAI(userID) || userID.includes(superuser)) {
+            return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
+                .then(() => chatGPT.stt(msg))
+                .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }))
+        }
 
-        return chatGPT.stt(msg);
+        return sendMsgQueue(id, "שירות התמלול זמין רק למי שתרם לבוט\n"
+            + "תוכלו לקבל מידע על איך תורמים באמצעות הפקודה '!תרומה'\n"
+            + "אם תרמת כבר ועדיין לא עובד, אנא צור קשר עם המפתח.");
     }
 
     /**#######
@@ -848,10 +859,9 @@ export default async function handleMessage(sock, msg, mongo) {
     // if the bot got mentioned
     if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
         let mentionedJids = msg.message.extendedTextMessage.contextInfo.mentionedJid;
-        const SOCK_NUM = sock.user.id.split(":")[0].split("@")[0];
-        if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM))) {
-            return sock.sendMessage(id, { text: "היי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות" }).then(messageRetryHandler.addMessage)
-        }
+        const SOCK_NUM = GLOBAL.sock.user.id.split(":")[0].split("@")[0];
+        if (mentionedJids.some(jid => jid.startsWith(SOCK_NUM)))
+            return sendMsgQueue(id, "היי אני באבי בוט, מישהו קרא לי?\nשלחו לי את הפקודה '!פקודות' כדי שאני אראה לכם מה אני יודע לעשות");
     }
 
     // commands list
@@ -866,6 +876,9 @@ export default async function handleMessage(sock, msg, mongo) {
         return sendCommandsList(id);
     }
 
+    /**########
+     *   INFO
+     ##########*/
 
     if (textMsg.startsWith("!info") || textMsg.startsWith("!מידע") || textMsg.includes("!אודות")) {
         let text = "*מידע על הבוט:*\n\n" +
@@ -878,46 +891,110 @@ export default async function handleMessage(sock, msg, mongo) {
             "מוזמנים להפיץ ולהשתמש להנאתכם!!\n\n" +
             "בוט זה נוצר על ידי שילה בבילה\n" +
             "ליצירת קשר:\n" +
-            "t.me/ContactMeSBbot";
+            "t.me/ContactMeSBbot\n" +
+            "למידע על איך תורמים לפרוייקט שלחו את הפקודה '!תרומה' בפרטי לבוט.";
 
         return sendMsgQueue(id, text);
     }
 
-    return
+    if (textMsg.startsWith("!תרומה") || textMsg.startsWith("!donate") || textMsg.startsWith("!donation") || textMsg.startsWith("!תרומות")) {
+        // if sender is superuser
+        if (id.includes(superuser)) {
+            let [donation, phone] = textMsg.split(" ").slice(1);
+            if (donation && phone && !isNaN(donation) && !isNaN(phone)) {
+                phone = phone.startsWith("972") ? +phone : "972" + +phone;
+                let jid = phone + "@s.whatsapp.net";
+
+                if (!GLOBAL.sock.onWhatsApp([jid])) {
+                    return sendMsgQueue(id, "מספר הטלפון אינו תקין");
+                }
+                if (donation < 1) {
+                    return sendMsgQueue(id, "סכום התרומה צריך להיות גדול מ-0");
+                }
+
+                GLOBAL.updateBalanceOpenAI(jid, +donation);
+                return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של " + donation + " דולר למשתמש " + phone);
+            }
+            else {
+                return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה (בדולרים) ולאחר מכן את מספר הטלפון");
+            }
+        }
+        // normal user 
+        else if (id.endsWith("@g.us")) {
+            sendMsgQueue(id, "הפרטים נשלחו לפרטי");
+            return sendDonationMsg(msg.key.participant);
+        }
+        return sendDonationMsg(id);
+    }
+
     // ##############
     // ##############
-    //  NOT IN GROUP
+    //  NOT IN GROUP - PRIVATE CHAT
     // ##############
     // ##############
     if (msg.key.remoteJid.includes("@g.us")) return;
 
+    if (textMsg.startsWith("!יתרה") || textMsg.startsWith("!balance")) {
+        if (id.includes(superuser)) {
+            let phone = textMsg.split(" ")[1];
+            if (phone && !isNaN(phone) && phone.length > 8) {
+                phone = phone.startsWith("972") ? +phone : "972" + +phone;
+                let jid = phone + "@s.whatsapp.net";
 
-    /**##########
-     * INFO
-     ############*/
+                if (!GLOBAL.sock.onWhatsApp([jid])) {
+                    return sendMsgQueue(id, "מספר הטלפון אינו תקין");
+                }
 
-    //const { type } = getMsgType(msg);
-    if (type === MsgType.AUDIO) {
-        return chatGPT.stt(msg);
-        // // get file
-        // let file = await downloadMediaMessage(msg, "buffer");
-        // // convert to text
-        // let info = await stt_heb(file);
-        // console.log(info);
-
-        // if (info.estimated_time) {
-        //     const sended = await sock.sendMessage(id, { text: "מנסה לתמלל את ההודעה... זה עלול לקחת זמן" }).then(messageRetryHandler.addMessage)
-        //     resendToSTT(file, id, sock, sended.key);
-        //     return
-        // }
-
-        // if (info.error)
-        //     return sock.sendMessage(id, { text: "אופס משהו לא עבד טוב" }).then(messageRetryHandler.addMessage)
-
-        // // send text
-        // return sock.sendMessage(id, { text: info.text }).then(messageRetryHandler.addMessage)
+                let balance = GLOBAL.getBalanceOpenAI(jid);
+                return sendMsgQueue(id, "היתרה של " + phone + " היא: " + balance + " דולר");
+            }
+            else {
+                return sendMsgQueue(id, "לא נמצא מספר טלפון\nנא להזין את מספר הטלפון");
+            }
+        }
+        return sendMsgQueue(id, "היתרה שלך היא: " + GLOBAL.getBalanceOpenAI(id) + " דולר");
     }
 
+
+    // for supporter that donate more than 5$ - dont need to send the command in private chat
+    if (type === MsgType.AUDIO) {
+        if (GLOBAL.autoSTT(id) || id.includes(superuser))
+            return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
+                .then(() => chatGPT.stt(msg))
+                .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }));
+    }
+
+
+    // if the bot got invited to a group
+    if (msg.message?.groupInviteMessage) {
+        sendMsgQueue(id, "אפשרות של צירוף באבי לקבוצות זמינה רק לתורמים.\n"
+            + "לפרטים נוספים נא לשלוח '!תרומה' בפרטי לבוט");
+
+        return sendMsgQueue(superuser + "@s.whatsapp.net", JSON.stringify({
+            groupInviteMessage: msg.message.groupInviteMessage,
+            keyMsg: msg.key
+        }, null, 2));
+    }
+
+    // dev only
+    if (id.includes(superuser) && textMsg.startsWith("!אשר")) {
+        if (!msg.message?.extendedTextMessage?.contextInfo?.stanzaId)
+            return sendMsgQueue(id, "יש לצטט הודעה");
+
+        const qoutedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
+        /** @type {{keyMsg: {},groupInviteMessage: import('@adiwajshing/baileys').proto.Message.IGroupInviteMessage}} */
+        const inviteDetails = JSON.parse(qoutedMsg.message?.conversation || qoutedMsg.message?.extendedTextMessage?.text || "{}");
+
+        if (!inviteDetails.groupInviteMessage) return sendMsgQueue(id, "לא נמצאו פרטי הזמנה");
+
+        return GLOBAL.sock.groupAcceptInviteV4(inviteDetails.keyMsg, inviteDetails.groupInviteMessage).then((status) => {
+            sendMsgQueue(id, "ההצטרפות לקבוצה " + inviteDetails.groupInviteMessage.groupName + " בוצעה בהצלחה");
+        }).catch((error) => {
+            errorMsgQueue(error ?? "שגיאה בהצטרפות לקבוצה");
+        });
+    }
+
+    return;
     if (type !== MsgType.TEXT) return;
 
     // no command - answer with ChatGPT
@@ -950,7 +1027,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
 /**
  * @param {String} str
- * @returns {Boolean} 
+ * @returns {Boolean}
  */
 function isIncludeLink(str) {
     str = str.toLowerCase();
@@ -958,9 +1035,9 @@ function isIncludeLink(str) {
 }
 
 /**
- * 
- * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg 
- * @param {Number} muteTime_min 
+ *
+ * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
+ * @param {Number} muteTime_min
  */
 async function muteGroup(msg, muteTime_min) {
     let id = msg.key.remoteJid;
@@ -1004,36 +1081,13 @@ function getGroupConfig(id) {
     return msgToSend;
 }
 
-/**
- * 
- * @param {string | Buffer} data 
- * @returns {Promise<{text?: string, error?: string, estimated_time?: number>}}
- */
-async function stt_heb(data) {
-    // if not buffer - load from file
-    if (typeof data !== "object")
-        data = fs.readFileSync(data);
-
-    const response = await fetch(
-        //"https://api-inference.huggingface.co/models/imvladikon/wav2vec2-xls-r-300m-hebrew",
-        "https://api-inference.huggingface.co/models/imvladikon/wav2vec2-xls-r-300m-lm-hebrew",
-        {
-            headers: { Authorization: `Bearer ${process.env.HUGGINGFACE_TOKEN}` },
-            method: "POST",
-            body: data,
-        }
-    );
-    const result = await response.json();
-    return result;
-}
-
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * 
- * @param {string} text 
+ *
+ * @param {string} text
  */
 function getTargetlanguage(text) {
     text = text.toLowerCase();
@@ -1066,7 +1120,7 @@ function getTargetlanguage(text) {
 }
 
 function sendCommandsList(jid) {
-    const showNumOfCommands = 7;
+    const showNumOfCommands = 8;
 
     let text = "היי! אני באבי בוט 🥹\nאני בוט חמוד שיכול לעשות המון דברים מגניבים!\n\n"
         + "הנה כמה דברים שאני יודע לעשות:"
@@ -1080,7 +1134,22 @@ function sendCommandsList(jid) {
     // info about the bot
     text += "*!אודות:* _לקבלת מידע על הבוט_\n";
 
-    text += "\nלקריאת כל הפקודות בצורה נוחה: babibot.live"
+    text += "\nלקריאת כל הפקודות בצורה נוחה: tinyurl.com/babibot"
+
+    return sendMsgQueue(jid, text);
+}
+
+function sendDonationMsg(jid) {
+    let text = "אוהבים את באבי בוט? 🥹\n"
+        + "רוצים לתמוך בפרוייקט וגם לקבל יכולות נוספות?\n\n"
+        + "תוכלו לתרום בקישורים הבאים:\n"
+        + "https://www.buymeacoffee.com/BabiBot\n"
+        + "https://payboxapp.page.link/C43xQBBdoUAo37oC6\n"
+        + "על מנת לקבל את היכולות הנוספות - יש לשלוח צילום מסך של התרומה לטלגרם, ולציין גם את המספר טלפון שלכם,\n"
+        + "ואני אפעיל את היכולות בהקדם האפשרי.\n"
+        + "> לבוט בטלגרם: t.me/ContactMeSBbot\n"
+        + "> לבירור יתרה יש לשלוח '!יתרה'\n\n"
+        + "תודה רבה!";
 
     return sendMsgQueue(jid, text);
 }

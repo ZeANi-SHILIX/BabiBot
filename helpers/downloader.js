@@ -33,7 +33,7 @@ const DLBaseURLS = [
 // }, 1000 * 60 * 5)
 
 /**
- * 
+ *
  * @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg
  */
 export async function DownloadV2(msg) {
@@ -102,9 +102,9 @@ export async function DownloadV2(msg) {
 }
 
 /**
- * 
- * @param {string} jid 
- * @param {string} videoId 
+ *
+ * @param {string} jid
+ * @param {string} videoId
  */
 export async function downloadTYoutubeVideo(jid, videoId) {
 
@@ -206,13 +206,13 @@ export async function handlerQueueYTDownload(jid, videoId) {
         console.log("no server available - try again in 5 seconds")
         await sleep(5000)
         TYQueue.add(async () => await handlerQueueYTDownload(jid, videoId)
-        , { priority: 1 }) // try again
+            , { priority: 1 }) // try again
     }
 }
 
 /**
  * find server that not have work in progress
- ** using double check 
+ ** using double check
  * @returns {Promise<string>}
  */
 async function getServerUrl() {
@@ -271,7 +271,7 @@ async function downloadVideoUsingRender(url, jid, videoId) {
                     })
             }
             else {
-                sendMsgQueue(jid, "אופס משהו לא עבד טוב...")
+                sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון")
             }
         })
         .catch(err => {
@@ -282,16 +282,16 @@ async function downloadVideoUsingRender(url, jid, videoId) {
 
 /**
  * @param {String} str
- * @returns {Boolean} 
+ * @returns {Boolean}
  */
 function isIncludeLink(str) {
     return str.includes("http") || str.includes("https") || str.includes("www.");
 }
 
 /**
- * 
- * @param {string} jid 
- * @param {string} text 
+ *
+ * @param {string} jid
+ * @param {string} text
  */
 async function downloadShortVideo(jid, text) {
 
@@ -313,14 +313,14 @@ async function downloadShortVideo(jid, text) {
     })
 
     stream.on("error", (err) => {
-        sendMsgQueue(jid, "אופס משהו לא עבד טוב עם הסרטון הזה...")
+        sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון");
         errorMsgQueue(err)
     })
 }
 
 /**
- * 
- * @param {string} jid 
+ *
+ * @param {string} jid
  * @param {string} text text with youtube link
  */
 export async function DownloadVideoMP4(jid, text) {
@@ -336,12 +336,16 @@ export async function DownloadVideoMP4(jid, text) {
     let videoDetails = await ytdl.getInfo(videoId);
     let filename = `./youtubeDL/${jid}-${videoId}-${new Date().toLocaleDateString("en-US").replace(/\//g, "-")}`;
 
+    // if the video is too long - more than 10 minutes
+    if (+videoDetails.videoDetails.lengthSeconds > 60 * 10)
+        return sendMsgQueue(jid, "אופס! הסרטון ארוך מדי, נסה סרטון קצר יותר")
+
     let vidFormat = videoDetails.formats
         .find((format) => format.container === "mp4"
             && (format.qualityLabel === "480p" || format.qualityLabel === "360p")
             && format.hasVideo && format.hasAudio);
 
-    if (!vidFormat) return sendMsgQueue(jid, "אופס! לא הצלחתי להוריד את הסרטון הזה...");
+    if (!vidFormat) return sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון");
 
     let stream = ytdl.downloadFromInfo(videoDetails, { format: vidFormat })
         .pipe(fs.createWriteStream(filename + "." + vidFormat.container));
@@ -353,7 +357,7 @@ export async function DownloadVideoMP4(jid, text) {
     })
 
     stream.on("error", (err) => {
-        sendMsgQueue(jid, "אופס משהו לא עבד טוב עם הסרטון הזה...")
+        sendMsgQueue(jid, "אופס! חלה שגיאה בהורדת הסרטון");
         errorMsgQueue(err)
     })
 }

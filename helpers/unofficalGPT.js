@@ -112,7 +112,7 @@ export default class UnofficalGPT {
             prompt += `${pushName}: ${text}\n`;
         }
         //prompt += "Summarize the conversation as briefly as possible but with as much detail as possible\n";
-        
+
         //console.log(prompt);
         prompt = (await translate(prompt, "en")).text
         //console.log(prompt);
@@ -122,7 +122,9 @@ export default class UnofficalGPT {
             "messages": [
                 {
                     role: "system",
-                    content: "You are a helpful Chatbot name BabiBot, your job is to summarize the conversation as briefly as possible but with as much detail as possible."
+                    content: "You are a helpful Chatbot names BabiBot, "
+                        + "your job is to summarize the conversation as briefly but with as much detail as possible, "
+                        + "make sure to include all the important details."
                 },
                 {
                     role: "user",
