@@ -47,6 +47,7 @@ let tempQuizLev = {};
 
 export const GLOBAL = {
     sock: tempSock, // updating when reconnecting (server.js)
+    superuser: "",
     store : tempStore,
     muteGroup: tempMuteGroup,
     groupConfig: tempGroupConfig,
