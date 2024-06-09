@@ -7,6 +7,8 @@ import savedNotes from './src/schemas/notes.js';
 import barkuni from './src/schemas/barkuni.js';
 import kupaRashit from "./src/schemas/kupaRashit.js";
 import mediaNote from './src/schemas/mediaNote.js';
+import mentions from "./src/schemas/mentions.js";
+import federations from "./src/schemas/federations.js";
 
 
 export default class Mongo {
@@ -18,6 +20,9 @@ export default class Mongo {
     this.barkuni = barkuni;
     this.kupaRashit = kupaRashit;
     this.mediaNote = mediaNote;
+    this.mentions = mentions;
+    this.federations = federations;
+
     this.connectionString = process.env.MONGOOSE + '/API_KEYS'//?retryWrites=true&w=majority'
     this.connection = mongoose.connection;
 

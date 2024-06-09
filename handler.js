@@ -22,7 +22,8 @@ import {
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
-import { mentions } from './helpers/mentions/mentions.js';
+import { mentions } from './helpers/mentionsHandler.js';
+import { federations } from './helpers/federationsHandler.js';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -259,11 +260,23 @@ export default async function handleMessage(sock, msg, mongo) {
 
 
     /**###########
-     *   LABLES
+     *   LABELS
      * ##########*/
     if (textMsg.startsWith("@")){
         return mentions.getMentions(msg);
     }
+    else if (textMsg.startsWith("!תג ")){
+        return mentions.labelHandling(msg);
+    }
+    //TODO change prefix to something reasonable...
+    else if (textMsg.startsWith("!פדרציה ")){
+        return federations.labelHandling(msg);
+    }
+    //TODO choose how to specify federation handling
+    //else if (textMsg.startsWith()) {
+    //    return federations.federationsHandling(msg);
+    //}
+
     // if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
     //     if (!msg.key.remoteJid.includes("@g.us"))
     //         return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
