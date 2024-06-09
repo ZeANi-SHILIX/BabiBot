@@ -22,6 +22,7 @@ import {
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
+import { mentions } from './helpers/mentions/mentions.js';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -257,34 +258,40 @@ export default async function handleMessage(sock, msg, mongo) {
         return sendMsgQueue(id, "פינג");
 
 
-    if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
-        if (!msg.key.remoteJid.includes("@g.us"))
-            return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
-
-        //get group members
-        let groupData = await sock.groupMetadata(id);
-
-        // sender is admin?
-        let sender = groupData.participants.find(p => p.id === msg.key.participant);
-        console.log(sender);
-
-        const isAdmin = sender?.admin || msg.key.participant?.includes(superuser) || false;
-        if (!isAdmin)
-            return sendMsgQueue(id, "פקודה זו זמינה למנהלים בלבד");
-
-        if (!GLOBAL.everybodyLastUse2min(id)) return sendMsgQueue(id, "יש להמתין 2 דקות לפני שימוש בפקודה פעם נוספת");
-
-        // dont include bot
-        const botnum = sock.user.id.split("@")[0].split(":")[0];
-        groupData.participants = groupData.participants.filter(p => !p.id.includes(botnum));
-
-        let members = groupData.participants.map(p => p.id);
-        let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
-        let quoteAll = "*הופה בלאגן!!! @" + phoneOfSender + " קורא/ת לכולם!* \n\n" // fix to set tag to the sender
-            + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
-
-        return sendCustomMsgQueue(id, { text: quoteAll, mentions: members });
+    /**###########
+     *   LABLES
+     * ##########*/
+    if (textMsg.startsWith("@")){
+        return mentions.getMentions(msg);
     }
+    // if (textMsg.startsWith("!כולם") || textMsg.startsWith("!everyone")) {
+    //     if (!msg.key.remoteJid.includes("@g.us"))
+    //         return sendMsgQueue(id, "הפקודה זמינה רק בקבוצות");
+
+    //     //get group members
+    //     let groupData = await sock.groupMetadata(id);
+
+    //     // sender is admin?
+    //     let sender = groupData.participants.find(p => p.id === msg.key.participant);
+    //     console.log(sender);
+
+    //     const isAdmin = sender?.admin || msg.key.participant?.includes(superuser) || false;
+    //     if (!isAdmin)
+    //         return sendMsgQueue(id, "פקודה זו זמינה למנהלים בלבד");
+
+    //     if (!GLOBAL.everybodyLastUse2min(id)) return sendMsgQueue(id, "יש להמתין 2 דקות לפני שימוש בפקודה פעם נוספת");
+
+    //     // dont include bot
+    //     const botnum = sock.user.id.split("@")[0].split(":")[0];
+    //     groupData.participants = groupData.participants.filter(p => !p.id.includes(botnum));
+
+    //     let members = groupData.participants.map(p => p.id);
+    //     let phoneOfSender = msg.key.participant?.slice(0, msg.key.participant.indexOf("@"));
+    //     let quoteAll = "*הופה בלאגן!!! @" + phoneOfSender + " קורא/ת לכולם!* \n\n" // fix to set tag to the sender
+    //         + members.map(m => "@" + m.replace("@s.whatsapp.net", "")).join(" ");
+
+    //     return sendCustomMsgQueue(id, { text: quoteAll, mentions: members });
+    // }
 
     /**#########
      * STICKER
