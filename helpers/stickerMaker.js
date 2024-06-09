@@ -14,7 +14,7 @@ import sharp from 'sharp';
 const { Sticker, StickerTypes } = pkg;
 
 /*** enable or disable the remove background feature (can take up to 3 minutes on low-spec servers) */
-const enableRemoveBackground = false;
+const enableRemoveBackground = true;
 
 const parameters = {
     colors: [
