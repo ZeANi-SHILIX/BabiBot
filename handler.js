@@ -737,7 +737,7 @@ export default async function handleMessage(sock, msg, mongo) {
                     return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
                 history = history.sort((a, b) => a.messageTimestamp - b.messageTimestamp);
 
-                history.pop(); // remove the last message (the command itself)
+                history.shift(); // remove the last message (the command itself)
 
                 let res = await unofficalGPT.tldr(history);
                 console.log(JSON.stringify({
@@ -747,7 +747,7 @@ export default async function handleMessage(sock, msg, mongo) {
                 }, null, 2) || res);
 
                 GLOBAL.updateUnofficialGPTcredit(res?.usage.total_tokens, res.model);
-                return sendMsgQueue(id, (await translate(res.choices[0].message.content.trim())).text);
+                return sendMsgQueue(id, res.choices[0].message.content);
             })
 
             .catch(error => {
@@ -880,20 +880,21 @@ export default async function handleMessage(sock, msg, mongo) {
     if (textMsg.startsWith("!תרומה") || textMsg.startsWith("!donate") || textMsg.startsWith("!donation") || textMsg.startsWith("!תרומות")) {
         // if sender is superuser
         if (id.includes(superuser)) {
-            let [donation, phone] = textMsg.split(" ").slice(1);
-            if (donation && phone && !isNaN(donation) && !isNaN(phone)) {
+            let [donation, phone, ...rest] = textMsg.split(" ").slice(1);
+            const donationNum = Number(donation);
+            if (donationNum && phone && !isNaN(donationNum) && !isNaN(phone)) {
                 phone = phone.startsWith("972") ? +phone : "972" + +phone;
                 let jid = phone + "@s.whatsapp.net";
 
                 if (!GLOBAL.sock.onWhatsApp([jid])) {
                     return sendMsgQueue(id, "מספר הטלפון אינו תקין");
                 }
-                if (donation < 1) {
+                if (donationNum < 1) {
                     return sendMsgQueue(id, "סכום התרומה צריך להיות גדול מ-0");
                 }
 
-                GLOBAL.updateBalanceOpenAI(jid, +donation);
-                return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של " + donation + " דולר למשתמש " + phone);
+                GLOBAL.updateBalanceOpenAI(jid, donationNum);
+                return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של " + donationNum + " דולר למשתמש " + phone);
             }
             else {
                 return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה (בדולרים) ולאחר מכן את מספר הטלפון");
@@ -951,6 +952,8 @@ export default async function handleMessage(sock, msg, mongo) {
             + "לפרטים נוספים נא לשלוח '!תרומה' בפרטי לבוט");
 
         return sendMsgQueue(superuser + "@s.whatsapp.net", JSON.stringify({
+            pushName: msg.pushName,
+            linkToUser: "wa.me/" + id.split("@")[0],
             groupInviteMessage: msg.message.groupInviteMessage,
             keyMsg: msg.key
         }, null, 2));
@@ -1123,8 +1126,8 @@ function sendDonationMsg(jid) {
     let text = "אוהבים את באבי בוט? 🥹\n"
         + "רוצים לתמוך בפרוייקט וגם לקבל יכולות נוספות?\n\n"
         + "תוכלו לתרום בקישורים הבאים:\n"
-        + "https://www.buymeacoffee.com/BabiBot\n"
         + "https://payboxapp.page.link/C43xQBBdoUAo37oC6\n"
+        + "https://www.buymeacoffee.com/BabiBot\n"
         + "על מנת לקבל את היכולות הנוספות - יש לשלוח צילום מסך של התרומה לטלגרם, ולציין גם את המספר טלפון שלכם,\n"
         + "ואני אפעיל את היכולות בהקדם האפשרי.\n"
         + "> לבוט בטלגרם: t.me/ContactMeSBbot\n"
