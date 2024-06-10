@@ -893,8 +893,10 @@ export default async function handleMessage(sock, msg, mongo) {
                     return sendMsgQueue(id, "סכום התרומה צריך להיות גדול מ-0");
                 }
 
-                GLOBAL.updateBalanceOpenAI(jid, donationNum);
-                return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של " + donationNum + " דולר למשתמש " + phone);
+                return sendMsgQueue(id, "התרומה נקלטה בהצלחה!\nהוזן סכום של "
+                    + GLOBAL.updateBalanceOpenAI(jid, donationNum)
+                    + " דולר למשתמש wa.me/" + phone
+                );
             }
             else {
                 return sendMsgQueue(id, "לא נמצאו פרטים לתרומה\nנא להזין את סכום התרומה (בדולרים) ולאחר מכן את מספר הטלפון");

@@ -47,7 +47,7 @@ let tempQuizLev = {};
 
 export const GLOBAL = {
     sock: tempSock, // updating when reconnecting (server.js)
-    store : tempStore,
+    store: tempStore,
     muteGroup: tempMuteGroup,
     groupConfig: tempGroupConfig,
     userConfig: tempUserConfig,
@@ -103,7 +103,7 @@ export const GLOBAL = {
      */
     updateBalanceOpenAI: function (jid, amount) {
         if (this.userConfig[jid] === undefined) {
-            this.userConfig[jid] = {};
+            this.userConfig[jid] = { balance: 0 };
         }
         this.userConfig[jid].balance += amount;
 
@@ -114,6 +114,8 @@ export const GLOBAL = {
         else if (amount > 0) {
             this.userConfig[jid].sttWithoutCommand = false;
         }
+
+        return this.userConfig[jid].balance.toFixed(2);
     },
     getBalanceOpenAI: function (jid) {
         if (this.userConfig[jid] === undefined) {
@@ -158,7 +160,7 @@ function readConfig() {
         tempConfig = {};
         console.log("Group Config file not found");
     }
-    else {   
+    else {
         const data = fs.readFileSync("./savedConfig.json");
         try {
             tempConfig = JSON.parse(data);
