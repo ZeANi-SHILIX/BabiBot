@@ -39,6 +39,7 @@
     "openai": "^3.2.1",
     "openai-authenticator": "^0.0.3",
     "p-queue": "^7.3.4",
+    "p-throttle": "^6.1.0",
     "qrcode": "^1.5.3",
     "text2png": "^2.3.0",
     "transparent-background": "^1.4.0",
