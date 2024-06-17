@@ -12,6 +12,63 @@ export default class UnofficalGPT {
         this.completions = "https://api.pawan.krd/v1/chat/completions";
         this.images = "https://api.pawan.krd/v1/images/generations";
         this.text = "https://api.pawan.krd/v1/completions";
+        this.cosmosrp = "https://api.pawan.krd/cosmosrp/v1/chat/completions";
+    }
+
+    /**
+     * chat with cosmosrp
+     * @param {import('@adiwajshing/baileys').proto.WebMessageInfo[]} msgs
+     * @returns {Promise<{id: string, created: number, model: "cosmosrp-001", object: "chat.completion",
+     *              choices: [{
+     *                  finish_reason: "stop" | "max_tokens" | "timeout", index: number,
+     *                  message: {content: string, role: "assistant" | "user"}
+     *              }],
+     *              usage: {
+     *                  prompt_tokens: number,
+     *                  completion_tokens: number,
+     *                  total_tokens: number
+     *             }
+     *         }>}
+     */
+    async chatWithCosmosRP(msgs) {
+        let data = {
+            "model": "cosmosrp",
+            "messages": [
+                {
+                    role: "system",
+                    content: "you are helping bot chat"
+                }]
+        };
+
+        for (let i = 0; i < msgs.length; i++) {
+            const msg = msgs[i];
+            const m = msg.message;
+            data.messages.push({
+                "role": msg.key.fromMe ? "assistant" : "user",
+                "content": m?.conversation ?? m?.extendedTextMessage?.text ? m?.extendedTextMessage?.text || m?.conversation :
+                    m?.imageMessage ? "sent an image" :
+                        m?.videoMessage ? "sent a video" :
+                            m?.audioMessage ? "sent an audio" :
+                                m?.stickerMessage ? "sent a sticker" : ""
+            });
+        }
+
+        try {
+            const response = await fetch(this.cosmosrp, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': this.auth //(not needed for cosmosrp right now)
+                },
+                body: JSON.stringify(data)
+            });
+
+            const json = await response.json();
+            return json;
+        } catch (error) {
+            console.error('Error:', error);
+            return;
+        }
     }
 
     /**
@@ -346,3 +403,74 @@ async function generateCompletion() {
 }
 
 //generateCompletion();
+
+async function testCosmosRP() {
+    const apiKey = process.env.UNOFFICALGPT_API_KEY
+    const gpt = new UnofficalGPT(apiKey)
+
+    // Example messages from multiple users
+    const exampleMsgs = [
+        {
+            key: {
+                fromMe: false,
+                participant: "participant_id_1",
+                remoteJid: "remote_jid_1"
+            },
+            pushName: "Sender1",
+            message: {
+                conversation: "היי, מה שלומך?"
+            }
+        },
+        {
+            key: {
+                fromMe: true
+            },
+            message: {
+                conversation: "לא רע, רק עובד על פרויקטים מעניינים. מה במקום?"
+            }
+        },
+        {
+            key: {
+                fromMe: false,
+                participant: "participant_id_2",
+                remoteJid: "remote_jid_2"
+            },
+            pushName: "Sender2",
+            message: {
+                conversation: "אני צריך עזרה במתמטיקה מישהו יכול לעזור?"
+            }
+        },
+        {
+            key: {
+                fromMe: false,
+                participant: "participant_id_3",
+                remoteJid: "remote_jid_3"
+            },
+            pushName: "Sender3",
+            message: {
+                conversation: "בטח אני יכול לעזור מה הבעיה?"
+            }
+        },
+        {
+            key: {
+                fromMe: true
+            },
+            message: {
+                conversation: "איזה יופי שאתם עוזרים אחד לשני"
+            }
+        }
+    ];
+
+    //Function call
+    gpt.chatWithCosmosRP(exampleMsgs)
+        .then(response => {
+            console.log("CosmosRP response:");
+            console.log(response);
+            console.log(response.choices?.[0]?.message.content);
+        })
+        .catch(error => {
+            console.error("Error chatting with CosmosRP:", error);
+        });
+}
+
+//testCosmosRP();

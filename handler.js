@@ -10,6 +10,7 @@ import MemoryStore from './src/memorystore.js';
 import messageRetryHandler from './src/retryHandler.js'; // can be removed
 import ChatGPT from './helpers/chatgpt.js';
 import UnofficalGPT from './helpers/unofficalGPT.js';
+import pThrottle from 'p-throttle';
 import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -31,6 +32,11 @@ const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
 const superuser = process.env.SUPERUSER ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
+
+const throttle = pThrottle({
+    limit: 3,
+    interval: 15000
+});
 
 /**
  *
@@ -979,35 +985,30 @@ export default async function handleMessage(sock, msg, mongo) {
         });
     }
 
-    return;
     if (type !== MsgType.TEXT) return;
 
-    // no command - answer with ChatGPT
-    // try {
-    //     await sock.sendMessage(id, { react: { text: '⏳', key: msg.key } });
-    //     let history = await store.loadMessages(id, 20);
-    //     let [res, finish_reason] = await chatGPT.chatDevinci(history)
-    //     if (res == "") {
-    //         [res, finish_reason] = await chatGPT.chatDevinci(history);
-    //     }
-    //     await sock.sendMessage(id, { react: { text: '✅', key: msg.key } });
-    //     let returnMsg = await sock.sendMessage(id, { text: res }).then(messageRetryHandler.addMessage);
-    //     if (finish_reason == "length") {
-    //         history.push({
-    //             key: { fromMe: true },
-    //             message: { conversation: res }
-    //         })
-    //         continueChat(history, res, id, sock, returnMsg.key);
-    //     }
-    //     return;
+    // if the bot got a message that is not a command
+    const history = (await MemoryStore.loadMessages(id, 20));
+    throttle(() => {
+        //sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } });
+        unofficalGPT.chatWithCosmosRP(history)
+            .then(res => {
+                if (!res) return sendMsgQueue(id, "חלה שגיאה  :(");
 
-    // } catch (error) {
-    //     console.error(error);
-    //     await sock.sendMessage(id, { text: "אופס... חלה שגיאה\nנסה לשאול שוב" })
-    // }
-    // await sock.sendMessage(id, { react: { text: '❌', key: msg.key } });
+                const text = res?.choices?.[0]?.message?.content?.trim();
+                if (!text) return sendMsgQueue(id, "חלה שגיאה  :(");
 
-
+                console.log(text);
+                sendMsgQueue(id, text);
+                //sendCustomMsgQueue(id, { react: { text: '✅', key: msg.key } });
+            })
+            .catch(error => {
+                console.error(error);
+                errorMsgQueue(error);
+                sendMsgQueue(id, "חלה שגיאה  :(");
+                //sendCustomMsgQueue(id, { react: { text: '❌', key: msg.key } });
+            });
+    });
 }
 
 /**
