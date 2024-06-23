@@ -10,7 +10,7 @@ import MemoryStore from './src/memorystore.js';
 import messageRetryHandler from './src/retryHandler.js'; // can be removed
 import ChatGPT from './helpers/chatgpt.js';
 import UnofficalGPT from './helpers/unofficalGPT.js';
-import pThrottle from 'p-throttle';
+import throttledQueue from 'throttled-queue';
 import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -33,10 +33,7 @@ const superuser = process.env.SUPERUSER ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const DEFAULT_COUNT_USER_TO_MUTE = 7;
 
-const throttle = pThrottle({
-    limit: 3,
-    interval: 15000
-});
+const throttle = throttledQueue(3, 15000);
 
 /**
  *
@@ -992,13 +989,9 @@ export default async function handleMessage(sock, msg, mongo) {
     throttle(() => {
         //sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } });
         unofficalGPT.chatWithCosmosRP(history)
-            .then(res => {
-                if (!res) return sendMsgQueue(id, "חלה שגיאה  :(");
+            .then(text => {
+                if (!text) return sendMsgQueue(id, "חלה שגיאה :(");
 
-                const text = res?.choices?.[0]?.message?.content?.trim();
-                if (!text) return sendMsgQueue(id, "חלה שגיאה  :(");
-
-                console.log(text);
                 sendMsgQueue(id, text);
                 //sendCustomMsgQueue(id, { react: { text: '✅', key: msg.key } });
             })
