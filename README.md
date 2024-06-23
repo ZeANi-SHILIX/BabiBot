@@ -63,7 +63,7 @@ node server.js
 |       ✅        |   Get a link to search on Google        |
 |       ✅        |   Get a random sticker 
 |       ❌        |   Generate an AI picture                         |
-|       ❌        |   Conversation with ChatGPT            |
+|       ✅        |   Conversation with ChatGPT            |
 |       ✅        |   Convert audio message to text (Primium)        |
 
 ### JCT 
