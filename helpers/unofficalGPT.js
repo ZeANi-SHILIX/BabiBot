@@ -1,5 +1,7 @@
 import fetch from 'node-fetch';
 import translate from '../custom_modules/Translate.js';
+import { downloadMediaMessage } from '@adiwajshing/baileys'
+import fs from 'fs';
 
 export default class UnofficalGPT {
     /**
@@ -33,24 +35,55 @@ export default class UnofficalGPT {
     async chatWithCosmosRP(msgs) {
         let data = {
             "model": "cosmosrp",
+            "temperature": 1.0,
             "messages": [
                 {
                     role: "system",
-                    content: "you are helping bot chat"
+                    content: "You are a WhatsApp chatbot named 'Babi Bot'.\n"
+                        + "dont write little notes about how you feel, worte the text only.\n"
+                        + "you can send emojis, you are very friendly and helpful."
                 }]
         };
 
         for (let i = 0; i < msgs.length; i++) {
             const msg = msgs[i];
             const m = msg.message;
-            data.messages.push({
-                "role": msg.key.fromMe ? "assistant" : "user",
-                "content": m?.conversation ?? m?.extendedTextMessage?.text ? m?.extendedTextMessage?.text || m?.conversation :
-                    m?.imageMessage ? "sent an image" :
-                        m?.videoMessage ? "sent a video" :
-                            m?.audioMessage ? "sent an audio" :
-                                m?.stickerMessage ? "sent a sticker" : ""
-            });
+            if (m?.imageMessage) {
+                data.messages.push({
+                    "role": msg.key.fromMe ? "assistant" : "user",
+                    "content": [
+                        { "type": "text", "text": m.imageMessage.caption ?? "" },
+                        {
+                            "type": "image_url", image_url: {
+                                "url": "data:" + m.imageMessage.mimetype + ";base64," + (await downloadMediaMessage(msg, "buffer")).toString('base64')
+                            }
+                        }
+                    ]
+                });
+            }
+            else if (m?.stickerMessage) {
+                data.messages.push({
+                    "role": msg.key.fromMe ? "assistant" : "user",
+                    "content": [
+                        { "type": "text", "text": "a sticker message" }, 
+                        {
+                            "type": "image_url", image_url: {
+                                "url": "data:" + m.stickerMessage.mimetype + ";base64," + (await downloadMediaMessage(msg, "buffer")).toString('base64')
+                            }
+                        }
+                    ]
+                });
+            }
+            else
+                data.messages.push({
+                    "role": msg.key.fromMe ? "assistant" : "user",
+                    "content": (await translate(
+                        m?.conversation ?? m?.extendedTextMessage?.text ? m?.extendedTextMessage?.text || m?.conversation :
+                            m?.videoMessage ? "sent a video" :
+                                m?.audioMessage ? "sent an audio" : "",
+                        "en"
+                    )).text
+                });
         }
 
         try {
@@ -64,7 +97,7 @@ export default class UnofficalGPT {
             });
 
             const json = await response.json();
-            return json;
+            return (await translate(json?.choices?.[0]?.message?.content?.trim(), "iw")).text;
         } catch (error) {
             console.error('Error:', error);
             return;
