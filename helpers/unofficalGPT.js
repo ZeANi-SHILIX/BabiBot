@@ -1,7 +1,6 @@
 import fetch from 'node-fetch';
 import translate from '../custom_modules/Translate.js';
 import { downloadMediaMessage } from '@adiwajshing/baileys'
-import fs from 'fs';
 
 export default class UnofficalGPT {
     /**
@@ -33,6 +32,32 @@ export default class UnofficalGPT {
      *         }>}
      */
     async chatWithCosmosRP(msgs) {
+        /** @param {import('@adiwajshing/baileys').proto.WebMessageInfo} msg */
+        async function formatMessage(msg) {
+            if (msg.message?.imageMessage)
+                return [
+                    { type: "text", text: msg.message.imageMessage.caption || "sent an image" },
+                    {
+                        type: "image_url", image_url: {
+                            url: "data:" + msg.message.imageMessage.mimetype + ";base64," + (await downloadMediaMessage(msg, "buffer")).toString('base64')
+                        }
+                    }
+                ]
+            else if (msg.message?.stickerMessage)
+                return [
+                    { type: "text", text: "sent a sticker" },
+                    {
+                        type: "image_url", image_url: {
+                            url: "data:" + msg.message.stickerMessage.mimetype + ";base64," + (await downloadMediaMessage(msg, "buffer")).toString('base64')
+                        }
+                    }
+                ]
+            else
+                return msg.message?.conversation ?? msg.message?.extendedTextMessage?.text ? msg.message?.extendedTextMessage?.text || msg.message?.conversation :
+                    msg.message?.videoMessage ? "sent a video" :
+                        msg.message?.audioMessage ? "sent an audio" : ""
+        }
+
         let data = {
             "model": "cosmosrp",
             "temperature": 1.0,
@@ -40,50 +65,17 @@ export default class UnofficalGPT {
                 {
                     role: "system",
                     content: "You are a WhatsApp chatbot named 'Babi Bot'.\n"
-                        + "dont write little notes about how you feel, worte the text only.\n"
-                        + "you can send emojis, you are very friendly and helpful."
+                        + "dont send emojis or emontions, just text.\n"
+                        + "if you see a sticker or image, tell every interesting thing about it.\n"
+                        + "you are very friendly and helpful, your answer write in english."
                 }]
         };
 
         for (let i = 0; i < msgs.length; i++) {
-            const msg = msgs[i];
-            const m = msg.message;
-            if (m?.imageMessage) {
-                data.messages.push({
-                    "role": msg.key.fromMe ? "assistant" : "user",
-                    "content": [
-                        { "type": "text", "text": m.imageMessage.caption ?? "" },
-                        {
-                            "type": "image_url", image_url: {
-                                "url": "data:" + m.imageMessage.mimetype + ";base64," + (await downloadMediaMessage(msg, "buffer")).toString('base64')
-                            }
-                        }
-                    ]
-                });
-            }
-            else if (m?.stickerMessage) {
-                data.messages.push({
-                    "role": msg.key.fromMe ? "assistant" : "user",
-                    "content": [
-                        { "type": "text", "text": "a sticker message" }, 
-                        {
-                            "type": "image_url", image_url: {
-                                "url": "data:" + m.stickerMessage.mimetype + ";base64," + (await downloadMediaMessage(msg, "buffer")).toString('base64')
-                            }
-                        }
-                    ]
-                });
-            }
-            else
-                data.messages.push({
-                    "role": msg.key.fromMe ? "assistant" : "user",
-                    "content": (await translate(
-                        m?.conversation ?? m?.extendedTextMessage?.text ? m?.extendedTextMessage?.text || m?.conversation :
-                            m?.videoMessage ? "sent a video" :
-                                m?.audioMessage ? "sent an audio" : "",
-                        "en"
-                    )).text
-                });
+            data.messages.push({
+                "role": msgs[i].key.fromMe ? "assistant" : "user",
+                "content": await formatMessage(msgs[i])
+            });
         }
 
         try {
