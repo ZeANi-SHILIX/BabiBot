@@ -173,10 +173,16 @@ function readConfig() {
 
     for (const key of savedKeys) {
         if (tempConfig[key] === undefined) {
-            GLOBAL[key] = {};
+            if (key === "unofficialGPTcredit")
+                GLOBAL[key] = 250;
+            else
+                GLOBAL[key] = {};
         }
         else {
-            GLOBAL[key] = tempConfig[key];
+            if (key === "unofficialGPTcredit" && typeof tempConfig[key] !== "number")
+                GLOBAL[key] = 250;
+            else
+                GLOBAL[key] = tempConfig[key];
         }
     }
 }
