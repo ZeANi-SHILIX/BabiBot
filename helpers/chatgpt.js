@@ -7,6 +7,8 @@ import { getMsgType, MsgType } from "./msgType.js";
 import MemoryStore from "../src/memorystore.js";
 import { GLOBAL } from "../src/storeMsg.js";
 
+const sttPricePerMinute = 0.01;
+
 export default function ChatGPT(apiKey, useOfficial = true) {
   const configuration = new Configuration({
     apiKey: apiKey,
@@ -285,6 +287,12 @@ ChatGPT.prototype.stt = async function (msg) {
   }
 
 
+  let AudioSeconds = quotedMsg.message.audioMessage.seconds;
+  let balance = Number(GLOBAL.getBalanceOpenAI(id));
+  if (balance < sttPricePerMinute * (AudioSeconds / 60)) {
+    return sendMsgQueue(id, "אורך השמע גדול מדי, כדי להמשיך לתמלל יש להגדיל את היתרה");
+  }
+
   try {
     const filename = `./${id}_whisper.ogg`;
 
@@ -299,14 +307,12 @@ ChatGPT.prototype.stt = async function (msg) {
     fs.unlinkSync(filename);
 
     // update balance after whisper success
-    let AudioSeconds = quotedMsg.message.audioMessage.seconds;
-    let pricePerMinute = 0.01;
     let userID = id.endsWith("@g.us") ? msg.key.participant : id;
-    GLOBAL.updateBalanceOpenAI(userID, -pricePerMinute * (AudioSeconds / 60));
+    GLOBAL.updateBalanceOpenAI(userID, -sttPricePerMinute * (AudioSeconds / 60));
 
     // send the result
     let msgToAdmin = "stt: the user wa.me/" + userID.split("@")[0] + " used the whisper command\n"
-      + "The cost was: " + pricePerMinute * (AudioSeconds / 60).toFixed(2) + " USD";
+      + "The cost was: " + sttPricePerMinute * (AudioSeconds / 60).toFixed(2) + " USD";
     errorMsgQueue(msgToAdmin);
     return sendMsgQueue(id, res);
   }
