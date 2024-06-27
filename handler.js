@@ -201,8 +201,8 @@ export default async function handleMessage(sock, msg, mongo) {
         info.YTdeleteSearch(id);
 
         if (TYQueue.size > 0) sendMsgQueue(id, "מקומך בתור: " + TYQueue.size + "\nאנא המתן...");
-        //TYQueue.add(async () => await downloadTYoutubeVideo(id, video.id));
-        TYQueue.add(async () => await handlerQueueYTDownload(id, video.id));
+        TYQueue.add(async () => await downloadTYoutubeVideo(id, video.id));
+        //TYQueue.add(async () => await handlerQueueYTDownload(id, video.id));
         return;
     }
     // set group config
