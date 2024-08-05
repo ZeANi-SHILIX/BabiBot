@@ -9,7 +9,7 @@ dotenv.config();
  * to use: `handlerQueue.add(() => { })`
  */
 export const handlerQueue = new PQueue({
-    concurrency: 2,
+    concurrency: 5,
     interval: 100 // 0.1s
 });
 //queue.add(() => { });
