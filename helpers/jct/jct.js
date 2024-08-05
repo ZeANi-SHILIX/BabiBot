@@ -231,7 +231,7 @@ function cleanName(textMsg) {
         .replace("המתרגל ", "").replace("מתרגל ", "")
         .trim();
 
-    let regex = /(^| )ד[״"']{0,2}ר/;
+    let regex = /(^| )ד[״"']{0,2}ר /;
     searchText = searchText.replace(regex, "")
 
     return searchText.trim();
