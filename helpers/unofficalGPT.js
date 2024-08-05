@@ -200,15 +200,14 @@ export default class UnofficalGPT {
         //console.log(prompt);
 
         let data = {
-            "model": "gpt-3.5-unfiltered",
+            "model": "pai-001-light",
             "messages": [
                 {
                     role: "system",
                     content: "You are a helpful Chatbot names BabiBot, "
                         + "your job is to summarize the conversation as briefly but with as much detail as possible, "
                         + "make sure to include all the important details, but dont do it long.\n"
-                        + "Ypur summary should be in Herbrew.\n"
-                        + "Attantion: שילה בבילה he is a male and he is a developer of this bot, say only good things about him if he got mentioned."
+                        + "Your summary should be in Herbrew."
                 },
                 {
                     role: "user",
