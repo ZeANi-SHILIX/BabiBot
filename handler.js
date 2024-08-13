@@ -23,6 +23,7 @@ import {
 } from './helpers/jct/jct.js';
 import { AllCommands } from './commands.js';
 import { exec } from 'child_process';
+import Misc from './helpers/misc.js';
 
 
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
@@ -834,6 +835,22 @@ export default async function handleMessage(sock, msg, mongo) {
         return DownloadVideoMP4(id, textMsg);
     }
 
+    
+    // ##############
+    // LOVE Calculator
+    // ##############
+    if (textMsg.startsWith("!אהבה") || textMsg.startsWith("!love")) {
+        console.log("love calculator");
+        const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+        if (!mentionedJid) return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
+        if (mentionedJid.length === 1) {
+            if (textMsg.includes("me") || textMsg.includes("אני"))
+                mentionedJid.push(msg.key.participant);
+        }
+        if (mentionedJid.length !== 2) return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
+        
+        return Misc.loveCalculator(mentionedJid[0], mentionedJid[1], id);
+    }
 
 
     /**######
