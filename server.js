@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import { Canvas } from 'canvas'; // fix on windows (canvas needs to imported first)
-import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, getAggregateVotesInPollMessage} from '@adiwajshing/baileys';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, getAggregateVotesInPollMessage } from '@adiwajshing/baileys';
 import pkg from '@adiwajshing/baileys/WAProto/index.js';
 const { proto } = pkg;
 import bodyParser from 'body-parser';
@@ -139,6 +139,35 @@ async function connectToWhatsApp() {
                     };
 
                     console.log("poll message", payload);
+
+                    // update in Av15
+                    if (GLOBAL.Av15.jids[key.remoteJid]) {
+                        /** @type {{id: string, votes: [], mentionUsers: string[]}[]} */
+                        let polls = GLOBAL.Av15.jids[key.remoteJid].savedPolls;
+                        let poll = polls.find(p => p.pollID === key.id);
+                        if (poll) {
+                            if (poll.votes.length === 0)
+                                poll.votes = pollMessage;
+                            else {
+                                pollMessage.forEach(voteUpdate => {
+                                    /** @type {{name: string, voters: string[]}} */
+                                    let vote = poll.votes.find(v => v.name === voteUpdate.name);
+
+                                    // add the new voters to the vote 
+                                    if (voteUpdate.voters.length > 0) {
+                                        // concat the voters without duplicates
+                                        vote.voters = [...new Set([...vote.voters, ...voteUpdate.voters])];
+                                    }
+                                    // remove the voters from the vote
+                                    else {
+                                        vote.voters = vote.voters.filter(v => v !== update.pollUpdates[0].pollUpdateMessageKey.participant);
+                                    }
+                                });
+                            }
+                            console.log("poll", poll);
+                        }
+
+                    }
                 }
             }
         }
@@ -209,7 +238,7 @@ function canHandleMsg(key) {
 }
 
 const console_info = console.info;
-console.info = (...args) => args.join(" ").includes("SessionEntry") ? console_info("Updating SessionEntry",[]) : console_info(...args);
+console.info = (...args) => args.join(" ").includes("SessionEntry") ? console_info("Updating SessionEntry", []) : console_info(...args);
 
 
 

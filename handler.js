@@ -234,16 +234,6 @@ export default async function handleMessage(sock, msg, mongo) {
                 name: "test poll",
                 values: [
                     "option 1",
-                    "option 2",
-                    "option 3",
-                    "option 4",
-                    "option 5",
-                    "option 6",
-                    "option 7",
-                    "option 8",
-                    "option 9",
-                    "option 10",
-                    "option 11",
                     "option 12" //max 12 options
                 ],
                 selectableCount: 3,
@@ -835,7 +825,7 @@ export default async function handleMessage(sock, msg, mongo) {
         return DownloadVideoMP4(id, textMsg);
     }
 
-    
+
     // ##############
     // LOVE Calculator
     // ##############
@@ -848,10 +838,26 @@ export default async function handleMessage(sock, msg, mongo) {
                 mentionedJid.push(msg.key.participant);
         }
         if (mentionedJid.length !== 2) return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
-        
+
         return Misc.loveCalculator(mentionedJid[0], mentionedJid[1], id);
     }
 
+    if (textMsg.startsWith("!loveday") || textMsg.startsWith("!יוםאהבה")) {
+        const param = textMsg.split(" ")[1];
+        if (["cancel", "בטל"].includes(param))
+            return Misc.active_15Av(id, true);
+        if (["start", "התחל"].includes(param))
+            return Misc.active_15Av(id);
+        if (["statistic", "סטטיסטיקה"].includes(param))
+            return Misc.get15AvStatistic(id);
+
+        return sendMsgQueue(id, "פקודה לא חוקית\n"
+            + "ניתן להשתמש בפקודות הבאות:\n"
+            + "!יוםאהבה התחל - להתחיל את חישוב יום האהבה\n"
+            + "!יוםאהבה בטל - לבטל את חישוב יום האהבה\n"
+            + "!יוםאהבה סטטיסטיקה - לקבל סטטיסטיקה על יום האהבה"
+        );
+    }
 
     /**######
      *  MISC

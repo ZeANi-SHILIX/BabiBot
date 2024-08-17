@@ -1,3 +1,4 @@
+import e from "express";
 import fs from "fs";
 
 /** @type {import('@adiwajshing/baileys').WASocket} */
@@ -27,6 +28,9 @@ let tempTimeouts = {};
 /** @type {{omerInternal: NodeJS.Timeout, chats: string[] }} */
 let omerReminder = {};
 
+/** @type {{jids: {[jid:string]: {savedPolls: {id: string, votes:[], mentionUsers: string[]}[]}}, allUsers: string[], interval: NodeJS.Timeout }} */
+let tempAv15 = { jids: {}, allUsers: [] };
+
 /**  
  * @type {{quizLev: {
  *              groups : {
@@ -53,6 +57,7 @@ export const GLOBAL = {
     userConfig: tempUserConfig,
     timeouts: tempTimeouts,
     omerReminder: omerReminder,
+    Av15: tempAv15,
     clearTimeout: function (id) {
         clearTimeout(this.timeouts[id]);
         console.log("cleared the timeout", this.timeouts[id], " for", id)
@@ -146,7 +151,7 @@ export const GLOBAL = {
     }
 };
 
-const savedKeys = ["groupConfig", "userConfig", "omerReminder", "unofficialGPTcredit"];
+const savedKeys = ["groupConfig", "userConfig", "omerReminder", "unofficialGPTcredit", "Av15"];
 
 readConfig();
 
@@ -172,15 +177,21 @@ function readConfig() {
     }
 
     for (const key of savedKeys) {
+        // if the key is not found, create a new one
         if (tempConfig[key] === undefined) {
             if (key === "unofficialGPTcredit")
                 GLOBAL[key] = 250;
+            else if (key === "Av15")
+                GLOBAL[key] = { jids: {}, allUsers: [] };
             else
                 GLOBAL[key] = {};
         }
+        // if the key is found, but the value is not correct, create a new one
         else {
             if (key === "unofficialGPTcredit" && typeof tempConfig[key] !== "number")
                 GLOBAL[key] = 250;
+            else if (key === "Av15" && tempConfig[key].jids === undefined)
+                GLOBAL[key] = { jids: {}, allUsers: [] };
             else
                 GLOBAL[key] = tempConfig[key];
         }
@@ -190,7 +201,11 @@ function readConfig() {
 function saveConfig() {
     const copyElement = {};
     for (const key of savedKeys) {
-        copyElement[key] = GLOBAL[key];
+        if (key === "Av15") {
+            copyElement[key] = { jids: GLOBAL[key].jids, allUsers: GLOBAL[key].allUsers, interval: GLOBAL[key].interval ? true : false };
+        }
+        else
+            copyElement[key] = GLOBAL[key];
     }
 
     fs.writeFileSync("./savedConfig.json", JSON.stringify(copyElement, null, 2));
