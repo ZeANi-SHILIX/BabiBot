@@ -84,16 +84,18 @@ export class Misc {
             console.log("Setting Av15.interval...");
 
             // the interval will send in next hour, so send the message now
-            for (const jid in GLOBAL.Av15.jids) {
-                this._randomLovewithPoll(jid)
-            }
+            if (new Date().getHours() > 7 && new Date().getHours() < 21)
+                for (const jid in GLOBAL.Av15.jids) {
+                    this._randomLovewithPoll(jid)
+                }
 
             // set the interval to send the message every hour
             GLOBAL.Av15.interval = setInterval(
                 () => {
-                    for (const jid in GLOBAL.Av15.jids) {
-                        this._randomLovewithPoll(jid)
-                    }
+                    if (new Date().getHours() > 7 && new Date().getHours() < 21)
+                        for (const jid in GLOBAL.Av15.jids) {
+                            this._randomLovewithPoll(jid)
+                        }
                 },
                 PRODUCTION
                     ? 60 * 60 * 1000
