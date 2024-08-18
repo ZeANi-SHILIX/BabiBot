@@ -202,7 +202,7 @@ function saveConfig() {
     const copyElement = {};
     for (const key of savedKeys) {
         if (key === "Av15") {
-            copyElement[key] = { jids: GLOBAL[key].jids, allUsers: GLOBAL[key].allUsers, interval: GLOBAL[key].interval ? true : false };
+            copyElement[key] = { jids: GLOBAL[key].jids, allUsers: GLOBAL[key].allUsers, interval: GLOBAL[key].interval ? "savedActived" : false };
         }
         else
             copyElement[key] = GLOBAL[key];

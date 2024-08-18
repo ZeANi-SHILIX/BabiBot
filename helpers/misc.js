@@ -3,10 +3,10 @@ import { GLOBAL } from "../src/storeMsg.js";
 
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const PollOptions = {
-    POSITIVE: "מתאימים מאוד",
-    NEGATIVE: "לא מתאימים",
-    SAME_SEX: "בן לוקח בת ובת לוקחת בן!",
-    IS_MERRIED: "הוא\\היא נשוי\\ה"
+    POSITIVE: "זוג משמיים 💍",
+    NEGATIVE: "לא מתאימים 💀",
+    SAME_SEX: "בן לוקח בת ובת לוקחת בן! לא הפוך 😒",
+    IS_MARRIED: "הוא/היא נשוי/נשואה ❌"
 }
 
 export class Misc {
@@ -23,14 +23,19 @@ export class Misc {
      * @param {boolean} toRemove - Whether to remove the feature
      * @returns {void}
      * */
-    active_15Av(jid, toRemove = false) {
+    async active_15Av(jid, toRemove = false) {
         // If the feature is to be removed, remove it
+
         if (toRemove) {
+            let text = `הפיצ'ר של יום האהבה לא פעיל בקבוצה`;
+
+            if (GLOBAL.Av15.jids[jid]) {
+                await this.get15AvStatistic(jid);
+                text = `הפיצ'ר של יום האהבה נמחק מהקבוצה`;
+            }
             delete GLOBAL.Av15.jids[jid];
 
-            return sendCustomMsgQueue(jid, {
-                text: `הפיצ'ר של יום האהבה נמחק מהקבוצה`
-            });
+            return sendCustomMsgQueue(jid, { text: text });
         }
 
 
@@ -67,24 +72,35 @@ export class Misc {
 
         // interval already set
         if (GLOBAL.Av15.interval) {
+            console.log("Av15.interval: ", GLOBAL.Av15.interval);
             // on restart the interval is set to true, we need to set new interval
-            if (!GLOBAL.Av15.interval === true)
+            if (!GLOBAL.Av15.interval === "savedActived")
                 return;
         }
 
         // get the time difference between now and the next hour
         let timeDiff_sec = 60 * 60 - new Date().getMinutes() * 60 - new Date().getSeconds();
         setTimeout(() => {
+            console.log("Setting Av15.interval...");
+
+            // the interval will send in next hour, so send the message now
+            for (const jid in GLOBAL.Av15.jids) {
+                this._randomLovewithPoll(jid)
+            }
+
             // set the interval to send the message every hour
-            GLOBAL.Av15.interval = setInterval(() => {
-                for (const jid in GLOBAL.Av15.jids) {
-                    this._randomLovewithPoll(jid)
-                }
-            },
+            GLOBAL.Av15.interval = setInterval(
+                () => {
+                    for (const jid in GLOBAL.Av15.jids) {
+                        this._randomLovewithPoll(jid)
+                    }
+                },
                 PRODUCTION
                     ? 60 * 60 * 1000
                     : 30 * 1000
             );
+
+            console.log("Av15.interval setted: ", GLOBAL.Av15.interval);
         },
             PRODUCTION
                 ? timeDiff_sec * 1000
@@ -106,7 +122,7 @@ export class Misc {
             users = users.filter(user => !GLOBAL.Av15.allUsers.includes(user));
 
             // not enough users for love calculation
-            if (users.length <= (PRODUCTION ? 5 : 2)) {
+            if (users.length <= 3) {
                 return;
             }
         }
@@ -134,7 +150,9 @@ export class Misc {
 
         // send msgs
         sendCustomMsgQueue(jid, {
-            text: `סקר אהבה חדש! @${user1.split("@")[0]} ו @${highest.user.split("@")[0]} יוצאים לדייט!`,
+            text: `🦋 פרפרים בבטן ולבבות באוויר🥰\n\n🎊 קבלו את הזוג הבא שלנו 🎊\n`
+                + `@${user1.split("@")[0]} @${highest.user.split("@")[0]}`
+                + `\n\nהאם הם יצאו לדייט?\nהסקר מחכה לכם, ואולי תזכו בשליש גן עדן🏞`,
             mentions: [user1, highest.user]
         });
 
@@ -146,7 +164,7 @@ export class Misc {
                     PollOptions.POSITIVE,
                     PollOptions.NEGATIVE,
                     PollOptions.SAME_SEX,
-                    PollOptions.IS_MERRIED
+                    PollOptions.IS_MARRIED
                 ],
                 selectableCount: 1
             }
@@ -194,12 +212,12 @@ export class Misc {
                     case PollOptions.SAME_SEX:
                         acc.sameSex += vote.voters.length;
                         break;
-                    case PollOptions.IS_MERRIED:
-                        acc.isMerried += vote.voters.length;
+                    case PollOptions.IS_MARRIED:
+                        acc.isMarried += vote.voters.length;
                         break;
                 }
                 return acc;
-            }, { positive: 0, sameSex: 0, isMerried: 0, mentionUsers: poll.mentionUsers });
+            }, { positive: 0, sameSex: 0, isMarried: 0, mentionUsers: poll.mentionUsers });
 
             pollsAggregateVotes.push(pollData);
         }
@@ -207,17 +225,17 @@ export class Misc {
         const TOP3 = {
             positive: pollsAggregateVotes.sort((a, b) => b.positive - a.positive).filter(poll => poll.positive > 0).slice(0, 3),
             sameSex: pollsAggregateVotes.sort((a, b) => b.sameSex - a.sameSex).filter(poll => poll.sameSex > 0).slice(0, 3),
-            isMerried: pollsAggregateVotes.sort((a, b) => b.isMerried - a.isMerried).filter(poll => poll.isMerried > 0).slice(0, 3)
+            isMarried: pollsAggregateVotes.sort((a, b) => b.isMarried - a.isMarried).filter(poll => poll.isMarried > 0).slice(0, 3)
         }
 
         sendCustomMsgQueue(jid, {
-            text: 'סטטיסטיקת סקרי האהבה בקבוצה:\n' +
-                `הזוגות הכי חמודים:\n` +
-                TOP3.positive.map((poll, i) => `${i + 1}. @${poll.mentionUsers[0].split("@")[0]} ו @${poll.mentionUsers[1].split("@")[0]} - ${poll.positive} קולות`).join('\n') +
-                `\n\nהזוגות הכי 2024:\n` +
-                TOP3.sameSex.map((poll, i) => `${i + 1}. @${poll.mentionUsers[0].split("@")[0]} ו @${poll.mentionUsers[1].split("@")[0]} - ${poll.sameSex} קולות`).join('\n') +
-                `\n\nהזוגות הכי ט.ל.ח.:\n` +
-                TOP3.isMerried.map((poll, i) => `${i + 1}. @${poll.mentionUsers[0].split("@")[0]} ו @${poll.mentionUsers[1].split("@")[0]} - ${poll.isMerried} קולות`),
+            text: '📈 סטטיסטיקת ט"ו באבי בקבוצה - בואו ונדבר במספרים ❤\n' +
+                `🥰 הזוגות חביבי הקהל:\n` +
+                TOP3.positive.map((poll, i) => `${i + 1}. @${poll.mentionUsers[0].split("@")[0]} ו @${poll.mentionUsers[1].split("@")[0]}`).join('\n') +
+                `\n\n🕺הזוגות הכי 2024:\n` +
+                TOP3.sameSex.map((poll, i) => `${i + 1}. @${poll.mentionUsers[0].split("@")[0]} ו @${poll.mentionUsers[1].split("@")[0]}`).join('\n') +
+                `\n\n👥 הזוגות הכי ט.ל.ח.:\n` +
+                TOP3.isMarried.map((poll, i) => `${i + 1}. @${poll.mentionUsers[0].split("@")[0]} ו @${poll.mentionUsers[1].split("@")[0]}`).join('\n'),
             mentions: jidData.savedPolls.flatMap(poll => poll.mentionUsers)
         });
     }
