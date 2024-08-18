@@ -859,7 +859,8 @@ export default async function handleMessage(sock, msg, mongo) {
         return Misc.loveCalculator(mentionedJid[0], mentionedJid[1], id);
     }
 
-    if (textMsg.startsWith("!loveday") || textMsg.startsWith("!יוםאהבה")) {
+    if (textMsg.startsWith("!loveday") || textMsg.startsWith("!יוםאהבה")
+        || caption.startsWith("!loveday") || caption.startsWith("!יוםאהבה")) {
         const param = textMsg.split(" ")[1];
         if (["cancel", "בטל"].includes(param))
             return Misc.active_15Av(id, true);
