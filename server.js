@@ -173,7 +173,7 @@ async function connectToWhatsApp() {
         }
     });
 
-    const allowCommands = ['!סטיקר', "!גוגל", "!תמלל", "!פקודות"];
+    const allowCommands = ['!סטיקר', "!גוגל", "!תמלל", "!פקודות", "!יוםאהבה", "!אהבה"];
 
     // handle messages
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
