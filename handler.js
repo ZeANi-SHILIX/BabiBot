@@ -831,13 +831,30 @@ export default async function handleMessage(sock, msg, mongo) {
     // ##############
     if (textMsg.startsWith("!אהבה") || textMsg.startsWith("!love")) {
         console.log("love calculator");
-        const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-        if (!mentionedJid) return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
-        if (mentionedJid.length === 1) {
-            if (textMsg.includes("me") || textMsg.includes("אני"))
-                mentionedJid.push(msg.key.participant);
+
+        // has mentioned
+        let mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+        if (mentionedJid) {
+            if (mentionedJid.length === 1) {
+                if (textMsg.includes("me") || textMsg.includes("אני"))
+                    mentionedJid.push(msg.key.participant);
+            }
+            if (mentionedJid.length !== 2) return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
         }
-        if (mentionedJid.length !== 2) return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
+        // from text
+        else {
+            let phones = textMsg.split(" ")
+                .filter(t => t.length > 8 && t.length < 15)
+                .map(t => t.replace(/[^0-9]/g, ""))
+                .filter(t => t.startsWith("05") && t.length === 10 || t.startsWith("9725") && t.length === 12);
+
+            if (phones.length === 2) {
+                mentionedJid = phones.map(p => p + "@s.whatsapp.net");
+            }
+            else {
+                return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
+            }
+        }
 
         return Misc.loveCalculator(mentionedJid[0], mentionedJid[1], id);
     }
