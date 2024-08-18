@@ -849,7 +849,7 @@ export default async function handleMessage(sock, msg, mongo) {
                 .filter(t => t.startsWith("05") && t.length === 10 || t.startsWith("9725") && t.length === 12);
 
             if (phones.length === 2) {
-                mentionedJid = phones.map(p => p + "@s.whatsapp.net");
+                mentionedJid = phones.map(p => p.startsWith("05") ? "972" + p.slice(1) + "@s.whatsapp.net" : p + "@s.whatsapp.net");
             }
             else {
                 return sendMsgQueue(id, "נא לציין שני משתמשים לחישוב האהבה ביניהם");
