@@ -95,6 +95,9 @@ async function connectToWhatsApp() {
             console.log('\x1b[33m%s\x1b[0m', 'connecting');
         }
         qr = update.qr;
+        if (qr) {
+            console.log('QR code: ', qr);
+        }
     })
     sock.ev.on('creds.update', () => {
         console.log('creds.update')
