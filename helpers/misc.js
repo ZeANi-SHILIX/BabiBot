@@ -12,9 +12,9 @@ const PollOptions = {
 export class Misc {
     constructor() {
         // wait for the store to be ready
-        setTimeout(() => {
-            this._setInterval15Av();
-        }, 10 * 1000);
+        // setTimeout(() => {
+        //     this._setInterval15Av();
+        // }, 10 * 1000);
     }
 
     /**
