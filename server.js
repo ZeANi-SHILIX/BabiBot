@@ -43,21 +43,18 @@ const getMessage = async (key) => {
 let qr = "";
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info');
-    try {
-        var { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log('version', version.join("."), 'isLatest', isLatest)
-    } catch (error) {
-        console.log('error fetching latest version of baileys', error);
-    }
+    //const { version, isLatest } = await fetchLatestBaileysVersion();
+    console.log('version', version.join("."), 'isLatest', isLatest)
     /** @type {import('@adiwajshing/baileys').WASocket} */
     const sock = makeWASocket.default({
+        // can provide additional config here
         printQRInTerminal: true,
         auth: {
             creds: state.creds,
             keys: state.keys,
         },
         logger: MemoryStore.logger,
-        version,
+        //version,
         msgRetryCounterMap,
         retryRequestDelayMs: 150,
 
