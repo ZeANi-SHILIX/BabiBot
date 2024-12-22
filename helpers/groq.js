@@ -13,11 +13,15 @@ export default class GroqAPI {
 
   /**
    * Transcribes and summarizes an audio file.
+   * If the transcription is short, returns it as is.
    * @param {string} audioFilePath - Path to the audio file in OGG format.
    * @returns {Promise<string>} - The summarized transcription.
    */
   async transcribeAndSummarize(audioFilePath) {
     let fullTranscription = await this.transcribe(audioFilePath);
+    if (fullTranscription.length < 200) {
+      return fullTranscription;
+    }
     return fullTranscription + '\n\n' + await this.getSummary(fullTranscription);
   }
 
