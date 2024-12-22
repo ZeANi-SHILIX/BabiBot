@@ -10,6 +10,7 @@ import MemoryStore from './src/memorystore.js';
 import messageRetryHandler from './src/retryHandler.js'; // can be removed
 import ChatGPT from './helpers/chatgpt.js';
 import UnofficalGPT from './helpers/unofficalGPT.js';
+import GroqAPI from './helpers/groq.js';
 import throttledQueue from 'throttled-queue';
 import { info } from './helpers/globals.js';
 import fetch from 'node-fetch';
@@ -29,6 +30,7 @@ import Misc from './helpers/misc.js';
 //const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY , false)
 const chatGPT = new ChatGPT(process.env.OPENAI_API_KEY, true)
 const unofficalGPT = new UnofficalGPT(process.env.UNOFFICALGPT_API_KEY)
+const Groq = new GroqAPI(process.env.GROQ_API_KEY);
 
 const superuser = process.env.SUPERUSER ?? "";
 const PRODUCTION = process.env.NODE_ENV === 'production';
@@ -797,22 +799,16 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // stt - speech to text
     if (textMsg.includes("!stt") || textMsg.includes("!טקסט") || textMsg.includes("!תמלל")) {
-        let userID = id.endsWith("@g.us") ? msg.key.participant : id;
-        if (GLOBAL.canIUseOpenAI(userID) || userID.includes(superuser)) {
-            return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
-                .then(() => chatGPT.stt(msg))
-                .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }))
-        }
-
-        return sendMsgQueue(id, "שירות התמלול זמין רק למי שתרם לבוט\n"
-            + "תוכלו לקבל מידע על איך תורמים באמצעות הפקודה '!תרומה'\n"
-            + "אם תרמת כבר ועדיין לא עובד, אנא צור קשר עם המפתח.");
+        return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
+            .then(() => Groq.stt(msg))
+            .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }))
     }
 
     /**#######
      * YOUTUBE
      #########*/
     if ((textMsg.startsWith("!youtube") || textMsg.startsWith("!יוטיוב"))) {
+        return sendMsgQueue(id, "שירות הורדה מיוטיוב לא זמין כרגע");
         // return sendMsgQueue(id, "שירות הורדת קובץ שמע מיוטיוב לא זמין כרגע."
         //     + "\nניתן להשתמש בפקודה '!סרטון' להורדת סרטונים מיוטיוב"
         //     + "\nאו לחילופין להשתמש בשירותים אחרים כמו t.me/Musicvideobybot");
@@ -821,7 +817,7 @@ export default async function handleMessage(sock, msg, mongo) {
 
     if ((textMsg.startsWith("!video") || textMsg.startsWith("!Video")
         || textMsg.startsWith("!וידאו") || textMsg.startsWith("!סרטון"))) {
-        //return sendMsgQueue(id, "שירות יוטיוב לא זמין כרגע");
+        return sendMsgQueue(id, "שירות הורדה מיוטיוב לא זמין כרגע");
         return DownloadVideoMP4(id, textMsg);
     }
 
@@ -986,9 +982,9 @@ export default async function handleMessage(sock, msg, mongo) {
 
     // for supporter that donate more than 5$ - dont need to send the command in private chat
     if (type === MsgType.AUDIO) {
-        if (GLOBAL.autoSTT(id) || id.includes(superuser))
+        //if (GLOBAL.autoSTT(id) || id.includes(superuser))
             return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
-                .then(() => chatGPT.stt(msg))
+                .then(() => Groq.stt(msg))
                 .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }));
     }
 
