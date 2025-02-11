@@ -98,10 +98,9 @@ async function connectToWhatsApp() {
         qr = update.qr;
         if (qr) {
             console.log('QR code: ', qr);
-            if (!PRODUCTION)
-                QRCode.toString(qr, function (err, str) {
-                    console.log(str)
-                })
+            QRCode.toString(qr, function (err, str) {
+                console.log(str)
+            })
         }
     })
     sock.ev.on('creds.update', () => {
