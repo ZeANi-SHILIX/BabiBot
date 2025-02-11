@@ -1022,6 +1022,8 @@ export default async function handleMessage(sock, msg, mongo) {
 
     if (type !== MsgType.TEXT) return;
 
+    // temporarily unavailable
+    return;
     // if the bot got a message that is not a command
     const history = (await MemoryStore.loadMessages(id, 20));
     throttle(() => {
