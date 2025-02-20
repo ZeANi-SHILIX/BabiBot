@@ -715,8 +715,8 @@ export default async function handleMessage(sock, msg, mongo) {
     }
 
     if (textMsg.includes("!אמלק") || textMsg.includes("!tldr") || textMsg.includes("!TLDR")) {
-        if (GLOBAL.unofficialGPTcredit && GLOBAL.unofficialGPTcredit < 10)
-            return sendMsgQueue(id, "נגמרו להיום הקרדיטים לשימוש בשירות זה\nנסה שוב מחר");
+        // if (GLOBAL.unofficialGPTcredit && GLOBAL.unofficialGPTcredit < 10)
+        //     return sendMsgQueue(id, "נגמרו להיום הקרדיטים לשימוש בשירות זה\nנסה שוב מחר");
 
         // get num from message
         let numMsgToLoad = parseInt(textMsg.match(/\d+/g)?.[0] || 50);
@@ -731,18 +731,19 @@ export default async function handleMessage(sock, msg, mongo) {
 
                 if (history.length < 1)
                     return sendMsgQueue(id, "לא מצאתי היסטוריה עבור שיחה זו")
+                
+                // sort by time and remove the last message (the command itself)
                 history = history.sort((a, b) => a.messageTimestamp - b.messageTimestamp);
+                history.pop();
 
-                history.shift(); // remove the last message (the command itself)
-
-                let res = await unofficalGPT.tldr(history);
+                let res = await Groq.tldr(history);
                 console.log(JSON.stringify({
                     model: res.model,
                     usage: res?.usage?.total_tokens,
                     response: res.choices?.[0].message.content.trim()
                 }, null, 2) || res);
 
-                GLOBAL.updateUnofficialGPTcredit(res?.usage.total_tokens, res.model);
+                //GLOBAL.updateUnofficialGPTcredit(res?.usage.total_tokens, res.model);
                 return sendMsgQueue(id, res.choices[0].message.content);
             })
 
@@ -983,9 +984,9 @@ export default async function handleMessage(sock, msg, mongo) {
     // for supporter that donate more than 5$ - dont need to send the command in private chat
     if (type === MsgType.AUDIO) {
         //if (GLOBAL.autoSTT(id) || id.includes(superuser))
-            return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
-                .then(() => Groq.stt(msg))
-                .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }));
+        return sendCustomMsgQueue(id, { react: { text: '⏳', key: msg.key } })
+            .then(() => Groq.stt(msg))
+            .then(() => sendCustomMsgQueue(id, { react: { text: '', key: msg.key } }));
     }
 
 

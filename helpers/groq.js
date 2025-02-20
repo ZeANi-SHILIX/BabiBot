@@ -156,17 +156,17 @@ export default class GroqAPI {
    */
   async stt(msg) {
     const id = msg.key.remoteJid;
-  
+
     // get type of original message
     let { type } = getMsgType(msg);
-  
+
     let quotedMsg = msg;
     if (type !== MsgType.AUDIO) {
       // has quoted message?
       if (!msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
         return sendMsgQueue(id, "יש לצטט הודעה")
       }
-  
+
       // get from store
       quotedMsg = await MemoryStore.loadMessage(id, msg.message.extendedTextMessage.contextInfo.stanzaId);
       if (!quotedMsg) {
@@ -176,18 +176,18 @@ export default class GroqAPI {
       if (!quotedMsg) {
         return sendMsgQueue(id, "ההודעה המצוטטת לא נמצאה, נסה לשלוח את הפקודה שוב בעוד כמה שניות")
       }
-  
+
       // get type of quoted message
       type = getMsgType(quotedMsg).type
-  
+
       if (type !== MsgType.AUDIO) {
         return sendMsgQueue(id, "ההודעה המצוטטת איננה קובץ שמע")
       }
     }
-  
+
     try {
       const filename = `./${id}_whisper.ogg`;
-  
+
       // download file
       /** @type {Buffer} */
       let buffer = await downloadMediaMessage(quotedMsg, "buffer");
@@ -204,7 +204,67 @@ export default class GroqAPI {
       sendMsgQueue(id, "אופס משהו לא עבד טוב")
     }
   }
-  
+
+  async tldr(msgs) {
+    let prompt = "";
+    for (const msg of msgs) {
+      const m = msg.message;
+      let text = m?.conversation ?? m?.extendedTextMessage?.text ? m?.extendedTextMessage?.text || m?.conversation :
+        m?.imageMessage ? "sent an image" :
+          m?.videoMessage ? "sent a video" :
+            m?.audioMessage ? "sent an audio" :
+              m?.stickerMessage ? "sent a sticker" : "";
+
+
+      if (!text) continue;
+
+      let pushName = msg.key.fromMe ? "BabiBot" : msg.pushName;
+
+      if (!pushName) {
+        let numOfSender = msg.key.participant || msg.key.remoteJid;
+        pushName = numOfSender.split("@")[0];
+      }
+
+      prompt += `${pushName}: ${text}\n`;
+    }
+
+    let data = {
+      "model": "llama3-70b-8192",
+      "messages": [
+        {
+          role: "system",
+          content: "אתה צ'טבוט מועיל שנקרא בשם BabiBot,"
+            + "התפקיד שלך הוא לסכם את השיחה בקצרה אך עם כמה שיותר פרטים,"
+            + "הקפד לכלול את כל הפרטים החשובים, אבל אל תעשה את זה ארוך מידי.\n"
+            + "הסיכום שלך צריך להיות בעברית."
+        },
+        {
+          role: "user",
+          content: "צור סיכום לצא'ט הבא:\n" + prompt
+        }
+      ]
+    };
+
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify(data)
+      });
+
+      const json = await response.json();
+
+      return json;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  }
+
 }
 
 async function test() {
