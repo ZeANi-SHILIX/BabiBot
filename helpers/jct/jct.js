@@ -64,7 +64,7 @@ function findCourse(query) {
 * >}}
 */
 async function getCoursesFromGit() {
-    let link = "https://raw.githubusercontent.com/ItamarShalev/semester_organizer/main/algorithms/generated_data/all_courses_blocked_and_blocks_info.json"
+    let link = "https://raw.githubusercontent.com/ItamarShalev/semester_organizer/main/src/algorithms/generated_data/all_courses_blocked_and_blocks_info.json"
 
     try {
         const res = await fetch(link);
