@@ -1,0 +1,79 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\MAORL\\source\\repos\\BabiBot\\helpers\\hebrewDate.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:helpers\\hebrewDate.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\MAORL\\source\\repos\\BabiBot\\handler.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:handler.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\MAORL\\source\\repos\\BabiBot\\helpers\\chatgpt.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:helpers\\chatgpt.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 1,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedHeight": 273,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "hebrewDate.js",
+              "DocumentMoniker": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\helpers\\hebrewDate.js",
+              "RelativeDocumentMoniker": "helpers\\hebrewDate.js",
+              "ToolTip": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\helpers\\hebrewDate.js",
+              "RelativeToolTip": "helpers\\hebrewDate.js",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAIkAAAAFAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-05-01T15:16:59.76Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "handler.js",
+              "DocumentMoniker": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\handler.js",
+              "RelativeDocumentMoniker": "handler.js",
+              "ToolTip": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\handler.js",
+              "RelativeToolTip": "handler.js",
+              "ViewState": "AQIAANEDAAAAAAAAAABwPYUBAAAWAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-05-01T15:16:43.367Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "chatgpt.js",
+              "DocumentMoniker": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\helpers\\chatgpt.js",
+              "RelativeDocumentMoniker": "helpers\\chatgpt.js",
+              "ToolTip": "C:\\Users\\MAORL\\source\\repos\\BabiBot\\helpers\\chatgpt.js",
+              "RelativeToolTip": "helpers\\chatgpt.js",
+              "ViewState": "AQIAAFwBAAAAAAAAAAAAAHUBAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-05-01T15:15:47.785Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

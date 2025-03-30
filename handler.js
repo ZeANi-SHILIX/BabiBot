@@ -89,7 +89,12 @@ export default async function handleMessage(sock, msg, mongo) {
                     : DEFAULT_COUNT_USER_TO_MUTE
             };
         }
-
+        if ((textMsg.startsWith("תזכורת עומר"))){
+            if ("הוספה")
+                return info.addOmerReminder(id, textMsg);
+            if ("מחיקה")
+            return info.deleteOmerReminder(id);
+        }
         // block links
         if (isIncludeLink(caption) || isIncludeLink(textMsg)) {
             if (GLOBAL.groupConfig[id]?.blockLinks) {
